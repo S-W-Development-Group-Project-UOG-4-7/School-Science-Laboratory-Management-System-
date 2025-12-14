@@ -1,0 +1,146 @@
+.pageContainer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(to bottom, #f0f9ff, #ffffff);
+}
+
+.header {
+  background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-700) 50%, var(--purple-600) 100%);
+  color: var(--white);
+  padding: 3rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+}
+
+.headerTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  position: relative;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.headerSubtitle {
+  font-size: 1.125rem;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 600px;
+  line-height: 1.6;
+  position: relative;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.practicalsHeader {
+  margin-bottom: 1.5rem;
+}
+
+.practicalsTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.practicalsTitle::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 1.5rem;
+  background-color: var(--blue-500);
+  border-radius: 2px;
+}
+
+.practicalsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.noResults {
+  text-align: center;
+  padding: 3rem 1rem;
+  background-color: var(--white);
+  border-radius: 0.75rem;
+  border: 1px dashed var(--gray-300);
+}
+
+.noResultsIcon {
+  color: var(--gray-400);
+  margin-bottom: 1rem;
+}
+
+.noResultsIcon svg {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto;
+  opacity: 0.5;
+}
+
+.noResultsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+}
+
+.noResultsText {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+.footer {
+  background-color: var(--white);
+  border-top: 1px solid var(--gray-200);
+  padding: 1.5rem 0;
+  margin-top: 3rem;
+}
+
+.footer .container {
+  text-align: center;
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.footerSubtitle {
+  color: var(--gray-500);
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  opacity: 0.8;
+}
+
+@media (min-width: 768px) {
+  .headerTitle {
+    font-size: 3rem;
+  }
+  
+  .headerSubtitle {
+    font-size: 1.25rem;
+  }
+  
+  .practicalsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .practicalsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
