@@ -1,4 +1,6 @@
-.page {
+.root {
+  /* default variables and sensible font fallback */
+  --font-geist-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   --background: #fafafa;
   --foreground: #fff;
 
@@ -8,7 +10,9 @@
   --button-primary-hover: #383838;
   --button-secondary-hover: #f2f2f2;
   --button-secondary-border: #ebebeb;
+}
 
+.page {
   display: flex;
   min-height: 100vh;
   align-items: center;
@@ -43,16 +47,20 @@
   font-weight: 600;
   line-height: 48px;
   letter-spacing: -2.4px;
-  text-wrap: balance;
   color: var(--text-primary);
+  /* use robust wrapping properties for cross-browser support */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .intro p {
   max-width: 440px;
   font-size: 18px;
   line-height: 32px;
-  text-wrap: balance;
   color: var(--text-secondary);
+  /* use robust wrapping properties for cross-browser support */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .intro a {
@@ -77,20 +85,27 @@
   padding: 0 16px;
   border-radius: 128px;
   border: 1px solid transparent;
-  transition: 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
   cursor: pointer;
   width: fit-content;
   font-weight: 500;
 }
 
-a.primary {
+/* scope primary/secondary styles to CTAs to avoid global anchor collisions */
+.ctas a.primary {
   background: var(--text-primary);
   color: var(--background);
   gap: 8px;
 }
 
-a.secondary {
+.ctas a.secondary {
   border-color: var(--button-secondary-border);
+}
+
+/* accessible focus state for keyboard users */
+.ctas a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--text-primary) 80%, transparent);
+  outline-offset: 2px;
 }
 
 /* Enable hover only on non-touch devices */
@@ -124,12 +139,12 @@ a.secondary {
 
 @media (prefers-color-scheme: dark) {
   .logo {
-    filter: invert();
+    filter: invert(1);
   }
 
-  .page {
+  :root {
     --background: #000;
-    --foreground: #000;
+    --foreground: #111; /* keep foreground slightly lighter than background */
 
     --text-primary: #ededed;
     --text-secondary: #999;
