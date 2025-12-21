@@ -1,16 +1,13 @@
+// prisma.config.ts
 import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-
   migrations: {
     path: "prisma/migrations",
   },
-
-  // Use adapter instead of provider
   datasource: {
-    // This is the Postgres connection URL
-    url: env("DATABASE_URL"),
+    url: process.env.DATABASE_URL, // Connection URL from .env
   },
 });
