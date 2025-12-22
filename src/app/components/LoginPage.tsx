@@ -38,14 +38,18 @@ const CREDENTIALS = {
 // DNA Helix Animation Component
 const DNAHelix = () => {
   const [rotation, setRotation] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
   
   React.useEffect(() => {
+    setMounted(true);
     const animate = () => {
       setRotation(prev => (prev + 0.5) % 360);
     };
     const interval = setInterval(animate, 30);
     return () => clearInterval(interval);
   }, []);
+  // Don't render on server to avoid hydration mismatch
+  if (!mounted) return null;
   
   const numPoints = 50;
   const points = Array.from({ length: numPoints });
@@ -120,7 +124,7 @@ const DNAHelix = () => {
         })}
         
         <text x="430" y="580" fill="#94a3b8" fontSize="14" fontWeight="bold">
-          DNA
+          
         </text>
       </svg>
     </div>
@@ -172,7 +176,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(false);
     
     // Mock login - determine role from email
-    const credentials = CREDENTIALS[email];
+    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];;
     if (credentials && credentials.password === password) {
       onLogin({
         name: credentials.name,
