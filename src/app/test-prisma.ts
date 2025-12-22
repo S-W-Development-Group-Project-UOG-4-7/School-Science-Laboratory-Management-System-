@@ -1,8 +1,4 @@
-// src/app/test-prisma.ts
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const { PrismaClient } = require('../generated/prisma');
+import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -14,7 +10,6 @@ async function main() {
         email: `test${Date.now()}@example.com`,
       },
     });
-
     console.log('Created user:', newUser);
 
     const users = await prisma.user.findMany();
