@@ -57,19 +57,19 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     const baseNavigation = [
       {
         id: "practicals" as Page,
-        label: "Practicals & Videos",
+        label: "Practical vedios",
         icon: Video,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },
       {
         id: "inventory" as Page,
-        label: "Laboratory Inventory",
+        label: "Laboratory Management",
         icon: Package,
         roles: ['teacher', 'lab-assistant', 'principal', 'admin'],
       },
       {
         id: "schedule" as Page,
-        label: "Schedule & Calendar",
+        label: "Schedule",
         icon: Calendar,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },

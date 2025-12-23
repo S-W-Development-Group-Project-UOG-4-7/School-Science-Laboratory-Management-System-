@@ -176,7 +176,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsLoading(false);
     
     // Mock login - determine role from email
-    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];
+    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];;
     if (credentials && credentials.password === password) {
       onLogin({
         name: credentials.name,

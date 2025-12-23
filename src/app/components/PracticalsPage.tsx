@@ -119,7 +119,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canUpload = userRole === 'teacher' || userRole === 'staff';
+  const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -215,6 +215,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="9">Grade 6</SelectItem>
+                          <SelectItem value="10">Grade 7</SelectItem>
+                          <SelectItem value="11">Grade 8</SelectItem>
                           <SelectItem value="9">Grade 9</SelectItem>
                           <SelectItem value="10">Grade 10</SelectItem>
                           <SelectItem value="11">Grade 11</SelectItem>
@@ -340,6 +343,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Grades</SelectItem>
+                    <SelectItem value="Grade 9">Grade 6</SelectItem>
+                    <SelectItem value="Grade 10">Grade 7</SelectItem>
+                    <SelectItem value="Grade 9">Grade 8</SelectItem>
                     <SelectItem value="Grade 9">Grade 9</SelectItem>
                     <SelectItem value="Grade 10">Grade 10</SelectItem>
                     <SelectItem value="Grade 11">Grade 11</SelectItem>

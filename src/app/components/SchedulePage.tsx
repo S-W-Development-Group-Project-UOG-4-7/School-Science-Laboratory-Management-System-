@@ -30,7 +30,7 @@ interface ScheduledPractical {
   time: string;
   duration: string;
   grade: string;
-  subject: 'Physics' | 'Chemistry' | 'Biology';
+  subject: 'Physics' | 'Chemistry' | 'Biology'| 'Science';
   teacher: string;
   location: string;
   notes: string;
@@ -136,7 +136,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canSchedule = userRole === 'teacher' || userRole === 'staff';
+ const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -243,6 +243,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="Physics">Science</SelectItem>
                         <SelectItem value="Physics">Physics</SelectItem>
                         <SelectItem value="Chemistry">Chemistry</SelectItem>
                         <SelectItem value="Biology">Biology</SelectItem>
@@ -256,6 +257,9 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="9">Grade 6</SelectItem>
+                        <SelectItem value="10">Grade 7</SelectItem>
+                        <SelectItem value="11">Grade 8</SelectItem>
                         <SelectItem value="9">Grade 9</SelectItem>
                         <SelectItem value="10">Grade 10</SelectItem>
                         <SelectItem value="11">Grade 11</SelectItem>
