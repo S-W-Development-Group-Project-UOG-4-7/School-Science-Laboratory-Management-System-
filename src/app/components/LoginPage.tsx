@@ -124,7 +124,7 @@ const DNAHelix = () => {
         })}
         
         <text x="430" y="580" fill="#94a3b8" fontSize="14" fontWeight="bold">
-          DNA
+          
         </text>
       </svg>
     </div>
