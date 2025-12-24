@@ -136,7 +136,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canSchedule = userRole === 'teacher' || userRole === 'staff';
+  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant'; 
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User as UserType } from '@/lib/types';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface SettingsPageProps {
   user: UserType;

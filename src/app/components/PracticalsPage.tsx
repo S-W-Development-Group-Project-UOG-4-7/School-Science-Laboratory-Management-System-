@@ -19,7 +19,7 @@ import {
 } from './ui/dialog';
 import { motion } from 'framer-motion';
 import type { UserRole } from '@/lib/types';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface PracticalsPageProps {
   userRole: UserRole;
@@ -119,7 +119,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canUpload = userRole === 'teacher' || userRole === 'staff';
+  const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

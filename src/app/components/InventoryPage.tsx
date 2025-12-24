@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import type { UserRole } from '@/lib/types';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface InventoryPageProps {
   userRole: UserRole;
@@ -142,7 +142,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
 
-  const canEdit = userRole === 'teacher' || userRole === 'staff';
+  const canEdit = userRole === 'teacher' || userRole === 'lab-assistant';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
