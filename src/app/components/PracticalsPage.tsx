@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon } from 'lucide-react';
+import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, Clock, BarChart3 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -18,26 +18,16 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from '@/lib/types';
+import { UserRole, Quiz, QuizAttempt, Practical } from '@/lib/types'; // UPDATED IMPORT
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { QuizManager } from './quiz/QuizManager';
+import { QuizPlayer } from './quiz/QuizPlayer';
 
 interface PracticalsPageProps {
   userRole: UserRole;
 }
 
-interface Practical {
-  id: string;
-  title: string;
-  grade: string;
-  subject: 'Physics' | 'Chemistry' | 'Biology';
-  videoUrl: string;
-  labSheetUrl: string;
-  duration: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  description: string;
-  thumbnail: string;
-}
-
+// Sample data with quizzes
 const practicals: Practical[] = [
   {
     id: '1',
@@ -50,6 +40,36 @@ const practicals: Practical[] = [
     difficulty: 'Intermediate',
     description: 'Learn the proper technique for conducting acid-base titrations using standard solutions.',
     thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
+    quizzes: [
+      {
+        id: 'quiz1',
+        practicalId: '1',
+        title: 'Acid-Base Titration Quiz',
+        description: 'Test your knowledge of acid-base titration concepts',
+        totalMarks: 20,
+        passingMarks: 60,
+        timeLimit: 30,
+        questions: [
+          {
+            id: 'q1',
+            question: 'What is the endpoint in a titration?',
+            type: 'multiple-choice',
+            options: [
+              'When the indicator changes color',
+              'When all reactant is consumed',
+              'When pH equals 7',
+              'When temperature stabilizes'
+            ],
+            correctAnswer: 'When the indicator changes color',
+            marks: 5,
+            explanation: 'The endpoint is indicated by a color change of the indicator.'
+          }
+        ],
+        isPublished: true,
+        createdAt: new Date(),
+        createdBy: 'teacher1'
+      }
+    ]
   },
   {
     id: '2',
@@ -62,6 +82,7 @@ const practicals: Practical[] = [
     difficulty: 'Beginner',
     description: 'Introduction to compound microscope operation and observing plant and animal cells.',
     thumbnail: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    quizzes: []
   },
   {
     id: '3',
@@ -74,43 +95,33 @@ const practicals: Practical[] = [
     difficulty: 'Intermediate',
     description: 'Practical demonstrations of Newton\'s three laws of motion with calculations.',
     thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    quizzes: []
   },
+];
+
+// Mock quiz attempts data
+const mockQuizAttempts: QuizAttempt[] = [
   {
-    id: '4',
-    title: 'Qualitative Analysis of Salts',
-    grade: 'Grade 12',
-    subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '90 min',
-    difficulty: 'Advanced',
-    description: 'Systematic identification of cations and anions in unknown salt mixtures.',
-    thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    id: '5',
-    title: 'Photosynthesis Experiment',
-    grade: 'Grade 10',
-    subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '45 min',
-    difficulty: 'Beginner',
-    description: 'Investigating the factors affecting the rate of photosynthesis in aquatic plants.',
-    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    id: '6',
-    title: 'Simple Harmonic Motion - Pendulum',
-    grade: 'Grade 11',
-    subject: 'Physics',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '40 min',
-    difficulty: 'Intermediate',
-    description: 'Study the relationship between length and time period of a simple pendulum.',
-    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
+    id: 'attempt1',
+    quizId: 'quiz1',
+    studentId: 'student1',
+    studentName: 'John Doe',
+    answers: [
+      {
+        questionId: 'q1',
+        answer: 'When the indicator changes color',
+        isCorrect: true,
+        marksObtained: 5
+      }
+    ],
+    totalMarks: 20,
+    obtainedMarks: 18,
+    percentage: 90,
+    passed: true,
+    startedAt: new Date(),
+    completedAt: new Date(),
+    status: 'completed'
+  }
 ];
 
 export function PracticalsPage({ userRole }: PracticalsPageProps) {
@@ -118,6 +129,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedPractical, setSelectedPractical] = useState<Practical | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>(mockQuizAttempts);
 
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
@@ -137,8 +151,10 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Biology':
         return 'bg-blue-100 text-blue-700 border-blue-200';
-      default:
+      case 'Science':
         return 'bg-gray-100 text-gray-700 border-gray-200';
+      default:
+        return 'bg-pink-100 text-pink-700 border-pink-200';
     }
   };
 
@@ -153,6 +169,53 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
       default:
         return 'bg-gray-100 text-gray-700';
     }
+  };
+
+  // Quiz Management Functions
+  const handleAddQuiz = (quizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+    const newQuiz: Quiz = {
+      ...quizData,
+      id: Date.now().toString(),
+      createdAt: new Date()
+    };
+    
+    // In real app, update database
+    console.log('Adding quiz:', newQuiz);
+    // Update the practical with new quiz
+    const practicalIndex = practicals.findIndex(p => p.id === quizData.practicalId);
+    if (practicalIndex !== -1) {
+      practicals[practicalIndex].quizzes = [...(practicals[practicalIndex].quizzes || []), newQuiz];
+    }
+  };
+
+  const handleEditQuiz = (quizId: string, updates: Partial<Quiz>) => {
+    // In real app, update database
+    console.log('Editing quiz:', quizId, updates);
+  };
+
+  const handleDeleteQuiz = (quizId: string) => {
+    // In real app, delete from database
+    console.log('Deleting quiz:', quizId);
+  };
+
+  const handleStartQuiz = (quiz: Quiz) => {
+    setSelectedQuiz(quiz);
+  };
+
+  const handleSubmitQuiz = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
+    const newAttempt: QuizAttempt = {
+      ...attempt,
+      id: Date.now().toString(),
+      startedAt: new Date(),
+      completedAt: new Date(),
+      status: 'completed'
+    };
+    
+    setQuizAttempts([...quizAttempts, newAttempt]);
+    setSelectedQuiz(null);
+    
+    // In real app, save to database
+    console.log('Quiz submitted:', newAttempt);
   };
 
   return (
@@ -205,6 +268,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           <SelectItem value="Physics">Physics</SelectItem>
                           <SelectItem value="Chemistry">Chemistry</SelectItem>
                           <SelectItem value="Biology">Biology</SelectItem>
+                          <SelectItem value="Science">Science</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -333,6 +397,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     <SelectItem value="Physics">Physics</SelectItem>
                     <SelectItem value="Chemistry">Chemistry</SelectItem>
                     <SelectItem value="Biology">Biology</SelectItem>
+                    <SelectItem value="Science">Science</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -410,6 +475,11 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                       <Badge variant="outline" className="bg-gray-50">
                         ⏱️ {practical.duration}
                       </Badge>
+                      {practical.quizzes && practical.quizzes.length > 0 && (
+                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                          📝 {practical.quizzes.length} quiz{practical.quizzes.length !== 1 ? 'zes' : ''}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -421,6 +491,43 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         <FileText className="w-4 h-4 mr-2" />
                         Lab Sheet
                       </Button>
+                      
+                      {/* Quiz Button */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
+                            onClick={() => setSelectedPractical(practical)}
+                          >
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            Quiz
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>{practical.title} - Quizzes</DialogTitle>
+                            <DialogDescription>
+                              {userRole === 'student' 
+                                ? 'Take quizzes to test your knowledge' 
+                                : 'Manage quizzes for this practical'}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <QuizManager
+                            practicalId={practical.id}
+                            userRole={userRole}
+                            quizzes={practical.quizzes || []}
+                            onAddQuiz={handleAddQuiz}
+                            onEditQuiz={handleEditQuiz}
+                            onDeleteQuiz={handleDeleteQuiz}
+                            quizAttempts={quizAttempts.filter(a => 
+                              (practical.quizzes || []).some(q => q.id === a.quizId)
+                            )}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                      
                       <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
                         <Download className="w-4 h-4 mr-2" />
                         Download
@@ -433,6 +540,15 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
           </motion.div>
         ))}
       </div>
+
+      {/* Quiz Player Modal */}
+      {selectedQuiz && userRole === 'student' && (
+        <QuizPlayer
+          quiz={selectedQuiz}
+          onSubmit={handleSubmitQuiz}
+          onClose={() => setSelectedQuiz(null)}
+        />
+      )}
 
       {/* Empty State */}
       {filteredPracticals.length === 0 && (
