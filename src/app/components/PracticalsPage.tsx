@@ -119,7 +119,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canUpload = userRole === 'teacher' || userRole === 'staff';
+  const canUpload = userRole === 'teacher' || userRole === 'student';
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

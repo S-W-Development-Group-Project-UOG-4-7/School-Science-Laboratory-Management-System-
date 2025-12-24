@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test-prisma": "node src/app/test-prisma.cjs",
     "studio": "prisma studio --url \"postgresql://postgres:Matheesha%409%23@localhost:5432/sciencemate?schema=public\""
+
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -38,8 +39,10 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^11.11.17",
+    "input-otp": "^1.4.2",
     "lucide-react": "^0.460.0",
     "next": "15.0.3",
     "next-themes": "^0.4.6",
@@ -47,9 +50,11 @@
     "react-day-picker": "^9.13.0",
     "react-dom": "^18.3.1",
     "react-resizable-panels": "^4.0.15",
+    "recharts": "^3.6.0",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "vaul": "^1.1.2"
   },
   "devDependencies": {
     "@types/node": "^22",
