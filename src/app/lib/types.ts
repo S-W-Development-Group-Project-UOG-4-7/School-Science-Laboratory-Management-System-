@@ -8,16 +8,7 @@ export interface User {
 }
 
 
-// Quiz types
-export interface QuizQuestion {
-  id: string;
-  question: string;
-  type: 'multiple-choice' | 'true-false' | 'short-answer';
-  options?: string[];
-  correctAnswer: string | string[];
-  marks: number;
-  explanation?: string;
-}
+
 
 export interface Quiz {
   id: string;
@@ -66,4 +57,16 @@ export interface Practical {
   description: string;
   thumbnail: string;
   quizzes?: Quiz[];
+}
+
+export type QuestionType = 'multiple-choice' | 'msq' | 'true-false' | 'short-answer';
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  type: QuestionType;
+  options?: string[]; // Only for multiple-choice and msq
+  correctAnswer: string | string[]; // string for single, string[] for msq
+  marks: number;
+  explanation?: string;
 }

@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Plus, Edit, Trash2, Eye, BarChart3, Users, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { Quiz, QuizAttempt, UserRole } from '@/lib/types'; T
+import { Quiz, QuizAttempt, UserRole } from '@/lib/types'; 
 import { QuizForm } from './QuizForm';
 import { QuizCard } from './QuizCard';
 import { QuizAttemptsView } from './QuizAttemptsView';

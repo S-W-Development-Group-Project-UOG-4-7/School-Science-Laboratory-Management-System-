@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, Clock, BarChart3 } from 'lucide-react';
+import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, Clock, BarChart3, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -17,8 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import { motion } from 'framer-motion';
-import { UserRole, Quiz, QuizAttempt, Practical } from '@/lib/types'; // UPDATED IMPORT
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserRole, Quiz, QuizAttempt, Practical } from '@/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
 import { QuizPlayer } from './quiz/QuizPlayer';
@@ -27,10 +27,10 @@ interface PracticalsPageProps {
   userRole: UserRole;
 }
 
-// Sample data with quizzes
+// Sample data with quizzes - ensure unique IDs
 const practicals: Practical[] = [
   {
-    id: '1',
+    id: 'practical-1',
     title: 'Acid-Base Titration',
     grade: 'Grade 11',
     subject: 'Chemistry',
@@ -42,8 +42,8 @@ const practicals: Practical[] = [
     thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
     quizzes: [
       {
-        id: 'quiz1',
-        practicalId: '1',
+        id: 'quiz-1',
+        practicalId: 'practical-1',
         title: 'Acid-Base Titration Quiz',
         description: 'Test your knowledge of acid-base titration concepts',
         totalMarks: 20,
@@ -51,9 +51,9 @@ const practicals: Practical[] = [
         timeLimit: 30,
         questions: [
           {
-            id: 'q1',
+            id: 'q-1-1',
             question: 'What is the endpoint in a titration?',
-            type: 'multiple-choice',
+            type: 'multiple-choice' as const,
             options: [
               'When the indicator changes color',
               'When all reactant is consumed',
@@ -72,7 +72,7 @@ const practicals: Practical[] = [
     ]
   },
   {
-    id: '2',
+    id: 'practical-2',
     title: 'Microscope Usage and Cell Observation',
     grade: 'Grade 9',
     subject: 'Biology',
@@ -85,7 +85,7 @@ const practicals: Practical[] = [
     quizzes: []
   },
   {
-    id: '3',
+    id: 'practical-3',
     title: "Newton's Laws of Motion Experiments",
     grade: 'Grade 10',
     subject: 'Physics',
@@ -97,18 +97,44 @@ const practicals: Practical[] = [
     thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
     quizzes: []
   },
+  {
+    id: 'practical-4',
+    title: 'Chemical Reactions and Equations',
+    grade: 'Grade 10',
+    subject: 'Chemistry',
+    videoUrl: '#',
+    labSheetUrl: '#',
+    duration: '50 min',
+    difficulty: 'Intermediate',
+    description: 'Observe and identify different types of chemical reactions.',
+    thumbnail: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaWNhbCUyMHJlYWN0aW9ufGVufDF8fHx8MTc2MzE2ODA5Nnww&ixlib=rb-4.1.0&q=80&w=1080',
+    quizzes: []
+  },
+  {
+    id: 'practical-5',
+    title: 'Photosynthesis Experiment',
+    grade: 'Grade 9',
+    subject: 'Biology',
+    videoUrl: '#',
+    labSheetUrl: '#',
+    duration: '40 min',
+    difficulty: 'Beginner',
+    description: 'Demonstrate the process of photosynthesis in plants.',
+    thumbnail: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaG90b3N5bnRoZXNpc3xlbnwxfHx8fDE3NjMxNjgxMTh8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    quizzes: []
+  },
 ];
 
 // Mock quiz attempts data
 const mockQuizAttempts: QuizAttempt[] = [
   {
-    id: 'attempt1',
-    quizId: 'quiz1',
-    studentId: 'student1',
+    id: 'attempt-1',
+    quizId: 'quiz-1',
+    studentId: 'student-1',
     studentName: 'John Doe',
     answers: [
       {
-        questionId: 'q1',
+        questionId: 'q-1-1',
         answer: 'When the indicator changes color',
         isCorrect: true,
         marksObtained: 5
@@ -132,11 +158,17 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedPractical, setSelectedPractical] = useState<Practical | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>(mockQuizAttempts);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Generate unique ID for the component
+  const componentId = useId();
 
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
   const filteredPracticals = practicals.filter((practical) => {
-    const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = searchQuery === '' || 
+      practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       practical.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSubject = selectedSubject === 'all' || practical.subject === selectedSubject;
     const matchesGrade = selectedGrade === 'all' || practical.grade === selectedGrade;
@@ -171,11 +203,20 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
   };
 
+  // Clear search function
+  const clearSearch = () => {
+    setSearchQuery('');
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
   // Quiz Management Functions
   const handleAddQuiz = (quizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+    // Use crypto.randomUUID() for better unique IDs
     const newQuiz: Quiz = {
       ...quizData,
-      id: Date.now().toString(),
+      id: `quiz-${crypto.randomUUID()}`,
       createdAt: new Date()
     };
     
@@ -205,7 +246,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const handleSubmitQuiz = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
     const newAttempt: QuizAttempt = {
       ...attempt,
-      id: Date.now().toString(),
+      id: `attempt-${crypto.randomUUID()}`,
       startedAt: new Date(),
       completedAt: new Date(),
       status: 'completed'
@@ -226,6 +267,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
+          key={`${componentId}-header`}
         >
           <h2 className="text-gray-900 mb-2">Practical Videos & Lab Sheets</h2>
           <p className="text-gray-600">
@@ -237,6 +279,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
+            key={`${componentId}-add-button`}
           >
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
@@ -279,14 +322,14 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="9">Grade 6</SelectItem>
-                          <SelectItem value="10">Grade 7</SelectItem>
-                          <SelectItem value="11">Grade 8</SelectItem>
-                          <SelectItem value="9">Grade 9</SelectItem>
-                          <SelectItem value="10">Grade 10</SelectItem>
-                          <SelectItem value="11">Grade 11</SelectItem>
-                          <SelectItem value="12">Grade 12</SelectItem>
-                          <SelectItem value="13">Grade 13</SelectItem>
+                          <SelectItem value="Grade 6">Grade 6</SelectItem>
+                          <SelectItem value="Grade 7">Grade 7</SelectItem>
+                          <SelectItem value="Grade 8">Grade 8</SelectItem>
+                          <SelectItem value="Grade 9">Grade 9</SelectItem>
+                          <SelectItem value="Grade 10">Grade 10</SelectItem>
+                          <SelectItem value="Grade 11">Grade 11</SelectItem>
+                          <SelectItem value="Grade 12">Grade 12</SelectItem>
+                          <SelectItem value="Grade 13">Grade 13</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -372,6 +415,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
+        key={`${componentId}-filters`}
       >
         <Card className="shadow-md hover:shadow-lg transition-shadow border-blue-100">
           <CardContent className="pt-6">
@@ -380,12 +424,56 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <Input
+                    ref={searchInputRef}
                     placeholder="Search practicals..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 transition-all hover:border-blue-400 focus:border-blue-500"
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    className="pl-10 pr-10 transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      type="button"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                {isSearchFocused && searchQuery && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute z-10 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full md:w-[calc(50%-0.5rem)]"
+                  >
+                    <div className="p-2">
+                      <p className="text-xs text-gray-500 px-2 py-1">Search results for "{searchQuery}"</p>
+                      {filteredPracticals.length > 0 ? (
+                        filteredPracticals.slice(0, 3).map((practical) => (
+                          <button
+                            key={`search-result-${practical.id}`}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50 rounded-md transition-colors"
+                            onClick={() => {
+                              setSearchQuery(practical.title);
+                              setIsSearchFocused(false);
+                            }}
+                            type="button"
+                          >
+                            <p className="font-medium text-gray-800">{practical.title}</p>
+                            <p className="text-sm text-gray-600 truncate">{practical.description}</p>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-gray-500">
+                          No practicals found for "{searchQuery}"
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
               </div>
               <div>
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
@@ -408,14 +496,10 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Grades</SelectItem>
-                    <SelectItem value="Grade 9">Grade 6</SelectItem>
-                    <SelectItem value="Grade 10">Grade 7</SelectItem>
-                    <SelectItem value="Grade 9">Grade 8</SelectItem>
                     <SelectItem value="Grade 9">Grade 9</SelectItem>
                     <SelectItem value="Grade 10">Grade 10</SelectItem>
                     <SelectItem value="Grade 11">Grade 11</SelectItem>
                     <SelectItem value="Grade 12">Grade 12</SelectItem>
-                    <SelectItem value="Grade 13">Grade 13</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -424,147 +508,192 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
         </Card>
       </motion.div>
 
-      {/* Results Count */}
+      {/* Results Count with Search Status */}
       <div className="flex items-center justify-between">
-        <p className="text-gray-600">
-          Showing <span className="text-blue-700">{filteredPracticals.length}</span> practical{filteredPracticals.length !== 1 ? 's' : ''}
-        </p>
+        <div>
+          <p className="text-gray-600">
+            Showing <span className="text-blue-700 font-medium">{filteredPracticals.length}</span> practical{filteredPracticals.length !== 1 ? 's' : ''}
+            {searchQuery && (
+              <span className="text-gray-500 ml-2">
+                for "<span className="font-medium">{searchQuery}</span>"
+              </span>
+            )}
+          </p>
+        </div>
+        {(searchQuery || selectedSubject !== 'all' || selectedGrade !== 'all') && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearchQuery('');
+              setSelectedSubject('all');
+              setSelectedGrade('all');
+            }}
+            className="text-gray-500 hover:text-gray-700"
+            key={`${componentId}-clear-filters`}
+          >
+            <X className="w-4 h-4 mr-1" />
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Practicals Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredPracticals.map((practical, index) => (
-          <motion.div
-            key={practical.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-blue-300 group">
-              <div className="flex flex-col sm:flex-row">
-                {/* Thumbnail */}
-                <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
-                  <ImageWithFallback
-                    src={practical.thumbnail}
-                    alt={practical.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-12 h-12 text-white" />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 flex flex-col">
-                  <CardHeader>
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                      <Badge className={getSubjectColor(practical.subject)}>
-                        {practical.subject}
-                      </Badge>
-                      <Badge variant="outline">{practical.grade}</Badge>
-                    </div>
-                    <CardTitle className="text-lg">{practical.title}</CardTitle>
-                    <CardDescription>{practical.description}</CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 flex flex-col justify-between">
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
-                        {practical.difficulty}
-                      </Badge>
-                      <Badge variant="outline" className="bg-gray-50">
-                        ⏱️ {practical.duration}
-                      </Badge>
-                      {practical.quizzes && practical.quizzes.length > 0 && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                          📝 {practical.quizzes.length} quiz{practical.quizzes.length !== 1 ? 'zes' : ''}
-                        </Badge>
-                      )}
+      <AnimatePresence mode="wait">
+        {filteredPracticals.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredPracticals.map((practical) => (
+              <motion.div
+                key={practical.id} // Use actual ID, not index
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                layout
+              >
+                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-blue-300 group">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Thumbnail */}
+                    <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
+                      <ImageWithFallback
+                        src={practical.thumbnail}
+                        alt={practical.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Play className="w-12 h-12 text-white" />
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                        <Play className="w-4 h-4 mr-2" />
-                        Watch Video
-                      </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Lab Sheet
-                      </Button>
-                      
-                      {/* Quiz Button */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
-                            onClick={() => setSelectedPractical(practical)}
-                          >
-                            <BarChart3 className="w-4 h-4 mr-2" />
-                            Quiz
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col">
+                      <CardHeader>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <Badge className={getSubjectColor(practical.subject)}>
+                            {practical.subject}
+                          </Badge>
+                          <Badge variant="outline">{practical.grade}</Badge>
+                        </div>
+                        <CardTitle className="text-lg">{practical.title}</CardTitle>
+                        <CardDescription>{practical.description}</CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="flex-1 flex flex-col justify-between">
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
+                            {practical.difficulty}
+                          </Badge>
+                          <Badge variant="outline" className="bg-gray-50">
+                            ⏱️ {practical.duration}
+                          </Badge>
+                          {practical.quizzes && practical.quizzes.length > 0 && (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              📝 {practical.quizzes.length} quiz{practical.quizzes.length !== 1 ? 'zes' : ''}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                            <Play className="w-4 h-4 mr-2" />
+                            Watch Video
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>{practical.title} - Quizzes</DialogTitle>
-                            <DialogDescription>
-                              {userRole === 'student' 
-                                ? 'Take quizzes to test your knowledge' 
-                                : 'Manage quizzes for this practical'}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <QuizManager
-                            practicalId={practical.id}
-                            userRole={userRole}
-                            quizzes={practical.quizzes || []}
-                            onAddQuiz={handleAddQuiz}
-                            onEditQuiz={handleEditQuiz}
-                            onDeleteQuiz={handleDeleteQuiz}
-                            quizAttempts={quizAttempts.filter(a => 
-                              (practical.quizzes || []).some(q => q.id === a.quizId)
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                      
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
+                          <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Lab Sheet
+                          </Button>
+                          
+                          {/* Quiz Button */}
+                          <Dialog key={`dialog-${practical.id}`}>
+                            <DialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
+                                onClick={() => setSelectedPractical(practical)}
+                              >
+                                <BarChart3 className="w-4 h-4 mr-2" />
+                                Quiz
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>{practical.title} - Quizzes</DialogTitle>
+                                <DialogDescription>
+                                  {userRole === 'student' 
+                                    ? 'Take quizzes to test your knowledge' 
+                                    : 'Manage quizzes for this practical'}
+                                </DialogDescription>
+                              </DialogHeader>
+                              <QuizManager
+                                practicalId={practical.id}
+                                userRole={userRole}
+                                quizzes={practical.quizzes || []}
+                                onAddQuiz={handleAddQuiz}
+                                onEditQuiz={handleEditQuiz}
+                                onDeleteQuiz={handleDeleteQuiz}
+                                quizAttempts={quizAttempts.filter(a => 
+                                  (practical.quizzes || []).some(q => q.id === a.quizId)
+                                )}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                          
+                          <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </CardContent>
                     </div>
-                  </CardContent>
-                </div>
-              </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            key={`${componentId}-empty-state`}
+          >
+            <Card className="py-12 border-blue-100">
+              <CardContent className="text-center">
+                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-gray-900 mb-2">No practicals found</h3>
+                <p className="text-gray-600 mb-4">
+                  {searchQuery 
+                    ? `No results found for "${searchQuery}"`
+                    : 'Try adjusting your filters or search query'}
+                </p>
+                {(searchQuery || selectedSubject !== 'all' || selectedGrade !== 'all') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedSubject('all');
+                      setSelectedGrade('all');
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                )}
+              </CardContent>
             </Card>
           </motion.div>
-        ))}
-      </div>
+        )}
+      </AnimatePresence>
 
       {/* Quiz Player Modal */}
       {selectedQuiz && userRole === 'student' && (
         <QuizPlayer
+          key={`quiz-player-${selectedQuiz.id}`}
           quiz={selectedQuiz}
           onSubmit={handleSubmitQuiz}
           onClose={() => setSelectedQuiz(null)}
         />
-      )}
-
-      {/* Empty State */}
-      {filteredPracticals.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="py-12 border-blue-100">
-            <CardContent className="text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-gray-900 mb-2">No practicals found</h3>
-              <p className="text-gray-600">Try adjusting your filters or search query</p>
-            </CardContent>
-          </Card>
-        </motion.div>
       )}
     </div>
   );
