@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { FlaskConical, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User, UserRole } from '@/lib/types';
+import type { User, UserRole } from '@/src/app/lib/types';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;

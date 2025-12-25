@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -16,7 +16,8 @@ import {
   Search,
   MoreVertical,
   Mail,
-  Key
+  Key,
+  Loader2
 } from 'lucide-react';
 import {
   Dialog,
@@ -47,47 +48,197 @@ interface SystemUser {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin';
-  status: 'active' | 'inactive';
+  role: string;
+  status: string;
   createdDate: string;
-  lastLogin?: string;
+  lastLogin?: string | null;
 }
 
-const mockUsers: SystemUser[] = [
-  { id: 'admin-001', name: 'System Administrator', email: 'admin@school.lk', role: 'admin', status: 'active', createdDate: '2024-01-01', lastLogin: '2025-11-27' },
-  { id: 'principal-001', name: 'Principal Silva', email: 'principal@school.lk', role: 'principal', status: 'active', createdDate: '2024-01-01', lastLogin: '2025-11-26' },
-  { id: 'teacher-001', name: 'Mr. Perera', email: 'teacher1@school.lk', role: 'teacher', status: 'active', createdDate: '2024-02-15', lastLogin: '2025-11-27' },
-  { id: 'teacher-002', name: 'Mrs. Fernando', email: 'teacher2@school.lk', role: 'teacher', status: 'active', createdDate: '2024-02-15', lastLogin: '2025-11-25' },
-  { id: 'lab-001', name: 'Lab Assistant Kumar', email: 'labassist1@school.lk', role: 'lab-assistant', status: 'active', createdDate: '2024-03-01', lastLogin: '2025-11-27' },
-  { id: 'lab-002', name: 'Lab Assistant Nimal', email: 'labassist2@school.lk', role: 'lab-assistant', status: 'active', createdDate: '2024-03-01', lastLogin: '2025-11-26' },
-  { id: 'student-001', name: 'Student Amal', email: 'student1@school.lk', role: 'student', status: 'active', createdDate: '2024-04-01', lastLogin: '2025-11-27' },
-  { id: 'student-002', name: 'Student Sahan', email: 'student2@school.lk', role: 'student', status: 'active', createdDate: '2024-04-01', lastLogin: '2025-11-27' },
-  { id: 'student-003', name: 'Student Nethmi', email: 'student3@school.lk', role: 'student', status: 'active', createdDate: '2024-04-05', lastLogin: '2025-11-26' },
-  { id: 'student-004', name: 'Student Kasun', email: 'student4@school.lk', role: 'student', status: 'inactive', createdDate: '2024-04-10' },
-];
-
 export function UserManagementPage() {
-  const [users, setUsers] = useState<SystemUser[]>(mockUsers);
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
-    role: 'student' as SystemUser['role'],
+    role: 'student',
     password: '',
   });
 
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        fetchUsers(searchQuery);
+      } else {
+        fetchUsers();
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchUsers = async (search = '') => {
+    try {
+      setLoading(true);
+      const url = search 
+        ? `/api/users?search=${encodeURIComponent(search)}`
+        : '/api/users';
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch users');
+      
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create user');
+      }
+
+      const user = await response.json();
+      setUsers([user, ...users]);
+      setIsAddDialogOpen(false);
+      setNewUser({ name: '', email: '', role: 'student', password: '' });
+      
+      toast.success('User Added Successfully', {
+        description: `${user.name} has been added to the system.`,
+      });
+    } catch (error: any) {
+      toast.error('Failed to add user', {
+        description: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user && (user.role === 'ADMIN' || user.role === 'PRINCIPAL')) {
+      toast.error('Cannot Delete User', {
+        description: 'Admin and Principal accounts cannot be deleted.',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/users?id=${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete user');
+      }
+
+      setUsers(users.filter(u => u.id !== userId));
+      toast.success('User Deleted', {
+        description: 'User has been removed from the system.',
+      });
+    } catch (error: any) {
+      toast.error('Failed to delete user', {
+        description: error.message,
+      });
+    }
+  };
+
+  const handleToggleStatus = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: userId, status: newStatus }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update status');
+
+      const updatedUser = await response.json();
+      setUsers(users.map(u => u.id === userId ? updatedUser : u));
+      
+      toast.success('Status Updated', {
+        description: `${user.name}'s status has been changed.`,
+      });
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedUser || !newPassword) {
+      toast.error('Please enter a new password');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const response = await fetch(`/api/users/${selectedUser.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      if (!response.ok) throw new Error('Failed to reset password');
+
+      toast.success('Password Reset Successfully', {
+        description: `Password for ${selectedUser.name} has been reset.`,
+      });
+      
+      setIsResetPasswordDialogOpen(false);
+      setNewPassword('');
+      setSelectedUser(null);
+    } catch (error) {
+      toast.error('Failed to reset password');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'ADMIN':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'principal':
+      case 'PRINCIPAL':
         return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'teacher':
+      case 'TEACHER':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'lab-assistant':
+      case 'LAB_ASSISTANT':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -95,69 +246,30 @@ export function UserManagementPage() {
   };
 
   const getStatusBadgeColor = (status: string) => {
-    return status === 'active' 
+    return status === 'ACTIVE' 
       ? 'bg-green-100 text-green-800 border-green-200' 
       : 'bg-red-100 text-red-800 border-red-200';
   };
 
-  const handleAddUser = () => {
-    const user: SystemUser = {
-      id: `user-${Date.now()}`,
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role,
-      status: 'active',
-      createdDate: new Date().toISOString().split('T')[0],
-    };
-
-    setUsers([user, ...users]);
-    setIsAddDialogOpen(false);
-    setNewUser({ name: '', email: '', role: 'student', password: '' });
-    
-    toast.success('User Added Successfully', {
-      description: `${user.name} has been added to the system.`,
-    });
+  const formatRole = (role: string) => {
+    return role.replace('_', ' ').split(' ').map(word => 
+      word.charAt(0) + word.slice(1).toLowerCase()
+    ).join(' ');
   };
 
-  const handleDeleteUser = (userId: string) => {
-    const user = users.find(u => u.id === userId);
-    if (user && (user.role === 'admin' || user.role === 'principal')) {
-      toast.error('Cannot Delete User', {
-        description: 'Admin and Principal accounts cannot be deleted.',
-      });
-      return;
-    }
-
-    setUsers(users.filter(u => u.id !== userId));
-    toast.success('User Deleted', {
-      description: 'User has been removed from the system.',
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
-
-  const handleToggleStatus = (userId: string) => {
-    setUsers(users.map(u => 
-      u.id === userId 
-        ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } 
-        : u
-    ));
-    
-    const user = users.find(u => u.id === userId);
-    toast.success('Status Updated', {
-      description: `${user?.name}'s status has been changed.`,
-    });
-  };
-
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const stats = {
     total: users.length,
-    active: users.filter(u => u.status === 'active').length,
-    students: users.filter(u => u.role === 'student').length,
-    staff: users.filter(u => u.role !== 'student').length,
+    active: users.filter(u => u.status === 'ACTIVE').length,
+    students: users.filter(u => u.role === 'STUDENT').length,
+    staff: users.filter(u => u.role !== 'STUDENT').length,
   };
 
   return (
@@ -169,7 +281,7 @@ export function UserManagementPage() {
         animate={{ opacity: 1, y: 0 }}
       >
         <div>
-          <h1 className="text-blue-900 mb-2">User Management</h1>
+          <h1 className="text-3xl font-bold text-blue-900 mb-2">User Management</h1>
           <p className="text-gray-600">
             Manage system users, roles, and permissions
           </p>
@@ -215,7 +327,7 @@ export function UserManagementPage() {
                   id="role"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as SystemUser['role'] })}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                 >
                   <option value="student">Student</option>
                   <option value="teacher">Teacher</option>
@@ -242,11 +354,20 @@ export function UserManagementPage() {
               </Button>
               <Button 
                 onClick={handleAddUser}
-                disabled={!newUser.name || !newUser.email || !newUser.password}
+                disabled={!newUser.name || !newUser.email || !newUser.password || submitting}
                 className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add User
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add User
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -265,7 +386,7 @@ export function UserManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Total Users</p>
-                  <p className="text-3xl text-blue-700">{stats.total}</p>
+                  <p className="text-3xl font-bold text-blue-700">{stats.total}</p>
                 </div>
                 <Users className="w-10 h-10 text-blue-600 opacity-80" />
               </div>
@@ -283,7 +404,7 @@ export function UserManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                  <p className="text-3xl text-green-700">{stats.active}</p>
+                  <p className="text-3xl font-bold text-green-700">{stats.active}</p>
                 </div>
                 <Shield className="w-10 h-10 text-green-600 opacity-80" />
               </div>
@@ -301,7 +422,7 @@ export function UserManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Students</p>
-                  <p className="text-3xl text-yellow-700">{stats.students}</p>
+                  <p className="text-3xl font-bold text-yellow-700">{stats.students}</p>
                 </div>
                 <Users className="w-10 h-10 text-yellow-600 opacity-80" />
               </div>
@@ -319,7 +440,7 @@ export function UserManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Staff</p>
-                  <p className="text-3xl text-purple-700">{stats.staff}</p>
+                  <p className="text-3xl font-bold text-purple-700">{stats.staff}</p>
                 </div>
                 <Shield className="w-10 h-10 text-purple-600 opacity-80" />
               </div>
@@ -328,7 +449,7 @@ export function UserManagementPage() {
         </motion.div>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -336,16 +457,14 @@ export function UserManagementPage() {
       >
         <Card>
           <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search users by name, email, or role..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search users by name, email, or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </CardContent>
         </Card>
@@ -361,94 +480,158 @@ export function UserManagementPage() {
           <CardHeader>
             <CardTitle>All Users</CardTitle>
             <CardDescription>
-              {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
+              {loading ? 'Loading...' : `${users.length} user${users.length !== 1 ? 's' : ''} found`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Login</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm">
-                            {user.name.charAt(0)}
-                          </div>
-                          <span>{user.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm">{user.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getRoleBadgeColor(user.role)} variant="outline">
-                          {user.role === 'lab-assistant' ? 'Lab Assistant' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusBadgeColor(user.status)} variant="outline">
-                          {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {user.lastLogin || 'Never'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
-                              <Shield className="w-4 h-4 mr-2" />
-                              {user.status === 'active' ? 'Deactivate' : 'Activate'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Key className="w-4 h-4 mr-2" />
-                              Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit Details
-                            </DropdownMenuItem>
-                            {user.role !== 'admin' && user.role !== 'principal' && (
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => handleDeleteUser(user.id)}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete User
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Login</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                          No users found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                                {user.name.charAt(0)}
+                              </div>
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm">{user.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getRoleBadgeColor(user.role)} variant="outline">
+                              {formatRole(user.role)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusBadgeColor(user.status)} variant="outline">
+                              {formatRole(user.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-gray-600">
+                              {user.lastLogin ? formatDate(user.lastLogin) : 'Never'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsResetPasswordDialogOpen(true);
+                                  }}
+                                >
+                                  <Key className="w-4 h-4 mr-2" />
+                                  Reset Password
+                                </DropdownMenuItem>
+                                {user.role !== 'ADMIN' && user.role !== 'PRINCIPAL' && (
+                                  <DropdownMenuItem 
+                                    className="text-red-600"
+                                    onClick={() => handleDeleteUser(user.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete User
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Reset password for {selectedUser?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsResetPasswordDialogOpen(false);
+              setNewPassword('');
+              setSelectedUser(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleResetPassword}
+              disabled={!newPassword || submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                <>
+                  <Key className="w-4 h-4 mr-2" />
+                  Reset Password
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

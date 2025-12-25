@@ -18,7 +18,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/src/app/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface PracticalsPageProps {

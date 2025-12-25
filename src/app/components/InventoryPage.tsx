@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/src/app/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface InventoryPageProps {
