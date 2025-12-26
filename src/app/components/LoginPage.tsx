@@ -15,6 +15,7 @@ interface LoginPageProps {
 }
 
 // Predefined credentials for different roles
+// Note: Seeded database users (from seed script) are also supported below
 const CREDENTIALS = {
   // Admin
   'admin@school.lk': { password: 'admin123', role: 'admin' as const, name: 'System Administrator', id: 'admin-001' },
@@ -33,6 +34,13 @@ const CREDENTIALS = {
   // Students (default role for any other email)
   'student1@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Amal', id: 'student-001' },
   'student2@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Sahan', id: 'student-002' },
+  
+  // Seeded Database Users (from seed script)
+  'john.doe@school.edu': { password: 'password123', role: 'student' as const, name: 'John Doe', id: '1' },
+  'jane.smith@school.edu': { password: 'password123', role: 'student' as const, name: 'Jane Smith', id: '2' },
+  'bob.johnson@school.edu': { password: 'password123', role: 'student' as const, name: 'Bob Johnson', id: '3' },
+  // Seeded teacher and lab assistant credentials removed
+  'mike.assistant@school.edu': { password: 'password123', role: 'lab-assistant' as const, name: 'Lab Assistant Mike', id: '5' },
 };
 
 // DNA Helix Animation Component
@@ -440,6 +448,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <p><span className="font-semibold text-green-700">Teacher:</span> teacher1@school.lk / teacher123</p>
                 <p><span className="font-semibold text-yellow-700">Lab Assistant:</span> labassist1@school.lk / labassist123</p>
                 <p><span className="font-semibold text-gray-700">Student:</span> student1@school.lk / student123</p>
+                <p className="mt-2 pt-2 border-t border-blue-200"><span className="font-semibold text-purple-700">Seeded DB Users:</span></p>
+                <p><span className="font-semibold text-purple-700">Student:</span> john.doe@school.edu / password123</p>
               </div>
             </CardContent>
           </Card>

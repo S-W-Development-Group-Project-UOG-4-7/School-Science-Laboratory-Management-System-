@@ -8,8 +8,184 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  STUDENT
+  TEACHER
+  LAB_ASSISTANT
+  PRINCIPAL
+  ADMIN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum MaterialRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+}
+
+enum CorrectAnswer {
+  A
+  B
+  C
+  D
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  name  String? @db.VarChar(100)
-  email String  @unique @db.VarChar(100)
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(100)
+  email     String   @unique @db.VarChar(100)
+  role      UserRole @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  materialRequests  MaterialRequest[]
+  attendances       Attendance[]
+  reportSubmissions ReportSubmission[]
+  quizAttempts      QuizAttempt[]
+}
+
+model Practical {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(200)
+  subject   String   @db.VarChar(100)
+  lab       String   @db.VarChar(100)
+  dateTime  DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  attendances       Attendance[]
+  materialRequests  MaterialRequest[]
+  notes             Note[]
+  reportSubmissions ReportSubmission[]
+  quizzes           Quiz[]
+}
+
+model Attendance {
+  id          Int              @id @default(autoincrement())
+  studentId   Int
+  practicalId Int
+  status      AttendanceStatus @default(PRESENT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, practicalId])
+  @@index([studentId])
+  @@index([practicalId])
+}
+
+model MaterialRequest {
+  id          Int                   @id @default(autoincrement())
+  studentId   Int
+  practicalId Int
+  itemName    String                @db.VarChar(200)
+  quantity    Int                   @default(1)
+  status      MaterialRequestStatus @default(PENDING)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  // Relations
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([practicalId])
+}
+
+model Note {
+  id          Int      @id @default(autoincrement())
+  practicalId Int
+  title       String   @db.VarChar(200)
+  fileUrl     String?  @db.Text
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@index([practicalId])
+}
+
+model ReportSubmission {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  practicalId Int
+  fileUrl     String   @db.Text
+  grade       Float?
+  feedback    String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, practicalId])
+  @@index([studentId])
+  @@index([practicalId])
+}
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  practicalId Int
+  title       String   @db.VarChar(200)
+  totalMarks  Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  practical    Practical      @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+  questions    QuizQuestion[]
+  quizAttempts QuizAttempt[]
+
+  @@index([practicalId])
+}
+
+model QuizQuestion {
+  id            Int           @id @default(autoincrement())
+  quizId        Int
+  questionText  String        @db.Text
+  optionA       String        @db.VarChar(200)
+  optionB       String        @db.VarChar(200)
+  optionC       String        @db.VarChar(200)
+  optionD       String        @db.VarChar(200)
+  correctAnswer CorrectAnswer
+  marks         Int           @default(1)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id        Int      @id @default(autoincrement())
+  quizId    Int
+  studentId Int
+  score     Float
+  answers   Json? // Store answers as JSON: { questionId: "A" }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, studentId])
+  @@index([quizId])
+  @@index([studentId])
 }

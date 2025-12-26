@@ -20,9 +20,15 @@ import {
 import { motion } from 'framer-motion';
 import type { UserRole } from '@/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { RequestMaterialsButton } from './student/RequestMaterialsButton';
+import { AttendPracticalButton } from './student/AttendPracticalButton';
+import { AccessNotesButton } from './student/AccessNotesButton';
+import { SubmitReportButton } from './student/SubmitReportButton';
+import { AttemptQuizButton } from './student/AttemptQuizButton';
 
 interface PracticalsPageProps {
   userRole: UserRole;
+  userId?: number;
 }
 
 interface Practical {
@@ -113,13 +119,13 @@ const practicals: Practical[] = [
   },
 ];
 
-export function PracticalsPage({ userRole }: PracticalsPageProps) {
+export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canUpload = userRole === 'teacher' || userRole === 'student';
+  const canUpload = userRole === 'teacher' || userRole === 'lab-assistant';
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -419,6 +425,27 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         <Download className="w-4 h-4 mr-2" />
                         Download
                       </Button>
+                      {userRole === 'student' && userId && (
+                        <>
+                          <RequestMaterialsButton
+                            studentId={userId}
+                            practicalId={parseInt(practical.id)}
+                          />
+                          <AttendPracticalButton
+                            studentId={userId}
+                            practicalId={parseInt(practical.id)}
+                          />
+                          <AccessNotesButton practicalId={parseInt(practical.id)} />
+                          <SubmitReportButton
+                            studentId={userId}
+                            practicalId={parseInt(practical.id)}
+                          />
+                          <AttemptQuizButton
+                            studentId={userId}
+                            practicalId={parseInt(practical.id)}
+                          />
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </div>

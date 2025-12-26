@@ -32,6 +32,11 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
+import { AttendancePage } from "./student/AttendancePage";
+import { StudentNotesPage } from "./student/StudentNotesPage";
+import { StudentReportsPage } from "./student/StudentReportsPage";
+import { StudentQuizzesPage } from "./student/StudentQuizzesPage";
+import { StudentQuizAttemptsPage } from "./student/StudentQuizAttemptsPage";
 import type { User } from "@/lib/types";
 
 interface DashboardProps {
@@ -46,7 +51,12 @@ type Page =
   | "schedule"
   | "settings"
   | "requests"
-  | "users";
+  | "users"
+  | "attendance"
+  | "notes"
+  | "reports"
+  | "quizzes"
+  | "quiz-attempts";
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] =
@@ -56,11 +66,49 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const getNavigationItems = () => {
     const baseNavigation = [
       {
+        id: "home" as Page,
+        label: "Home",
+        icon: FlaskConical,
+        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
+      },
+      {
         id: "practicals" as Page,
         label: "Practicals & Videos",
         icon: Video,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },
+      // Student-specific pages
+      {
+        id: "attendance" as Page,
+        label: "Mark Attendance",
+        icon: Calendar,
+        roles: ['student'],
+      },
+      {
+        id: "notes" as Page,
+        label: "View Notes",
+        icon: FileText,
+        roles: ['student'],
+      },
+      {
+        id: "reports" as Page,
+        label: "Submit Reports",
+        icon: FileText,
+        roles: ['student'],
+      },
+      {
+        id: "quizzes" as Page,
+        label: "Available Quizzes",
+        icon: FlaskConical,
+        roles: ['student'],
+      },
+      {
+        id: "quiz-attempts" as Page,
+        label: "Quiz Scores",
+        icon: FileText,
+        roles: ['student'],
+      },
+      // Other pages
       {
         id: "inventory" as Page,
         label: "Laboratory Inventory",
@@ -140,7 +188,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               className="flex items-center gap-3 cursor-pointer"
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
-              onClick={() => setCurrentPage("home")}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setCurrentPage("home");
+              }}
             >
               <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
                 <FlaskConical className="w-6 h-6 text-white" />
@@ -155,7 +207,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               {navigation.map((item) => (
                 <motion.button
                   key={item.id}
-                  onClick={() => setCurrentPage(item.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentPage(item.id);
+                  }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     currentPage === item.id
                       ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
@@ -191,7 +247,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     {navigation.map((item) => (
                       <DropdownMenuItem
                         key={item.id}
-                        onClick={() => setCurrentPage(item.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCurrentPage(item.id);
+                        }}
                         className={
                           currentPage === item.id ? "bg-blue-50" : ""
                         }
@@ -237,7 +297,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => setCurrentPage("settings")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCurrentPage("settings");
+                    }}
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
@@ -270,12 +334,13 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             {currentPage === "home" && (
               <HomePage 
                 userName={user.name}
-                userRole={user.role} 
+                userRole={user.role}
+                userId={parseInt(user.id)}
                 onNavigate={(page) => setCurrentPage(page as Page)}
               />
             )}
             {currentPage === "practicals" && (
-              <PracticalsPage userRole={user.role} />
+              <PracticalsPage userRole={user.role} userId={parseInt(user.id)} />
             )}
             {currentPage === "inventory" && (
               <InventoryPage userRole={user.role} />
@@ -295,6 +360,22 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             )}
             {currentPage === "settings" && (
               <SettingsPage user={user} />
+            )}
+            {/* Student-specific pages */}
+            {currentPage === "attendance" && user.role === "student" && (
+              <AttendancePage studentId={parseInt(user.id)} />
+            )}
+            {currentPage === "notes" && user.role === "student" && (
+              <StudentNotesPage studentId={parseInt(user.id)} />
+            )}
+            {currentPage === "reports" && user.role === "student" && (
+              <StudentReportsPage studentId={parseInt(user.id)} />
+            )}
+            {currentPage === "quizzes" && user.role === "student" && (
+              <StudentQuizzesPage studentId={parseInt(user.id)} />
+            )}
+            {currentPage === "quiz-attempts" && user.role === "student" && (
+              <StudentQuizAttemptsPage studentId={parseInt(user.id)} />
             )}
           </motion.div>
         </AnimatePresence>

@@ -8,10 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "test-prisma": "node src/app/test-prisma.cjs",
-    "studio": "prisma studio --url \"postgresql://postgres:Matheesha%409%23@localhost:5432/sciencemate?schema=public\""
-
+    "studio": "prisma studio",
+    "seed": "npx tsx prisma/seed.ts",
+    "test-backend": "npx tsx test-backend.ts"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -61,10 +66,11 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.0.3",
     "postcss": "^8.4.49",
-    "prisma": "^7.2.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^3.4.15",
     "typescript": "^5"
   }

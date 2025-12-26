@@ -10,18 +10,24 @@ import {
   TrendingUp, 
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  FileText
 } from 'lucide-react';
 import { Button } from './ui/button';
 import type { UserRole } from '@/lib/types';
+import { ViewNotes } from './student/ViewNotes';
+import { ViewReports } from './student/ViewReports';
+import { ViewQuizzes } from './student/ViewQuizzes';
+import { ViewQuizAttempts } from './student/ViewQuizAttempts';
 
 interface HomePageProps {
   userName: string;
   userRole: UserRole;
+  userId: number;
   onNavigate: (page: string) => void;
 }
 
-export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
+export function HomePage({ userName, userRole, userId, onNavigate }: HomePageProps) {
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -51,32 +57,32 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
     switch (userRole) {
       case 'admin':
         return [
-          { label: 'Total Users', value: '142', icon: Users, color: 'blue' },
-          { label: 'Active Sessions', value: '23', icon: TrendingUp, color: 'green' },
-          { label: 'System Health', value: '98%', icon: CheckCircle, color: 'green' },
-          { label: 'Pending Tasks', value: '5', icon: Clock, color: 'yellow' },
+          { label: 'Total Users', value: '142', icon: Users, color: 'blue', page: 'users' },
+          { label: 'Active Sessions', value: '23', icon: TrendingUp, color: 'green', page: 'schedule' },
+          { label: 'System Health', value: '98%', icon: CheckCircle, color: 'green', page: 'settings' },
+          { label: 'Pending Tasks', value: '5', icon: Clock, color: 'yellow', page: 'requests' },
         ];
       case 'principal':
         return [
-          { label: 'Pending Requests', value: '8', icon: Clock, color: 'yellow' },
-          { label: 'Active Teachers', value: '12', icon: Users, color: 'green' },
-          { label: 'Lab Sessions Today', value: '6', icon: FlaskConical, color: 'blue' },
-          { label: 'Inventory Items', value: '234', icon: Package, color: 'purple' },
+          { label: 'Pending Requests', value: '8', icon: Clock, color: 'yellow', page: 'requests' },
+          { label: 'Active Teachers', value: '12', icon: Users, color: 'green', page: 'users' },
+          { label: 'Lab Sessions Today', value: '6', icon: FlaskConical, color: 'blue', page: 'schedule' },
+          { label: 'Inventory Items', value: '234', icon: Package, color: 'purple', page: 'inventory' },
         ];
       case 'teacher':
       case 'lab-assistant':
         return [
-          { label: 'My Practicals', value: '8', icon: FlaskConical, color: 'blue' },
-          { label: 'Scheduled Sessions', value: '4', icon: Calendar, color: 'green' },
-          { label: 'Pending Requests', value: '2', icon: Clock, color: 'yellow' },
-          { label: 'Inventory Items', value: '234', icon: Package, color: 'purple' },
+          { label: 'My Practicals', value: '8', icon: FlaskConical, color: 'blue', page: 'practicals' },
+          { label: 'Scheduled Sessions', value: '4', icon: Calendar, color: 'green', page: 'schedule' },
+          { label: 'Pending Requests', value: '2', icon: Clock, color: 'yellow', page: 'requests' },
+          { label: 'Inventory Items', value: '234', icon: Package, color: 'purple', page: 'inventory' },
         ];
       case 'student':
         return [
-          { label: 'Available Practicals', value: '12', icon: FlaskConical, color: 'blue' },
-          { label: 'Completed', value: '8', icon: CheckCircle, color: 'green' },
-          { label: 'Upcoming Sessions', value: '3', icon: Calendar, color: 'yellow' },
-          { label: 'Video Lessons', value: '24', icon: TrendingUp, color: 'purple' },
+          { label: 'Available Practicals', value: '12', icon: FlaskConical, color: 'blue', page: 'practicals' },
+          { label: 'Completed', value: '8', icon: CheckCircle, color: 'green', page: 'practicals' },
+          { label: 'Upcoming Sessions', value: '3', icon: Calendar, color: 'yellow', page: 'schedule' },
+          { label: 'Video Lessons', value: '24', icon: TrendingUp, color: 'purple', page: 'practicals' },
         ];
       default:
         return [];
@@ -168,13 +174,24 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 * index }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Card className={`${getColorClass(stat.color)} border-2`}>
+            <Card 
+              className={`${getColorClass(stat.color)} border-2 cursor-pointer transition-all hover:shadow-lg`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (stat.page) {
+                  onNavigate(stat.page);
+                }
+              }}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm opacity-80 mb-1">{stat.label}</p>
-                    <p className="text-3xl">{stat.value}</p>
+                    <p className="text-3xl font-bold">{stat.value}</p>
                   </div>
                   <stat.icon className="w-10 h-10 opacity-60" />
                 </div>
@@ -206,7 +223,11 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
                   <Button
                     variant="outline"
                     className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                    onClick={() => onNavigate(action.page)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onNavigate(action.page);
+                    }}
                   >
                     <action.icon className="w-5 h-5 text-blue-600" />
                     <span>{action.label}</span>
@@ -217,6 +238,65 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Student Features Section */}
+      {userRole === 'student' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-blue-900">Student Features</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  onClick={() => onNavigate('attendance')}
+                >
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <span>Mark Attendance</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  onClick={() => onNavigate('notes')}
+                >
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <span>View Notes</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  onClick={() => onNavigate('reports')}
+                >
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <span>Submit Reports</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  onClick={() => onNavigate('quizzes')}
+                >
+                  <FlaskConical className="w-5 h-5 text-blue-600" />
+                  <span>Available Quizzes</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                  onClick={() => onNavigate('quiz-attempts')}
+                >
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  <span>Quiz Scores</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Recent Activity or Announcements */}
       <motion.div
