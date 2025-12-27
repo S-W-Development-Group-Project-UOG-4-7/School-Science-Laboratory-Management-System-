@@ -11,6 +11,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Post {
@@ -18,4 +19,56 @@ model Post {
   title     String
   content   String?
   createdAt DateTime @default(now())
+}
+
+model Inventory {
+  id                  String             @id @default(cuid())
+  name                String
+  category            Category
+  stockLevel          Int
+  minStockLevel       Int
+  unit                String
+  location            String
+  photo               String
+  storageInstructions String
+  handlingProcedure   String
+  safetyNotes         String
+  lastUpdated         DateTime           @default(now())
+  requests            InventoryRequest[]
+}
+
+model InventoryRequest {
+  id            String        @id @default(cuid())
+  requesterName String
+  requesterRole String
+  requesterId   String
+  itemId        String
+  item          Inventory     @relation(fields: [itemId], references: [id])
+  quantity      Int
+  reason        String
+  urgency       Urgency
+  status        RequestStatus @default(pending)
+  requestDate   DateTime      @default(now())
+  responseDate  DateTime?
+  responseNote  String?
+}
+
+enum Category {
+  Glassware
+  Equipment
+  Chemicals
+  Safety
+  Instruments
+}
+
+enum Urgency {
+  low
+  medium
+  high
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
 }

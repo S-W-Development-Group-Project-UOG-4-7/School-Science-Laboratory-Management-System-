@@ -8,6 +8,7 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import useSWR from 'swr';
 import { 
   PackagePlus, 
   Send, 
@@ -94,15 +95,22 @@ const mockRequests: InventoryRequest[] = [
 ];
 
 export function InventoryRequestsPage({ userRole, userId, userName }: InventoryRequestsPageProps) {
-  const [requests, setRequests] = useState<InventoryRequest[]>(mockRequests);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
+  '/api/inventory-requests',
+  fetcher
+);
+if (error) return <div>Failed to load requests</div>;
+if (!requests) return <div>Loading requests...</div>;
   const [newRequest, setNewRequest] = useState({
     itemName: '',
     quantity: 1,
     reason: '',
     urgency: 'medium' as const,
   });
-
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
   const canApproveRequest = userRole === 'principal';
 
@@ -120,9 +128,10 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
       requestDate: new Date().toISOString().split('T')[0],
     };
 
-    setRequests([request, ...requests]);
-    setIsDialogOpen(false);
-    setNewRequest({ itemName: '', quantity: 1, reason: '', urgency: 'medium' });
+  mutate([request, ...requests], false);
+
+  setNewRequest({ itemName: '', quantity: 1, reason: '', urgency: 'medium' });
+  setIsDialogOpen(false);
     
     // Mock email notification
     toast.success('Request Sent Successfully', {
@@ -131,7 +140,7 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
   };
 
   const handleApproveRequest = (requestId: string) => {
-    setRequests(requests.map(req => 
+    mutate(requests.map(req => 
       req.id === requestId 
         ? { 
             ...req, 
@@ -147,17 +156,20 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
     });
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setRequests(requests.map(req => 
-      req.id === requestId 
-        ? { 
-            ...req, 
-            status: 'rejected', 
+const handleRejectRequest = (requestId: string) => {
+  mutate(
+    requests.map(req =>
+      req.id === requestId
+        ? {
+            ...req,
+            status: 'rejected',
             responseDate: new Date().toISOString().split('T')[0],
-            responseNote: 'Not approved at this time'
-          } 
+            responseNote: 'Not approved at this time',
+          }
         : req
-    ));
+    ),
+    false
+  );
     
     toast.error('Request Rejected', {
       description: 'Email notification sent to the requester.',

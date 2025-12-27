@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import useSWR from 'swr';
 import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
@@ -15,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/app/lib/types'
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface InventoryPageProps {
@@ -37,103 +38,24 @@ interface InventoryItem {
   lastUpdated: string;
 }
 
-const inventoryItems: InventoryItem[] = [
-  {
-    id: '1',
-    name: 'Beakers (250ml)',
-    category: 'Glassware',
-    stockLevel: 35,
-    minStockLevel: 20,
-    unit: 'pieces',
-    location: 'Cabinet A2 - Shelf 3',
-    photo: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a dry, cool place away from direct sunlight. Stack carefully with padding between units to prevent breakage.',
-    handlingProcedure: 'Handle with care. Check for cracks before use. Clean thoroughly after each use with appropriate cleaning solution.',
-    safetyNotes: 'Wear safety gloves when handling. Dispose of broken glassware in designated sharps container.',
-    lastUpdated: '2025-11-10',
-  },
-  {
-    id: '2',
-    name: 'Compound Microscopes',
-    category: 'Instruments',
-    stockLevel: 8,
-    minStockLevel: 10,
-    unit: 'units',
-    location: 'Equipment Room - Shelf B',
-    photo: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a dust-free cabinet with desiccant packs. Keep covered when not in use. Maintain at room temperature (20-25°C).',
-    handlingProcedure: 'Always carry with both hands - one on the arm and one supporting the base. Clean lenses with lens paper only. Never use regular cloth or tissue.',
-    safetyNotes: 'Ensure electrical safety before plugging in. Keep away from water sources. Report any damaged cables immediately.',
-    lastUpdated: '2025-11-08',
-  },
-  {
-    id: '3',
-    name: 'Test Tubes (20ml)',
-    category: 'Glassware',
-    stockLevel: 120,
-    minStockLevel: 80,
-    unit: 'pieces',
-    location: 'Cabinet A1 - Drawer 2',
-    photo: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store upright in test tube racks. Keep in dry storage away from heat sources. Organize by size for easy access.',
-    handlingProcedure: 'Inspect for chips or cracks before use. Use test tube holders for hot materials. Clean with appropriate brushes and detergent.',
-    safetyNotes: 'Never heat a closed test tube. Point opening away from yourself and others when heating. Dispose of broken glass properly.',
-    lastUpdated: '2025-11-11',
-  },
-  {
-    id: '4',
-    name: 'Safety Goggles',
-    category: 'Safety',
-    stockLevel: 42,
-    minStockLevel: 50,
-    unit: 'pieces',
-    location: 'Safety Cabinet - Main Lab',
-    photo: 'https://images.unsplash.com/photo-1758685848561-3658f433e6a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYWZldHklMjBnb2dnbGVzJTIwbGFifGVufDF8fHx8MTc2Mjk2NDk4Nnww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a clean, dry place. Keep each pair in individual compartments to prevent scratching. Sanitize regularly.',
-    handlingProcedure: 'Ensure proper fit before use. Clean with mild soap and water after each use. Check for scratches or damage before issuing.',
-    safetyNotes: 'Mandatory for all laboratory work. Must be worn at all times in the lab. Replace if scratched or damaged.',
-    lastUpdated: '2025-11-09',
-  },
-  {
-    id: '5',
-    name: 'Bunsen Burners',
-    category: 'Equipment',
-    stockLevel: 15,
-    minStockLevel: 12,
-    unit: 'units',
-    location: 'Equipment Room - Shelf C',
-    photo: 'https://images.unsplash.com/photo-1644261766628-3af7203be678?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidW5zZW4lMjBidXJuZXIlMjBmbGFtZXxlbnwxfHx8fDE3NjI5NjQ5ODZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in ventilated area away from flammable materials. Disconnect gas tubing when not in use. Keep upright.',
-    handlingProcedure: 'Check gas connections before use. Light with striker, never matches. Adjust air valve for proper flame type. Turn off gas when not actively heating.',
-    safetyNotes: 'Never leave unattended when lit. Ensure proper ventilation. Keep flammable materials at safe distance. Allow to cool before storing.',
-    lastUpdated: '2025-11-07',
-  },
-  {
-    id: '6',
-    name: 'Volumetric Flasks (100ml)',
-    category: 'Glassware',
-    stockLevel: 18,
-    minStockLevel: 15,
-    unit: 'pieces',
-    location: 'Cabinet A3 - Shelf 2',
-    photo: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store with stoppers in place. Keep in secured cabinet to prevent tipping. Maintain at constant room temperature.',
-    handlingProcedure: 'Clean thoroughly before use. Fill to calibration mark at eye level. Use for preparation of standard solutions only.',
-    safetyNotes: 'Do not heat. Handle stopper separately from flask when in use. Clean immediately after use to prevent contamination.',
-    lastUpdated: '2025-11-10',
-  },
-];
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function InventoryPage({ userRole }: InventoryPageProps) {
+  const { data: inventoryItems, error } = useSWR<InventoryItem[]>(
+  '/api/inventory',
+  fetcher
+);
+   if (!inventoryItems) return <div>Loading inventory...</div>;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
-  const filteredItems = inventoryItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+const filteredItems = inventoryItems.filter((item: InventoryItem) => {
+  const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesCategory =
+    selectedCategory === 'all' || item.category === selectedCategory;
+  return matchesSearch && matchesCategory;
+});
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -358,4 +280,6 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       )}
     </div>
   );
+
+
 }
