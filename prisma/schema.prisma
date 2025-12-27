@@ -16,12 +16,6 @@ enum UserRole {
   ADMIN
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-}
-
 enum MaterialRequestStatus {
   PENDING
   APPROVED
@@ -46,7 +40,6 @@ model User {
 
   // Relations
   materialRequests  MaterialRequest[]
-  attendances       Attendance[]
   reportSubmissions ReportSubmission[]
   quizAttempts      QuizAttempt[]
 }
@@ -61,29 +54,13 @@ model Practical {
   updatedAt DateTime @updatedAt
 
   // Relations
-  attendances       Attendance[]
   materialRequests  MaterialRequest[]
   notes             Note[]
   reportSubmissions ReportSubmission[]
   quizzes           Quiz[]
 }
 
-model Attendance {
-  id          Int              @id @default(autoincrement())
-  studentId   Int
-  practicalId Int
-  status      AttendanceStatus @default(PRESENT)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, practicalId])
-  @@index([studentId])
-  @@index([practicalId])
-}
+// Attendance model removed
 
 model MaterialRequest {
   id          Int                   @id @default(autoincrement())

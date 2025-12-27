@@ -102,3 +102,5 @@ To check if your database is properly set up:
 - Run `npx prisma db pull` to sync schema from database
 - Run `npx prisma studio` to view data
 
+
+

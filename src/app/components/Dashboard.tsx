@@ -32,7 +32,6 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import { AttendancePage } from "./student/AttendancePage";
 import { StudentNotesPage } from "./student/StudentNotesPage";
 import { StudentReportsPage } from "./student/StudentReportsPage";
 import { StudentQuizzesPage } from "./student/StudentQuizzesPage";
@@ -52,15 +51,13 @@ type Page =
   | "settings"
   | "requests"
   | "users"
-  | "attendance"
   | "notes"
   | "reports"
   | "quizzes"
   | "quiz-attempts";
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentPage, setCurrentPage] =
-    useState<Page>("home");
+  const [currentPage, setCurrentPage] = useState<Page>("home");
 
   // Define navigation items based on user role
   const getNavigationItems = () => {
@@ -73,17 +70,11 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       },
       {
         id: "practicals" as Page,
-        label: "Practicals & Videos",
+        label: user.role === 'student' ? "Practical" : "Practicals & Videos",
         icon: Video,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },
       // Student-specific pages
-      {
-        id: "attendance" as Page,
-        label: "Mark Attendance",
-        icon: Calendar,
-        roles: ['student'],
-      },
       {
         id: "notes" as Page,
         label: "View Notes",
@@ -117,7 +108,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       },
       {
         id: "schedule" as Page,
-        label: "Schedule & Calendar",
+        label: user.role === 'student' ? "Schedule" : "Schedule & Calendar",
         icon: Calendar,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },
@@ -362,9 +353,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <SettingsPage user={user} />
             )}
             {/* Student-specific pages */}
-            {currentPage === "attendance" && user.role === "student" && (
-              <AttendancePage studentId={parseInt(user.id)} />
-            )}
+            
             {currentPage === "notes" && user.role === "student" && (
               <StudentNotesPage studentId={parseInt(user.id)} />
             )}

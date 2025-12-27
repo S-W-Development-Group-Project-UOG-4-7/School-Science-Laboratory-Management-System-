@@ -255,14 +255,6 @@ export function HomePage({ userName, userRole, userId, onNavigate }: HomePagePro
                 <Button
                   variant="outline"
                   className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                  onClick={() => onNavigate('attendance')}
-                >
-                  <Calendar className="w-5 h-5 text-blue-600" />
-                  <span>Mark Attendance</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
                   onClick={() => onNavigate('notes')}
                 >
                   <FileText className="w-5 h-5 text-blue-600" />

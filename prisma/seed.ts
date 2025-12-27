@@ -13,7 +13,6 @@ async function main() {
   await prisma.reportSubmission.deleteMany();
   await prisma.note.deleteMany();
   await prisma.materialRequest.deleteMany();
-  await prisma.attendance.deleteMany();
   await prisma.practical.deleteMany();
   await prisma.user.deleteMany();
 
@@ -77,34 +76,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${practicals.length} practicals`);
 
-  // 3. Create 3 Attendance records
-  console.log('📋 Creating attendance records...');
-  const attendances = await Promise.all([
-    prisma.attendance.create({
-      data: {
-        studentId: students[0].id,
-        practicalId: practicals[0].id,
-        status: 'PRESENT',
-      },
-    }),
-    prisma.attendance.create({
-      data: {
-        studentId: students[1].id,
-        practicalId: practicals[1].id,
-        status: 'PRESENT',
-      },
-    }),
-    prisma.attendance.create({
-      data: {
-        studentId: students[2].id,
-        practicalId: practicals[2].id,
-        status: 'LATE',
-      },
-    }),
-  ]);
-  console.log(`✅ Created ${attendances.length} attendance records`);
-
-  // 4. Create 3 MaterialRequest records
+  // 3. Create 3 MaterialRequest records
   console.log('📦 Creating material requests...');
   const materialRequests = await Promise.all([
     prisma.materialRequest.create({
@@ -137,7 +109,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${materialRequests.length} material requests`);
 
-  // 5. Create 3 Note records
+  // 4. Create 3 Note records
   console.log('📝 Creating notes...');
   const notes = await Promise.all([
     prisma.note.create({
@@ -167,7 +139,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${notes.length} notes`);
 
-  // 6. Create 3 ReportSubmission records
+  // 5. Create 3 ReportSubmission records
   console.log('📄 Creating report submissions...');
   const reportSubmissions = await Promise.all([
     prisma.reportSubmission.create({
@@ -200,7 +172,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${reportSubmissions.length} report submissions`);
 
-  // 7. Create 3 Quiz records
+  // 6. Create 3 Quiz records
   console.log('📚 Creating quizzes...');
   const quizzes = await Promise.all([
     prisma.quiz.create({
@@ -227,7 +199,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${quizzes.length} quizzes`);
 
-  // 8. Create 3 QuizQuestion records (one for each quiz)
+  // 7. Create 3 QuizQuestion records (one for each quiz)
   console.log('❓ Creating quiz questions...');
   const quizQuestions = await Promise.all([
     prisma.quizQuestion.create({
@@ -269,7 +241,7 @@ async function main() {
   ]);
   console.log(`✅ Created ${quizQuestions.length} quiz questions`);
 
-  // 9. Create 3 QuizAttempt records
+  // 8. Create 3 QuizAttempt records
   console.log('✍️ Creating quiz attempts...');
   const quizAttempts = await Promise.all([
     prisma.quizAttempt.create({
@@ -309,7 +281,6 @@ async function main() {
   console.log('\n📊 Summary:');
   console.log(`   - Users: ${users.length}`);
   console.log(`   - Practicals: ${practicals.length}`);
-  console.log(`   - Attendance: ${attendances.length}`);
   console.log(`   - Material Requests: ${materialRequests.length}`);
   console.log(`   - Notes: ${notes.length}`);
   console.log(`   - Report Submissions: ${reportSubmissions.length}`);
@@ -326,4 +297,6 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
 

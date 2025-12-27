@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon } from 'lucide-react';
+import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, HelpCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -21,7 +21,6 @@ import { motion } from 'framer-motion';
 import type { UserRole } from '@/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { RequestMaterialsButton } from './student/RequestMaterialsButton';
-import { AttendPracticalButton } from './student/AttendPracticalButton';
 import { AccessNotesButton } from './student/AccessNotesButton';
 import { SubmitReportButton } from './student/SubmitReportButton';
 import { AttemptQuizButton } from './student/AttemptQuizButton';
@@ -369,89 +368,112 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
       {/* Practicals Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {filteredPracticals.map((practical, index) => (
-          <motion.div
-            key={practical.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-blue-300 group">
-              <div className="flex flex-col sm:flex-row">
-                {/* Thumbnail */}
-                <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
-                  <ImageWithFallback
-                    src={practical.thumbnail}
-                    alt={practical.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-12 h-12 text-white" />
+            <motion.div
+              key={practical.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+            >
+              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-blue-300 group">
+                <div className="flex flex-col sm:flex-row">
+                  {/* Thumbnail */}
+                  <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
+                    <ImageWithFallback
+                      src={practical.thumbnail}
+                      alt={practical.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-12 h-12 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 flex flex-col">
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <Badge className={getSubjectColor(practical.subject)}>
+                          {practical.subject}
+                        </Badge>
+                        <Badge variant="outline">{practical.grade}</Badge>
+                      </div>
+                      <CardTitle className="text-lg">{practical.title}</CardTitle>
+                      <CardDescription>{practical.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 flex flex-col justify-between">
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
+                          {practical.difficulty}
+                        </Badge>
+                        <Badge variant="outline" className="bg-gray-50">
+                          ⏱️ {practical.duration}
+                        </Badge>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                          <Play className="w-4 h-4 mr-2" />
+                          Watch Video
+                        </Button>
+                        <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Lab Sheet
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="hover:bg-blue-50 hover:border-blue-300"
+                          onClick={() => {
+                            if (userRole === 'student' && userId) {
+                              // Find and click the hidden AttemptQuizButton trigger for this practical
+                              const hiddenButton = document.querySelector(`[data-practical-quiz="${practical.id}"] button`) as HTMLButtonElement;
+                              if (hiddenButton) {
+                                hiddenButton.click();
+                              }
+                            }
+                          }}
+                        >
+                          {userRole === 'student' ? (
+                            <img 
+                              src="/quiz-icon.png" 
+                              alt="Quiz" 
+                              className="w-4 h-4 mr-2 object-contain"
+                            />
+                          ) : (
+                            <HelpCircle className="w-4 h-4 mr-2" />
+                          )}
+                          Quiz
+                        </Button>
+                        <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                        {userRole === 'student' && userId && (
+                          <>
+                            <RequestMaterialsButton
+                              studentId={userId}
+                              practicalId={parseInt(practical.id)}
+                            />
+                            <AccessNotesButton practicalId={parseInt(practical.id)} />
+                            <SubmitReportButton
+                              studentId={userId}
+                              practicalId={parseInt(practical.id)}
+                            />
+                            <div className="hidden" data-practical-quiz={practical.id}>
+                              <AttemptQuizButton
+                                studentId={userId}
+                                practicalId={parseInt(practical.id)}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </CardContent>
                   </div>
                 </div>
-
-                {/* Content */}
-                <div className="flex-1 flex flex-col">
-                  <CardHeader>
-                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                      <Badge className={getSubjectColor(practical.subject)}>
-                        {practical.subject}
-                      </Badge>
-                      <Badge variant="outline">{practical.grade}</Badge>
-                    </div>
-                    <CardTitle className="text-lg">{practical.title}</CardTitle>
-                    <CardDescription>{practical.description}</CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 flex flex-col justify-between">
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
-                        {practical.difficulty}
-                      </Badge>
-                      <Badge variant="outline" className="bg-gray-50">
-                        ⏱️ {practical.duration}
-                      </Badge>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                        <Play className="w-4 h-4 mr-2" />
-                        Watch Video
-                      </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Lab Sheet
-                      </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                      {userRole === 'student' && userId && (
-                        <>
-                          <RequestMaterialsButton
-                            studentId={userId}
-                            practicalId={parseInt(practical.id)}
-                          />
-                          <AttendPracticalButton
-                            studentId={userId}
-                            practicalId={parseInt(practical.id)}
-                          />
-                          <AccessNotesButton practicalId={parseInt(practical.id)} />
-                          <SubmitReportButton
-                            studentId={userId}
-                            practicalId={parseInt(practical.id)}
-                          />
-                          <AttemptQuizButton
-                            studentId={userId}
-                            practicalId={parseInt(practical.id)}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
+              </Card>
+            </motion.div>
         ))}
       </div>
 
