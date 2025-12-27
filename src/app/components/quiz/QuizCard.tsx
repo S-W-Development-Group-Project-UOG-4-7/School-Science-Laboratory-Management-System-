@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Edit, Trash2, Play, BarChart3, Users, Clock, CheckCircle } from 'lucide-react';
-import { Quiz, UserRole } from '@/lib/types'; // UPDATED IMPORT
+import { Quiz, UserRole } from '@/lib/types';
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -27,6 +27,9 @@ export function QuizCard({
 }: QuizCardProps) {
   const canManage = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
   const isStudent = userRole === 'student';
+
+  // Convert quiz.id to string for the function calls
+  const quizIdString = quiz.id.toString();
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -92,7 +95,7 @@ export function QuizCard({
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => onEdit(quiz.id, { isPublished: !quiz.isPublished })}
+                onClick={() => onEdit(quizIdString, { isPublished: !quiz.isPublished })}
               >
                 <Edit className="w-4 h-4 mr-2" />
                 {quiz.isPublished ? 'Unpublish' : 'Publish'}
@@ -101,7 +104,7 @@ export function QuizCard({
                 size="sm" 
                 variant="outline"
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={() => onDelete(quiz.id)}
+                onClick={() => onDelete(quizIdString)}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete

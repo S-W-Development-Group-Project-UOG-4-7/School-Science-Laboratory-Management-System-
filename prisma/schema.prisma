@@ -36,12 +36,6 @@ enum QuizStatus {
   ARCHIVED
 }
 
-enum AttemptStatus {
-  IN_PROGRESS
-  COMPLETED
-  ABANDONED
-}
-
 ////////////////////
 // MODELS
 ////////////////////
@@ -53,9 +47,7 @@ model User {
   createdAt DateTime @default(now())
 
   // Relations
-  teacher     Teacher?
-  student     Student?
-  quizAttempt QuizAttempt[]
+  teacher Teacher?
 }
 
 model Teacher {
@@ -65,21 +57,10 @@ model Teacher {
   createdAt DateTime @default(now())
 
   // Relations
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   practicals Practical[]
   schedules  Schedule[]
-  quizzes    Quiz[]
-}
-
-model Student {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  grade     String
-  createdAt DateTime @default(now())
-
-  // Relations
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  quizAttempt QuizAttempt[]
+  quizzes    Quiz[] // ✅ FIX ADDED
 }
 
 model Practical {
@@ -90,9 +71,9 @@ model Practical {
   grade       String
   duration    String
   difficulty  DifficultyLevel @default(INTERMEDIATE)
-  videoUrl    String?         // URL to video file
-  labSheetUrl String?         // URL to PDF file
-  thumbnail   String?         // URL to thumbnail image
+  videoUrl    String?
+  labSheetUrl String?
+  thumbnail   String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -103,76 +84,39 @@ model Practical {
 }
 
 model Quiz {
-  id           Int          @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   title        String
   description  String?
   practicalId  Int
-  totalMarks   Int          @default(100)
-  passingMarks Int          @default(60)
-  timeLimit    Int?         // Time limit in minutes
-  status       QuizStatus   @default(DRAFT)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  totalMarks   Int        @default(100)
+  passingMarks Int        @default(60)
+  timeLimit    Int?
+  status       QuizStatus @default(DRAFT)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   // Relations
-  practical   Practical   @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-  teacherId   Int
-  teacher     Teacher     @relation(fields: [teacherId], references: [id])
-  questions   Question[]
-  attempts    QuizAttempt[]
+  practical Practical  @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+  teacherId Int
+  teacher   Teacher    @relation(fields: [teacherId], references: [id])
+  questions Question[]
 }
 
 model Question {
-  id            Int          @id @default(autoincrement())
-  quizId        Int
-  question      String
-  type          QuestionType @default(MULTIPLE_CHOICE)
-  options       String[]     // JSON array for multiple choice options
-  correctAnswer String?      // For multiple choice/true false (single answer)
-  // Use Json type for multiple correct answers
-  correctAnswers Json?       // For multiple select (stored as JSON array)
-  marks         Int          @default(1)
-  explanation   String?      // Explanation shown after quiz
-  order         Int          @default(0) // For ordering questions
-  createdAt     DateTime     @default(now())
+  id             Int          @id @default(autoincrement())
+  quizId         Int
+  question       String
+  type           QuestionType @default(MULTIPLE_CHOICE)
+  options        String[]
+  correctAnswer  String?
+  correctAnswers Json?
+  marks          Int          @default(1)
+  explanation    String?
+  order          Int          @default(0)
+  createdAt      DateTime     @default(now())
 
   // Relations
-  quiz         Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  quizAttempts QuizAnswer[]
-}
-
-model QuizAttempt {
-  id            Int           @id @default(autoincrement())
-  quizId        Int
-  studentId     Int
-  totalMarks    Int
-  obtainedMarks Int
-  percentage    Float
-  passed        Boolean
-  startedAt     DateTime      @default(now())
-  completedAt   DateTime?
-  status        AttemptStatus @default(IN_PROGRESS)
-
-  // Relations
-  quiz     Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student  Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  answers  QuizAnswer[]
-}
-
-model QuizAnswer {
-  id             Int      @id @default(autoincrement())
-  attemptId      Int
-  questionId     Int
-  answer         String?  // For multiple choice/short answer
-  // Use Json type for multiple selected options
-  selectedOptions Json?   // For multiple select (stored as JSON array)
-  isCorrect      Boolean?
-  marksObtained  Int      @default(0)
-  feedback       String?
-
-  // Relations
-  attempt   QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question  Question    @relation(fields: [questionId], references: [id])
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
 }
 
 model Schedule {
@@ -183,24 +127,6 @@ model Schedule {
   createdAt   DateTime @default(now())
 
   // Relations
-  teacherId  Int
-  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-}
-
-// Optional: For file storage management
-model FileUpload {
-  id          Int      @id @default(autoincrement())
-  filename    String
-  originalName String
-  mimeType    String
-  size        Int      // in bytes
-  path        String   // Storage path or URL
-  type        String   // 'video', 'pdf', 'image'
-  practicalId Int?
-  uploadedBy  Int
-  createdAt   DateTime @default(now())
-
-  // Relations
-  practical Practical? @relation(fields: [practicalId], references: [id], onDelete: SetNull)
-  user      User      @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  teacherId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 }

@@ -19,7 +19,7 @@ interface QuizFormProps {
 type NewQuestionState = {
   question: string;
   type: QuestionType;
-  options?: string[];
+  options: string[];
   correctAnswer: string;
   correctAnswers: string[];
   marks: number;
@@ -69,16 +69,19 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
 
     const question: QuizQuestion = {
       id: Date.now().toString(),
+      quizId: 'temp', // Temporary, will be set when quiz is created
       question: newQuestion.question,
       type: newQuestion.type,
       options: (newQuestion.type === 'multiple-choice' || newQuestion.type === 'msq') 
-        ? newQuestion.options?.filter(o => o.trim()) 
-        : undefined,
+        ? newQuestion.options.filter(o => o.trim()) 
+        : [], // Always provide an array, even if empty
       correctAnswer: newQuestion.type === 'msq' 
-        ? newQuestion.correctAnswers 
+        ? newQuestion.correctAnswers.join(', ') // Convert array to string for single answer field
         : newQuestion.correctAnswer,
+      correctAnswers: newQuestion.type === 'msq' ? newQuestion.correctAnswers : undefined,
       marks: newQuestion.marks,
-      explanation: newQuestion.explanation
+      explanation: newQuestion.explanation,
+      order: questions.length // Add order for sorting
     };
 
     setQuestions([...questions, question]);
@@ -128,6 +131,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
       passingMarks,
       timeLimit,
       questions,
+      status: 'DRAFT', // Add status field
       isPublished: true,
       createdBy: 'current-user'
     });
@@ -172,7 +176,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
               min="0"
               max="100"
               value={passingMarks}
-              onChange={(e) => setPassingMarks(parseInt(e.target.value))}
+              onChange={(e) => setPassingMarks(parseInt(e.target.value) || 0)}
             />
           </div>
           <div>
@@ -182,7 +186,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
               type="number"
               min="1"
               value={timeLimit}
-              onChange={(e) => setTimeLimit(parseInt(e.target.value))}
+              onChange={(e) => setTimeLimit(parseInt(e.target.value) || 1)}
             />
           </div>
         </div>
@@ -214,7 +218,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                     type: value,
                     options: isMultipleChoiceOrMSQ(value) 
                       ? ['Option 1', 'Option 2', 'Option 3', 'Option 4'] 
-                      : undefined,
+                      : [],
                     correctAnswer: '',
                     correctAnswers: [],
                     marks: newQuestion.marks,
@@ -241,12 +245,12 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                 type="number"
                 min="1"
                 value={newQuestion.marks}
-                onChange={(e) => setNewQuestion({...newQuestion, marks: parseInt(e.target.value)})}
+                onChange={(e) => setNewQuestion({...newQuestion, marks: parseInt(e.target.value) || 1})}
               />
             </div>
           </div>
 
-          {isMultipleChoiceOrMSQ(newQuestion.type) && newQuestion.options && (
+          {isMultipleChoiceOrMSQ(newQuestion.type) && newQuestion.options.length > 0 && (
             <div className="space-y-2">
               <Label>Options</Label>
               {newQuestion.options.map((option, index) => (
@@ -263,7 +267,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                         value={option}
                         onChange={(e) => {
                           const oldOption = option;
-                          const newOptions = [...newQuestion.options!];
+                          const newOptions = [...newQuestion.options];
                           newOptions[index] = e.target.value;
                           
                           // Update correct answers if the option was selected
@@ -285,7 +289,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                       value={option}
                       onChange={(e) => {
                         const oldOption = option;
-                        const newOptions = [...newQuestion.options!];
+                        const newOptions = [...newQuestion.options];
                         newOptions[index] = e.target.value;
                         
                         // Update correct answer if it was this option
@@ -307,7 +311,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                     size="sm"
                     onClick={() => {
                       const optionToRemove = option;
-                      const newOptions = newQuestion.options!.filter((_, i) => i !== index);
+                      const newOptions = newQuestion.options.filter((_, i) => i !== index);
                       
                       // Remove from correct answers if selected
                       const updatedCorrectAnswer = 
@@ -335,7 +339,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                 size="sm"
                 onClick={() => setNewQuestion({
                   ...newQuestion, 
-                  options: [...(newQuestion.options || []), `Option ${(newQuestion.options?.length || 0) + 1}`]
+                  options: [...newQuestion.options, `Option ${newQuestion.options.length + 1}`]
                 })}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -359,7 +363,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                   <SelectValue placeholder="Select correct option" />
                 </SelectTrigger>
                 <SelectContent>
-                  {newQuestion.options?.map((option, index) => {
+                  {newQuestion.options.map((option, index) => {
                     // Ensure value is never empty
                     const value = option.trim() === "" ? `option-${index}` : option;
                     const label = option.trim() === "" ? `Option ${index + 1}` : option;
@@ -435,7 +439,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
             <h5 className="font-medium mb-2">Added Questions ({questions.length})</h5>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {questions.map((q, index) => (
-                <div key={q.id} className="flex items-start justify-between border rounded p-3 hover:bg-gray-50">
+                <div key={q.id.toString()} className="flex items-start justify-between border rounded p-3 hover:bg-gray-50">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium">Q{index + 1}: {q.question}</p>
@@ -447,7 +451,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                     </div>
                     <p className="text-sm text-gray-600">
                       {q.type === 'msq' 
-                        ? `Correct answers: ${Array.isArray(q.correctAnswer) ? q.correctAnswer.length : 0} selected`
+                        ? `Correct answers: ${Array.isArray(q.correctAnswers) ? q.correctAnswers.length : 0} selected`
                         : `Answer: ${q.correctAnswer}`
                       }
                       {' • '}{q.marks} mark{q.marks !== 1 ? 's' : ''}
@@ -457,7 +461,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeQuestion(q.id)}
+                    onClick={() => removeQuestion(q.id.toString())}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />

@@ -1,42 +1,146 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Card, CardContent } from '../ui/card';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Clock, AlertCircle, CheckCircle } from 'lucide-react';
-import { Quiz, QuizQuestion } from '@/lib/types'; 
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Quiz, QuizAttempt, QuizQuestion, QuizAnswer } from '@/lib/types';
 
 interface QuizPlayerProps {
   quiz: Quiz;
-  onSubmit: (attempt: any) => void;
+  onSubmit: (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => void; // Changed to QuizAttempt
   onClose: () => void;
 }
 
 export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [timeLeft, setTimeLeft] = useState(quiz.timeLimit ? quiz.timeLimit * 60 : 0);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [results, setResults] = useState<{
+    obtainedMarks: number;
+    percentage: number;
+    passed: boolean;
+  } | null>(null);
 
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+
+  // Timer effect
   useEffect(() => {
-    if (quiz.timeLimit && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            handleSubmit();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timer);
+    if (!quiz.timeLimit || timeLeft <= 0) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [quiz.timeLimit, timeLeft]);
+
+  const handleAnswerChange = (questionId: string, answer: string | string[]) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }));
+  };
+
+  const handleNext = () => {
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      handleSubmit();
     }
-  }, [timeLeft]);
+  };
+
+  const handlePrev = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+
+    // Calculate score
+    let obtainedMarks = 0;
+    const answerResults: QuizAnswer[] = [];
+
+    quiz.questions.forEach((question) => {
+      const questionId = question.id.toString();
+      const userAnswer = answers[questionId];
+      let isCorrect = false;
+      let marksObtained = 0;
+
+      if (userAnswer) {
+        if (question.type === 'msq') {
+          // Multiple select question
+          const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
+          const correctAnswers = question.correctAnswers || [];
+          
+          // Check if all correct answers are selected and no incorrect ones
+          const allCorrectSelected = correctAnswers.every((ans: string) => 
+            userAnswers.includes(ans)
+          );
+          const noIncorrectSelected = userAnswers.every((ans: string) => 
+            correctAnswers.includes(ans)
+          );
+          
+          isCorrect = allCorrectSelected && noIncorrectSelected;
+        } else {
+          // Single answer question
+          isCorrect = userAnswer === question.correctAnswer;
+        }
+
+        marksObtained = isCorrect ? question.marks : 0;
+        obtainedMarks += marksObtained;
+      }
+
+      answerResults.push({
+        questionId: question.id.toString(),
+        answer: Array.isArray(userAnswer) ? JSON.stringify(userAnswer) : (userAnswer || ''),
+        isCorrect,
+        marksObtained,
+      });
+    });
+
+    const percentage = (obtainedMarks / quiz.totalMarks) * 100;
+    const passed = percentage >= quiz.passingMarks;
+
+    setResults({
+      obtainedMarks,
+      percentage,
+      passed,
+    });
+    setIsCompleted(true);
+    setIsSubmitting(false);
+
+    // Submit QUIZ ATTEMPT (not quiz)
+    onSubmit({
+      quizId: quiz.id.toString(),
+      studentId: 'current-student-id', // Replace with actual student ID
+      studentName: 'Current Student', // Replace with actual student name
+      answers: answerResults,
+      totalMarks: quiz.totalMarks,
+      obtainedMarks,
+      percentage,
+      passed,
+      status: 'completed', // This is correct for QuizAttempt
+    });
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -44,211 +148,293 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswer = (questionId: string, answer: string | string[]) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
-  };
+  if (isCompleted && results) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Quiz Results</DialogTitle>
+            <DialogDescription>
+              You have completed the quiz!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="mx-auto w-32 h-32 rounded-full flex items-center justify-center mb-4">
+                {results.passed ? (
+                  <div className="bg-green-100 p-8 rounded-full">
+                    <CheckCircle className="w-16 h-16 text-green-600" />
+                  </div>
+                ) : (
+                  <div className="bg-red-100 p-8 rounded-full">
+                    <XCircle className="w-16 h-16 text-red-600" />
+                  </div>
+                )}
+              </div>
+              
+              <h3 className="text-2xl font-bold mb-2">
+                {results.passed ? 'Congratulations!' : 'Try Again!'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {results.passed 
+                  ? `You passed the quiz with ${results.percentage.toFixed(1)}%`
+                  : `You scored ${results.percentage.toFixed(1)}%. Need ${quiz.passingMarks}% to pass.`}
+              </p>
+            </div>
 
-  const calculateResults = () => {
-    let totalMarks = 0;
-    const detailedAnswers = quiz.questions.map(question => {
-      const userAnswer = answers[question.id];
-      let isCorrect = false;
-      let marksObtained = 0;
+            <div className="grid grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <div className="text-3xl font-bold text-blue-600">{results.obtainedMarks}</div>
+                  <div className="text-sm text-gray-600">Marks Obtained</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <div className="text-3xl font-bold text-blue-600">{quiz.totalMarks}</div>
+                  <div className="text-sm text-gray-600">Total Marks</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <div className="text-3xl font-bold text-blue-600">{results.percentage.toFixed(1)}%</div>
+                  <div className="text-sm text-gray-600">Percentage</div>
+                </CardContent>
+              </Card>
+            </div>
 
-      if (question.type === 'multiple-choice' || question.type === 'true-false') {
-        isCorrect = userAnswer === question.correctAnswer;
-      } else if (question.type === 'short-answer') {
-        isCorrect = (userAnswer as string)?.toLowerCase().trim() === 
-                   (question.correctAnswer as string).toLowerCase().trim();
-      }
+            <div className="space-y-4">
+              <h4 className="font-semibold">Your Answers:</h4>
+              {quiz.questions.map((question, index) => {
+                const questionId = question.id.toString();
+                const userAnswer = answers[questionId];
+                const result = results.obtainedMarks > 0 ? 
+                  (Array.isArray(userAnswer) 
+                    ? JSON.parse(userAnswer as any)
+                    : userAnswer) : null;
+                
+                return (
+                  <Card key={questionId}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          result ? 'bg-green-100' : 'bg-gray-100'
+                        }`}>
+                          <span className="text-sm font-medium">{index + 1}</span>
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium mb-2">{question.question}</h5>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <div>
+                              <span className="font-medium">Your answer: </span>
+                              {Array.isArray(userAnswer) 
+                                ? userAnswer.join(', ')
+                                : userAnswer || 'Not answered'}
+                            </div>
+                            {question.correctAnswer && (
+                              <div>
+                                <span className="font-medium">Correct answer: </span>
+                                {question.correctAnswer}
+                              </div>
+                            )}
+                            {question.correctAnswers && (
+                              <div>
+                                <span className="font-medium">Correct answers: </span>
+                                {question.correctAnswers.join(', ')}
+                              </div>
+                            )}
+                            {question.explanation && (
+                              <div className="mt-2 p-3 bg-blue-50 rounded-md">
+                                <span className="font-medium">Explanation: </span>
+                                {question.explanation}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
-      marksObtained = isCorrect ? question.marks : 0;
-      totalMarks += marksObtained;
-
-      return {
-        questionId: question.id,
-        answer: userAnswer || '',
-        isCorrect,
-        marksObtained
-      };
-    });
-
-    const percentage = (totalMarks / quiz.totalMarks) * 100;
-    const passed = percentage >= quiz.passingMarks;
-
-    return {
-      totalMarks: quiz.totalMarks,
-      obtainedMarks: totalMarks,
-      percentage,
-      passed,
-      detailedAnswers
-    };
-  };
-
-  const handleSubmit = () => {
-    const results = calculateResults();
-    
-    onSubmit({
-      quizId: quiz.id,
-      studentId: 'current-student',
-      studentName: 'Current Student',
-      ...results
-    });
-    
-    setIsSubmitted(true);
-    setTimeout(() => {
-      onClose();
-    }, 2000);
-  };
-
-  const currentQ = quiz.questions[currentQuestion];
+            <div className="flex justify-end">
+              <Button onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{quiz.title}</span>
+          <div className="flex items-start justify-between">
+            <div>
+              <DialogTitle>{quiz.title}</DialogTitle>
+              <DialogDescription>
+                Question {currentQuestionIndex + 1} of {quiz.questions.length}
+              </DialogDescription>
+            </div>
             {quiz.timeLimit && (
-              <div className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-medium flex items-center gap-1">
+              <div className="flex items-center gap-2 text-red-600 font-medium">
                 <Clock className="w-4 h-4" />
                 {formatTime(timeLeft)}
               </div>
             )}
-          </DialogTitle>
+          </div>
         </DialogHeader>
 
-        {isSubmitted ? (
-          <div className="text-center py-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Quiz Submitted!</h3>
-            <p className="text-gray-600">Your answers have been recorded.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Progress Bar */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Question {currentQuestion + 1} of {quiz.questions.length}</span>
-                <span>{Math.round(((currentQuestion + 1) / quiz.questions.length) * 100)}%</span>
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-blue-600 transition-all duration-300"
-                  style={{ width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%` }}
-                />
-              </div>
+        <div className="space-y-6">
+          {/* Progress */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progress</span>
+              <span>{currentQuestionIndex + 1}/{quiz.questions.length}</span>
             </div>
+            <Progress value={progress} className="h-2" />
+          </div>
 
-            {/* Current Question */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-6">
-                  <h3 className="text-lg font-semibold">
-                    Q{currentQuestion + 1}: {currentQ.question}
-                  </h3>
-                  <div className="px-2 py-1 rounded border text-sm">
-                    {currentQ.marks} mark{currentQ.marks !== 1 ? 's' : ''}
+          {/* Question */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium">
+                  {currentQuestion.question}
+                </h3>
+
+                {/* Multiple Choice */}
+                {currentQuestion.type === 'multiple-choice' && (
+                  <RadioGroup
+                    value={answers[currentQuestion.id.toString()] as string || ''}
+                    onValueChange={(value) => handleAnswerChange(currentQuestion.id.toString(), value)}
+                  >
+                    <div className="space-y-3">
+                      {currentQuestion.options?.map((option, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`option-${index}`} />
+                          <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                )}
+
+                {/* Multiple Select (MSQ) */}
+                {currentQuestion.type === 'msq' && (
+                  <div className="space-y-3">
+                    {currentQuestion.options?.map((option, index) => {
+                      const currentAnswers = answers[currentQuestion.id.toString()] as string[] || [];
+                      return (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`msq-option-${index}`}
+                            checked={currentAnswers.includes(option)}
+                            onCheckedChange={(checked) => {
+                              const newAnswers = checked
+                                ? [...currentAnswers, option]
+                                : currentAnswers.filter((ans: string) => ans !== option);
+                              handleAnswerChange(currentQuestion.id.toString(), newAnswers);
+                            }}
+                          />
+                          <Label htmlFor={`msq-option-${index}`} className="flex-1 cursor-pointer">
+                            {option}
+                          </Label>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-
-                {currentQ.type === 'multiple-choice' && currentQ.options && (
-                  <RadioGroup
-                    value={answers[currentQ.id] as string}
-                    onValueChange={(value) => handleAnswer(currentQ.id, value)}
-                    className="space-y-3"
-                  >
-                    {currentQ.options.map((option, idx) => (
-                      <div key={idx} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
-                        <RadioGroupItem value={option} id={`option-${idx}`} />
-                        <Label htmlFor={`option-${idx}`} className="flex-1 cursor-pointer">
-                          {option}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
                 )}
 
-                {currentQ.type === 'true-false' && (
+                {/* True/False */}
+                {currentQuestion.type === 'true-false' && (
                   <RadioGroup
-                    value={answers[currentQ.id] as string}
-                    onValueChange={(value) => handleAnswer(currentQ.id, value)}
-                    className="flex gap-4"
+                    value={answers[currentQuestion.id.toString()] as string || ''}
+                    onValueChange={(value) => handleAnswerChange(currentQuestion.id.toString(), value)}
                   >
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 flex-1">
-                      <RadioGroupItem value="true" id="true" />
-                      <Label htmlFor="true" className="cursor-pointer">True</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 flex-1">
-                      <RadioGroupItem value="false" id="false" />
-                      <Label htmlFor="false" className="cursor-pointer">False</Label>
+                    <div className="space-y-3">
+                      {['True', 'False'].map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`tf-${option}`} />
+                          <Label htmlFor={`tf-${option}`} className="flex-1 cursor-pointer">
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
                     </div>
                   </RadioGroup>
                 )}
 
-                {currentQ.type === 'short-answer' && (
-                  <Textarea
-                    value={(answers[currentQ.id] as string) || ''}
-                    onChange={(e) => handleAnswer(currentQ.id, e.target.value)}
+                {/* Short Answer */}
+                {currentQuestion.type === 'short-answer' && (
+                  <Input
+                    value={answers[currentQuestion.id.toString()] as string || ''}
+                    onChange={(e) => handleAnswerChange(currentQuestion.id.toString(), e.target.value)}
                     placeholder="Type your answer here..."
-                    rows={4}
                   />
                 )}
+              </div>
+            </CardContent>
+          </Card>
 
-                {currentQ.explanation && (
-                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <AlertCircle className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-600">Hint</span>
-                    </div>
-                    <p className="text-sm text-blue-700">{currentQ.explanation}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Navigation */}
-            <div className="flex justify-between">
+          {/* Navigation */}
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrev}
+              disabled={currentQuestionIndex === 0 || isSubmitting}
+            >
+              Previous
+            </Button>
+            
+            <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setCurrentQuestion(prev => Math.max(0, prev - 1))}
-                disabled={currentQuestion === 0}
+                onClick={onClose}
+                disabled={isSubmitting}
               >
-                Previous
+                Cancel
               </Button>
               
-              {currentQuestion === quiz.questions.length - 1 ? (
-                <Button 
-                  onClick={handleSubmit}
-                  className="bg-gradient-to-r from-green-600 to-green-700"
-                >
-                  Submit Quiz
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setCurrentQuestion(prev => Math.min(quiz.questions.length - 1, prev + 1))}
-                >
-                  Next Question
-                </Button>
-              )}
-            </div>
-
-            {/* Question Navigation Dots */}
-            <div className="flex flex-wrap gap-2">
-              {quiz.questions.map((_, idx) => (
-                <Button
-                  key={idx}
-                  variant={currentQuestion === idx ? "default" : "outline"}
-                  size="sm"
-                  className="w-8 h-8 p-0"
-                  onClick={() => setCurrentQuestion(idx)}
-                >
-                  {idx + 1}
-                </Button>
-              ))}
+              <Button
+                onClick={handleNext}
+                disabled={isSubmitting}
+              >
+                {currentQuestionIndex === quiz.questions.length - 1 ? 'Submit' : 'Next'}
+              </Button>
             </div>
           </div>
-        )}
+
+          {/* Question Navigation */}
+          <div className="grid grid-cols-5 gap-2">
+            {quiz.questions.map((question, index) => {
+              const questionId = question.id.toString();
+              const isAnswered = answers[questionId];
+              const isCurrent = index === currentQuestionIndex;
+              
+              return (
+                <Button
+                  key={questionId}
+                  variant={isCurrent ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentQuestionIndex(index)}
+                  className={isAnswered ? "bg-green-100 text-green-700 hover:bg-green-200" : ""}
+                >
+                  {index + 1}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

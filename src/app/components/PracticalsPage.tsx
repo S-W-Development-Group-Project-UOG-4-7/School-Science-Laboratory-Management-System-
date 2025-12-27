@@ -18,7 +18,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserRole, Quiz, QuizAttempt, Practical } from '@/lib/types'; 
+import { UserRole, Quiz, QuizAttempt, Practical, QuizQuestion } from '@/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
 import { QuizPlayer } from './quiz/QuizPlayer';
@@ -49,9 +49,12 @@ const practicals: Practical[] = [
         totalMarks: 20,
         passingMarks: 60,
         timeLimit: 30,
+        status: 'PUBLISHED',
+        teacherId: 1,
         questions: [
           {
             id: 'q-1-1',
+            quizId: 'quiz-1',
             question: 'What is the endpoint in a titration?',
             type: 'multiple-choice' as const,
             options: [
@@ -62,7 +65,8 @@ const practicals: Practical[] = [
             ],
             correctAnswer: 'When the indicator changes color',
             marks: 5,
-            explanation: 'The endpoint is indicated by a color change of the indicator.'
+            explanation: 'The endpoint is indicated by a color change of the indicator.',
+            order: 0
           }
         ],
         isPublished: true,
@@ -107,7 +111,7 @@ const practicals: Practical[] = [
     duration: '50 min',
     difficulty: 'Intermediate',
     description: 'Observe and identify different types of chemical reactions.',
-    thumbnail: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaWNhbCUyMHJlYWN0aW9ufGVufDF8fHx8MTc2MzE2ODA5Nnww&ixlib=rb-4.1.0&q=80&w=1080',
+    thumbnail: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2MzE2ODA5Nnww&ixlib=rb-4.1.0&q=80&w=1080',
     quizzes: []
   },
   {
@@ -169,7 +173,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = searchQuery === '' || 
       practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      practical.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (practical.description && practical.description.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesSubject = selectedSubject === 'all' || practical.subject === selectedSubject;
     const matchesGrade = selectedGrade === 'all' || practical.grade === selectedGrade;
     return matchesSearch && matchesSubject && matchesGrade;
@@ -211,19 +215,49 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
   };
 
-  // Quiz Management Functions
-  const handleAddQuiz = (quizData: Omit<Quiz, 'id' | 'createdAt'>) => {
-    // Use crypto.randomUUID() for better unique IDs
+  // Quiz Management Functions - CORRECTED VERSION
+  const handleAddQuiz = (quizData: {
+    practicalId: string | number;
+    title: string;
+    description?: string;
+    totalMarks: number;
+    passingMarks: number;
+    timeLimit?: number;
+    questions: Array<{
+      question: string;
+      type: 'multiple-choice' | 'true-false' | 'short-answer' | 'msq';
+      options: string[];
+      correctAnswer?: string;
+      correctAnswers?: string[];
+      marks: number;
+      explanation?: string;
+    }>;
+    status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+    teacherId?: number;
+  }) => {
+    const quizId = `quiz-${crypto.randomUUID()}`;
+    
     const newQuiz: Quiz = {
       ...quizData,
-      id: `quiz-${crypto.randomUUID()}`,
-      createdAt: new Date()
+      id: quizId,
+      practicalId: quizData.practicalId,
+      createdAt: new Date(),
+      status: quizData.status || 'DRAFT',
+      teacherId: quizData.teacherId || 1,
+      questions: quizData.questions.map((q, index) => ({
+        ...q,
+        id: `q-${quizId}-${index}`,
+        quizId: quizId,
+        order: index,
+      })),
+      isPublished: (quizData.status || 'DRAFT') === 'PUBLISHED',
+      createdBy: 'teacher1'
     };
     
-    // In real app, update database
     console.log('Adding quiz:', newQuiz);
+    
     // Update the practical with new quiz
-    const practicalIndex = practicals.findIndex(p => p.id === quizData.practicalId);
+    const practicalIndex = practicals.findIndex(p => p.id.toString() === quizData.practicalId.toString());
     if (practicalIndex !== -1) {
       practicals[practicalIndex].quizzes = [...(practicals[practicalIndex].quizzes || []), newQuiz];
     }
@@ -257,6 +291,14 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     
     // In real app, save to database
     console.log('Quiz submitted:', newAttempt);
+  };
+
+  // Helper function to get safe thumbnail URL
+  const getSafeThumbnail = (thumbnail: string | null | undefined): string => {
+    if (!thumbnail || thumbnail === '#') {
+      return '/default-thumbnail.jpg';
+    }
+    return thumbnail;
   };
 
   return (
@@ -463,7 +505,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                             type="button"
                           >
                             <p className="font-medium text-gray-800">{practical.title}</p>
-                            <p className="text-sm text-gray-600 truncate">{practical.description}</p>
+                            <p className="text-sm text-gray-600 truncate">{practical.description || ''}</p>
                           </button>
                         ))
                       ) : (
@@ -544,7 +586,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredPracticals.map((practical) => (
               <motion.div
-                key={practical.id} // Use actual ID, not index
+                key={practical.id.toString()}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -556,7 +598,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     {/* Thumbnail */}
                     <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
                       <ImageWithFallback
-                        src={practical.thumbnail}
+                        src={getSafeThumbnail(practical.thumbnail)}
                         alt={practical.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                       />
@@ -575,7 +617,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           <Badge variant="outline">{practical.grade}</Badge>
                         </div>
                         <CardTitle className="text-lg">{practical.title}</CardTitle>
-                        <CardDescription>{practical.description}</CardDescription>
+                        <CardDescription>{practical.description || ''}</CardDescription>
                       </CardHeader>
 
                       <CardContent className="flex-1 flex flex-col justify-between">
@@ -604,7 +646,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           </Button>
                           
                           {/* Quiz Button */}
-                          <Dialog key={`dialog-${practical.id}`}>
+                          <Dialog key={`dialog-${practical.id.toString()}`}>
                             <DialogTrigger asChild>
                               <Button 
                                 size="sm" 
@@ -626,14 +668,14 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                                 </DialogDescription>
                               </DialogHeader>
                               <QuizManager
-                                practicalId={practical.id}
+                                practicalId={practical.id.toString()}
                                 userRole={userRole}
                                 quizzes={practical.quizzes || []}
                                 onAddQuiz={handleAddQuiz}
                                 onEditQuiz={handleEditQuiz}
                                 onDeleteQuiz={handleDeleteQuiz}
                                 quizAttempts={quizAttempts.filter(a => 
-                                  (practical.quizzes || []).some(q => q.id === a.quizId)
+                                  (practical.quizzes || []).some(q => q.id.toString() === a.quizId.toString())
                                 )}
                               />
                             </DialogContent>
@@ -689,7 +731,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
       {/* Quiz Player Modal */}
       {selectedQuiz && userRole === 'student' && (
         <QuizPlayer
-          key={`quiz-player-${selectedQuiz.id}`}
+          key={`quiz-player-${selectedQuiz.id.toString()}`}
           quiz={selectedQuiz}
           onSubmit={handleSubmitQuiz}
           onClose={() => setSelectedQuiz(null)}
