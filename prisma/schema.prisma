@@ -26,6 +26,10 @@ model User {
 
   @@index([email])
   @@index([role])
+
+  // Relations
+  createdPracticals Practical[] @relation("CreatedPracticals")
+  uploadedVideos    Video[]     @relation("UploadedVideos")
 }
 
 enum Role {
@@ -39,4 +43,90 @@ enum Role {
 enum Status {
   ACTIVE
   INACTIVE
+}
+
+// Main Practical model
+model Practical {
+  id          String             @id @default(cuid())
+  title       String
+  description String             @db.Text
+  subject     Subject
+  grade       String
+  difficulty  DifficultyLevel
+  duration    String // e.g., "45 min"
+  
+  // Files
+  thumbnailUrl String?
+  labSheetUrl  String? // PDF file URL
+  
+  // Metadata
+  createdById String
+  createdBy   User   @relation("CreatedPracticals", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPublished Boolean  @default(false)
+  
+  // Relations
+  video       Video?  // One-to-one with Video
+  
+  @@index([subject, grade])
+  @@index([createdById])
+}
+
+// Separate Video model for admin-controlled uploads
+model Video {
+  id            String   @id @default(cuid())
+  practicalId   String   @unique
+  practical     Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+  
+  // Video storage details
+  videoUrl      String   // CDN URL or local path
+  videoType     VideoType @default(UPLOADED) // UPLOADED or EMBEDDED
+  
+  // File metadata (for uploaded videos)
+  fileName      String?
+  fileSize      Int?     // in bytes
+  mimeType      String?  // e.g., "video/mp4"
+  duration      Int?     // in seconds
+  
+  // CDN details (if using cloud storage)
+  cloudProvider String?  // e.g., "cloudinary", "s3", "supabase"
+  publicId      String?  // Cloudinary public ID or S3 key
+  
+  // Upload tracking
+  uploadedById  String
+  uploadedBy    User     @relation("UploadedVideos", fields: [uploadedById], references: [id])
+  uploadedAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([practicalId])
+  @@index([uploadedById])
+}
+
+enum VideoType {
+  UPLOADED  // Video file uploaded to server/CDN
+  EMBEDDED  // YouTube/Vimeo URL
+}
+
+enum Subject {
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// Optional: Track video views/analytics
+model VideoView {
+  id        String   @id @default(cuid())
+  videoId   String
+  userId    String?  // Optional: track which user viewed
+  viewedAt  DateTime @default(now())
+  
+  @@index([videoId])
+  @@index([userId])
 }
