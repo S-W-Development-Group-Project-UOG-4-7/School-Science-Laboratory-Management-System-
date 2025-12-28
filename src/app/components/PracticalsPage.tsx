@@ -118,6 +118,32 @@ const practicals: Practical[] = [
   },
 ];
 
+// Helper component for Quiz button with image icon and error handling
+function QuizButtonWithIcon({ studentId, practicalId }: { studentId: number; practicalId: number }) {
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <AttemptQuizButton
+      studentId={studentId}
+      practicalId={practicalId}
+      customIcon={
+        imageError ? (
+          <HelpCircle className="w-4 h-4 mr-2" />
+        ) : (
+          <img 
+            src="/quiz-icon.png" 
+            alt="Quiz" 
+            className="w-4 h-4 mr-2 object-contain pointer-events-none"
+            onError={() => setImageError(true)}
+            style={{ display: 'block' }}
+          />
+        )
+      }
+      buttonLabel="Quiz"
+    />
+  );
+}
+
 export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
@@ -420,31 +446,22 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                           <FileText className="w-4 h-4 mr-2" />
                           Lab Sheet
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="hover:bg-blue-50 hover:border-blue-300"
-                          onClick={() => {
-                            if (userRole === 'student' && userId) {
-                              // Find and click the hidden AttemptQuizButton trigger for this practical
-                              const hiddenButton = document.querySelector(`[data-practical-quiz="${practical.id}"] button`) as HTMLButtonElement;
-                              if (hiddenButton) {
-                                hiddenButton.click();
-                              }
-                            }
-                          }}
-                        >
-                          {userRole === 'student' ? (
-                            <img 
-                              src="/quiz-icon.png" 
-                              alt="Quiz" 
-                              className="w-4 h-4 mr-2 object-contain"
-                            />
-                          ) : (
+                        {userRole === 'student' && userId ? (
+                          <QuizButtonWithIcon
+                            studentId={userId}
+                            practicalId={parseInt(practical.id)}
+                          />
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="hover:bg-blue-50 hover:border-blue-300"
+                            disabled
+                          >
                             <HelpCircle className="w-4 h-4 mr-2" />
-                          )}
-                          Quiz
-                        </Button>
+                            Quiz
+                          </Button>
+                        )}
                         <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
                           <Download className="w-4 h-4 mr-2" />
                           Download
@@ -460,12 +477,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                               studentId={userId}
                               practicalId={parseInt(practical.id)}
                             />
-                            <div className="hidden" data-practical-quiz={practical.id}>
-                              <AttemptQuizButton
-                                studentId={userId}
-                                practicalId={parseInt(practical.id)}
-                              />
-                            </div>
                           </>
                         )}
                       </div>

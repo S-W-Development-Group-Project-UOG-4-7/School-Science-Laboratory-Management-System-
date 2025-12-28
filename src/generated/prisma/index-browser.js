@@ -127,6 +127,7 @@ exports.Prisma.UserScalarFieldEnum = {
   name: 'name',
   email: 'email',
   role: 'role',
+  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -215,6 +216,15 @@ exports.Prisma.QuizAttemptScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  loginTime: 'loginTime',
+  logoutTime: 'logoutTime',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -248,6 +258,11 @@ exports.UserRole = exports.$Enums.UserRole = {
   ADMIN: 'ADMIN'
 };
 
+exports.UserStatus = exports.$Enums.UserStatus = {
+  ONLINE: 'ONLINE',
+  OFFLINE: 'OFFLINE'
+};
+
 exports.AttendanceStatus = exports.$Enums.AttendanceStatus = {
   PRESENT: 'PRESENT',
   ABSENT: 'ABSENT',
@@ -277,7 +292,8 @@ exports.Prisma.ModelName = {
   ReportSubmission: 'ReportSubmission',
   Quiz: 'Quiz',
   QuizQuestion: 'QuizQuestion',
-  QuizAttempt: 'QuizAttempt'
+  QuizAttempt: 'QuizAttempt',
+  Session: 'Session'
 };
 
 /**

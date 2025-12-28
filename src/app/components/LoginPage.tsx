@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import type { User, UserRole } from '@/lib/types';
 
 interface LoginPageProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User, sessionId?: string) => void;
 }
 
 // Predefined credentials for different roles
@@ -179,21 +179,31 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
     
-    // Mock login - determine role from email
-    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];;
-    if (credentials && credentials.password === password) {
-      onLogin({
-        name: credentials.name,
-        role: credentials.role,
-        email,
-        id: credentials.id,
+    try {
+      // Call login API to validate credentials and insert/update user in database
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
       });
-    } else {
-      alert('Invalid OTP or credentials');
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Login successful, user data is automatically saved to database
+        // Pass sessionId to parent component
+        onLogin(data.user, data.sessionId);
+      } else {
+        alert(data.message || 'Invalid OTP or credentials');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('An error occurred during login. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

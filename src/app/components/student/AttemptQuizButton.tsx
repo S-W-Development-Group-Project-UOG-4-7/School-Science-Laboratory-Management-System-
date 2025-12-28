@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import {
   Dialog,
@@ -21,6 +21,8 @@ interface AttemptQuizButtonProps {
   studentId: number;
   practicalId: number;
   onSuccess?: () => void;
+  customIcon?: React.ReactNode;
+  buttonLabel?: string;
 }
 
 interface QuizQuestion {
@@ -44,6 +46,8 @@ export function AttemptQuizButton({
   studentId,
   practicalId,
   onSuccess,
+  customIcon,
+  buttonLabel = 'Attempt Quiz',
 }: AttemptQuizButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -151,8 +155,8 @@ export function AttemptQuizButton({
             </>
           ) : (
             <>
-              <HelpCircle className="w-4 h-4 mr-2" />
-              Attempt Quiz
+              {customIcon || <HelpCircle className="w-4 h-4 mr-2" />}
+              {buttonLabel}
             </>
           )}
         </Button>
