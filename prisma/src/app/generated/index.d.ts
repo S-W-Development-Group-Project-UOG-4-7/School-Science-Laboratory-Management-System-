@@ -14,11 +14,6 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>
 
 
 /**
- * Model Post
- * 
- */
-export type Post = $Result.DefaultSelection<Prisma.$PostPayload>
-/**
  * Model Inventory
  * 
  */
@@ -44,6 +39,14 @@ export namespace $Enums {
 export type Category = (typeof Category)[keyof typeof Category]
 
 
+export const RequesterRole: {
+  LAB_ASSISTANT: 'LAB_ASSISTANT',
+  ADMIN: 'ADMIN'
+};
+
+export type RequesterRole = (typeof RequesterRole)[keyof typeof RequesterRole]
+
+
 export const Urgency: {
   low: 'low',
   medium: 'medium',
@@ -67,6 +70,10 @@ export type Category = $Enums.Category
 
 export const Category: typeof $Enums.Category
 
+export type RequesterRole = $Enums.RequesterRole
+
+export const RequesterRole: typeof $Enums.RequesterRole
+
 export type Urgency = $Enums.Urgency
 
 export const Urgency: typeof $Enums.Urgency
@@ -82,8 +89,8 @@ export const RequestStatus: typeof $Enums.RequestStatus
  * @example
  * ```
  * const prisma = new PrismaClient()
- * // Fetch zero or more Posts
- * const posts = await prisma.post.findMany()
+ * // Fetch zero or more Inventories
+ * const inventories = await prisma.inventory.findMany()
  * ```
  *
  * 
@@ -103,8 +110,8 @@ export class PrismaClient<
    * @example
    * ```
    * const prisma = new PrismaClient()
-   * // Fetch zero or more Posts
-   * const posts = await prisma.post.findMany()
+   * // Fetch zero or more Inventories
+   * const inventories = await prisma.inventory.findMany()
    * ```
    *
    * 
@@ -199,16 +206,6 @@ export class PrismaClient<
   $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb, ExtArgs>
 
       /**
-   * `prisma.post`: Exposes CRUD operations for the **Post** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more Posts
-    * const posts = await prisma.post.findMany()
-    * ```
-    */
-  get post(): Prisma.PostDelegate<ExtArgs>;
-
-  /**
    * `prisma.inventory`: Exposes CRUD operations for the **Inventory** model.
     * Example usage:
     * ```ts
@@ -668,7 +665,6 @@ export namespace Prisma {
 
 
   export const ModelName: {
-    Post: 'Post',
     Inventory: 'Inventory',
     InventoryRequest: 'InventoryRequest'
   };
@@ -686,80 +682,10 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "post" | "inventory" | "inventoryRequest"
+      modelProps: "inventory" | "inventoryRequest"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
-      Post: {
-        payload: Prisma.$PostPayload<ExtArgs>
-        fields: Prisma.PostFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.PostFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.PostFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          findFirst: {
-            args: Prisma.PostFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.PostFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          findMany: {
-            args: Prisma.PostFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>[]
-          }
-          create: {
-            args: Prisma.PostCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          createMany: {
-            args: Prisma.PostCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.PostCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>[]
-          }
-          delete: {
-            args: Prisma.PostDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          update: {
-            args: Prisma.PostUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          deleteMany: {
-            args: Prisma.PostDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.PostUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.PostUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$PostPayload>
-          }
-          aggregate: {
-            args: Prisma.PostAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregatePost>
-          }
-          groupBy: {
-            args: Prisma.PostGroupByArgs<ExtArgs>
-            result: $Utils.Optional<PostGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.PostCountArgs<ExtArgs>
-            result: $Utils.Optional<PostCountAggregateOutputType> | number
-          }
-        }
-      }
       Inventory: {
         payload: Prisma.$InventoryPayload<ExtArgs>
         fields: Prisma.InventoryFieldRefs
@@ -1092,906 +1018,6 @@ export namespace Prisma {
    */
 
   /**
-   * Model Post
-   */
-
-  export type AggregatePost = {
-    _count: PostCountAggregateOutputType | null
-    _avg: PostAvgAggregateOutputType | null
-    _sum: PostSumAggregateOutputType | null
-    _min: PostMinAggregateOutputType | null
-    _max: PostMaxAggregateOutputType | null
-  }
-
-  export type PostAvgAggregateOutputType = {
-    id: number | null
-  }
-
-  export type PostSumAggregateOutputType = {
-    id: number | null
-  }
-
-  export type PostMinAggregateOutputType = {
-    id: number | null
-    title: string | null
-    content: string | null
-    createdAt: Date | null
-  }
-
-  export type PostMaxAggregateOutputType = {
-    id: number | null
-    title: string | null
-    content: string | null
-    createdAt: Date | null
-  }
-
-  export type PostCountAggregateOutputType = {
-    id: number
-    title: number
-    content: number
-    createdAt: number
-    _all: number
-  }
-
-
-  export type PostAvgAggregateInputType = {
-    id?: true
-  }
-
-  export type PostSumAggregateInputType = {
-    id?: true
-  }
-
-  export type PostMinAggregateInputType = {
-    id?: true
-    title?: true
-    content?: true
-    createdAt?: true
-  }
-
-  export type PostMaxAggregateInputType = {
-    id?: true
-    title?: true
-    content?: true
-    createdAt?: true
-  }
-
-  export type PostCountAggregateInputType = {
-    id?: true
-    title?: true
-    content?: true
-    createdAt?: true
-    _all?: true
-  }
-
-  export type PostAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which Post to aggregate.
-     */
-    where?: PostWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Posts to fetch.
-     */
-    orderBy?: PostOrderByWithRelationInput | PostOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: PostWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Posts from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Posts.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned Posts
-    **/
-    _count?: true | PostCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: PostAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: PostSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: PostMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: PostMaxAggregateInputType
-  }
-
-  export type GetPostAggregateType<T extends PostAggregateArgs> = {
-        [P in keyof T & keyof AggregatePost]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregatePost[P]>
-      : GetScalarType<T[P], AggregatePost[P]>
-  }
-
-
-
-
-  export type PostGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: PostWhereInput
-    orderBy?: PostOrderByWithAggregationInput | PostOrderByWithAggregationInput[]
-    by: PostScalarFieldEnum[] | PostScalarFieldEnum
-    having?: PostScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: PostCountAggregateInputType | true
-    _avg?: PostAvgAggregateInputType
-    _sum?: PostSumAggregateInputType
-    _min?: PostMinAggregateInputType
-    _max?: PostMaxAggregateInputType
-  }
-
-  export type PostGroupByOutputType = {
-    id: number
-    title: string
-    content: string | null
-    createdAt: Date
-    _count: PostCountAggregateOutputType | null
-    _avg: PostAvgAggregateOutputType | null
-    _sum: PostSumAggregateOutputType | null
-    _min: PostMinAggregateOutputType | null
-    _max: PostMaxAggregateOutputType | null
-  }
-
-  type GetPostGroupByPayload<T extends PostGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<PostGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof PostGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], PostGroupByOutputType[P]>
-            : GetScalarType<T[P], PostGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type PostSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    content?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["post"]>
-
-  export type PostSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    content?: boolean
-    createdAt?: boolean
-  }, ExtArgs["result"]["post"]>
-
-  export type PostSelectScalar = {
-    id?: boolean
-    title?: boolean
-    content?: boolean
-    createdAt?: boolean
-  }
-
-
-  export type $PostPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "Post"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      title: string
-      content: string | null
-      createdAt: Date
-    }, ExtArgs["result"]["post"]>
-    composites: {}
-  }
-
-  type PostGetPayload<S extends boolean | null | undefined | PostDefaultArgs> = $Result.GetResult<Prisma.$PostPayload, S>
-
-  type PostCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<PostFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: PostCountAggregateInputType | true
-    }
-
-  export interface PostDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Post'], meta: { name: 'Post' } }
-    /**
-     * Find zero or one Post that matches the filter.
-     * @param {PostFindUniqueArgs} args - Arguments to find a Post
-     * @example
-     * // Get one Post
-     * const post = await prisma.post.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends PostFindUniqueArgs>(args: SelectSubset<T, PostFindUniqueArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one Post that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {PostFindUniqueOrThrowArgs} args - Arguments to find a Post
-     * @example
-     * // Get one Post
-     * const post = await prisma.post.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends PostFindUniqueOrThrowArgs>(args: SelectSubset<T, PostFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first Post that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostFindFirstArgs} args - Arguments to find a Post
-     * @example
-     * // Get one Post
-     * const post = await prisma.post.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends PostFindFirstArgs>(args?: SelectSubset<T, PostFindFirstArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first Post that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostFindFirstOrThrowArgs} args - Arguments to find a Post
-     * @example
-     * // Get one Post
-     * const post = await prisma.post.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends PostFindFirstOrThrowArgs>(args?: SelectSubset<T, PostFindFirstOrThrowArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more Posts that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all Posts
-     * const posts = await prisma.post.findMany()
-     * 
-     * // Get first 10 Posts
-     * const posts = await prisma.post.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const postWithIdOnly = await prisma.post.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends PostFindManyArgs>(args?: SelectSubset<T, PostFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a Post.
-     * @param {PostCreateArgs} args - Arguments to create a Post.
-     * @example
-     * // Create one Post
-     * const Post = await prisma.post.create({
-     *   data: {
-     *     // ... data to create a Post
-     *   }
-     * })
-     * 
-     */
-    create<T extends PostCreateArgs>(args: SelectSubset<T, PostCreateArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many Posts.
-     * @param {PostCreateManyArgs} args - Arguments to create many Posts.
-     * @example
-     * // Create many Posts
-     * const post = await prisma.post.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends PostCreateManyArgs>(args?: SelectSubset<T, PostCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many Posts and returns the data saved in the database.
-     * @param {PostCreateManyAndReturnArgs} args - Arguments to create many Posts.
-     * @example
-     * // Create many Posts
-     * const post = await prisma.post.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Posts and only return the `id`
-     * const postWithIdOnly = await prisma.post.createManyAndReturn({ 
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends PostCreateManyAndReturnArgs>(args?: SelectSubset<T, PostCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a Post.
-     * @param {PostDeleteArgs} args - Arguments to delete one Post.
-     * @example
-     * // Delete one Post
-     * const Post = await prisma.post.delete({
-     *   where: {
-     *     // ... filter to delete one Post
-     *   }
-     * })
-     * 
-     */
-    delete<T extends PostDeleteArgs>(args: SelectSubset<T, PostDeleteArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one Post.
-     * @param {PostUpdateArgs} args - Arguments to update one Post.
-     * @example
-     * // Update one Post
-     * const post = await prisma.post.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends PostUpdateArgs>(args: SelectSubset<T, PostUpdateArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more Posts.
-     * @param {PostDeleteManyArgs} args - Arguments to filter Posts to delete.
-     * @example
-     * // Delete a few Posts
-     * const { count } = await prisma.post.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends PostDeleteManyArgs>(args?: SelectSubset<T, PostDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more Posts.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many Posts
-     * const post = await prisma.post.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends PostUpdateManyArgs>(args: SelectSubset<T, PostUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one Post.
-     * @param {PostUpsertArgs} args - Arguments to update or create a Post.
-     * @example
-     * // Update or create a Post
-     * const post = await prisma.post.upsert({
-     *   create: {
-     *     // ... data to create a Post
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the Post we want to update
-     *   }
-     * })
-     */
-    upsert<T extends PostUpsertArgs>(args: SelectSubset<T, PostUpsertArgs<ExtArgs>>): Prisma__PostClient<$Result.GetResult<Prisma.$PostPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of Posts.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostCountArgs} args - Arguments to filter Posts to count.
-     * @example
-     * // Count the number of Posts
-     * const count = await prisma.post.count({
-     *   where: {
-     *     // ... the filter for the Posts we want to count
-     *   }
-     * })
-    **/
-    count<T extends PostCountArgs>(
-      args?: Subset<T, PostCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], PostCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a Post.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends PostAggregateArgs>(args: Subset<T, PostAggregateArgs>): Prisma.PrismaPromise<GetPostAggregateType<T>>
-
-    /**
-     * Group by Post.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {PostGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends PostGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: PostGroupByArgs['orderBy'] }
-        : { orderBy?: PostGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, PostGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPostGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the Post model
-   */
-  readonly fields: PostFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for Post.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__PostClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the Post model
-   */ 
-  interface PostFieldRefs {
-    readonly id: FieldRef<"Post", 'Int'>
-    readonly title: FieldRef<"Post", 'String'>
-    readonly content: FieldRef<"Post", 'String'>
-    readonly createdAt: FieldRef<"Post", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * Post findUnique
-   */
-  export type PostFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter, which Post to fetch.
-     */
-    where: PostWhereUniqueInput
-  }
-
-  /**
-   * Post findUniqueOrThrow
-   */
-  export type PostFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter, which Post to fetch.
-     */
-    where: PostWhereUniqueInput
-  }
-
-  /**
-   * Post findFirst
-   */
-  export type PostFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter, which Post to fetch.
-     */
-    where?: PostWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Posts to fetch.
-     */
-    orderBy?: PostOrderByWithRelationInput | PostOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for Posts.
-     */
-    cursor?: PostWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Posts from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Posts.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of Posts.
-     */
-    distinct?: PostScalarFieldEnum | PostScalarFieldEnum[]
-  }
-
-  /**
-   * Post findFirstOrThrow
-   */
-  export type PostFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter, which Post to fetch.
-     */
-    where?: PostWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Posts to fetch.
-     */
-    orderBy?: PostOrderByWithRelationInput | PostOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for Posts.
-     */
-    cursor?: PostWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Posts from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Posts.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of Posts.
-     */
-    distinct?: PostScalarFieldEnum | PostScalarFieldEnum[]
-  }
-
-  /**
-   * Post findMany
-   */
-  export type PostFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter, which Posts to fetch.
-     */
-    where?: PostWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of Posts to fetch.
-     */
-    orderBy?: PostOrderByWithRelationInput | PostOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing Posts.
-     */
-    cursor?: PostWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` Posts from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` Posts.
-     */
-    skip?: number
-    distinct?: PostScalarFieldEnum | PostScalarFieldEnum[]
-  }
-
-  /**
-   * Post create
-   */
-  export type PostCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * The data needed to create a Post.
-     */
-    data: XOR<PostCreateInput, PostUncheckedCreateInput>
-  }
-
-  /**
-   * Post createMany
-   */
-  export type PostCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many Posts.
-     */
-    data: PostCreateManyInput | PostCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Post createManyAndReturn
-   */
-  export type PostCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many Posts.
-     */
-    data: PostCreateManyInput | PostCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Post update
-   */
-  export type PostUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * The data needed to update a Post.
-     */
-    data: XOR<PostUpdateInput, PostUncheckedUpdateInput>
-    /**
-     * Choose, which Post to update.
-     */
-    where: PostWhereUniqueInput
-  }
-
-  /**
-   * Post updateMany
-   */
-  export type PostUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update Posts.
-     */
-    data: XOR<PostUpdateManyMutationInput, PostUncheckedUpdateManyInput>
-    /**
-     * Filter which Posts to update
-     */
-    where?: PostWhereInput
-  }
-
-  /**
-   * Post upsert
-   */
-  export type PostUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * The filter to search for the Post to update in case it exists.
-     */
-    where: PostWhereUniqueInput
-    /**
-     * In case the Post found by the `where` argument doesn't exist, create a new Post with this data.
-     */
-    create: XOR<PostCreateInput, PostUncheckedCreateInput>
-    /**
-     * In case the Post was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<PostUpdateInput, PostUncheckedUpdateInput>
-  }
-
-  /**
-   * Post delete
-   */
-  export type PostDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-    /**
-     * Filter which Post to delete.
-     */
-    where: PostWhereUniqueInput
-  }
-
-  /**
-   * Post deleteMany
-   */
-  export type PostDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which Posts to delete
-     */
-    where?: PostWhereInput
-  }
-
-  /**
-   * Post without action
-   */
-  export type PostDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Post
-     */
-    select?: PostSelect<ExtArgs> | null
-  }
-
-
-  /**
    * Model Inventory
    */
 
@@ -2210,10 +1236,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo: string | null
+    storageInstructions: string | null
+    handlingProcedure: string | null
+    safetyNotes: string | null
     lastUpdated: Date
     _count: InventoryCountAggregateOutputType | null
     _avg: InventoryAvgAggregateOutputType | null
@@ -2302,10 +1328,10 @@ export namespace Prisma {
       minStockLevel: number
       unit: string
       location: string
-      photo: string
-      storageInstructions: string
-      handlingProcedure: string
-      safetyNotes: string
+      photo: string | null
+      storageInstructions: string | null
+      handlingProcedure: string | null
+      safetyNotes: string | null
       lastUpdated: Date
     }, ExtArgs["result"]["inventory"]>
     composites: {}
@@ -3084,7 +2110,7 @@ export namespace Prisma {
   export type InventoryRequestMinAggregateOutputType = {
     id: string | null
     requesterName: string | null
-    requesterRole: string | null
+    requesterRole: $Enums.RequesterRole | null
     requesterId: string | null
     itemId: string | null
     quantity: number | null
@@ -3099,7 +2125,7 @@ export namespace Prisma {
   export type InventoryRequestMaxAggregateOutputType = {
     id: string | null
     requesterName: string | null
-    requesterRole: string | null
+    requesterRole: $Enums.RequesterRole | null
     requesterId: string | null
     itemId: string | null
     quantity: number | null
@@ -3271,7 +2297,7 @@ export namespace Prisma {
   export type InventoryRequestGroupByOutputType = {
     id: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     itemId: string
     quantity: number
@@ -3364,7 +2390,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       requesterName: string
-      requesterRole: string
+      requesterRole: $Enums.RequesterRole
       requesterId: string
       itemId: string
       quantity: number
@@ -3770,7 +2796,7 @@ export namespace Prisma {
   interface InventoryRequestFieldRefs {
     readonly id: FieldRef<"InventoryRequest", 'String'>
     readonly requesterName: FieldRef<"InventoryRequest", 'String'>
-    readonly requesterRole: FieldRef<"InventoryRequest", 'String'>
+    readonly requesterRole: FieldRef<"InventoryRequest", 'RequesterRole'>
     readonly requesterId: FieldRef<"InventoryRequest", 'String'>
     readonly itemId: FieldRef<"InventoryRequest", 'String'>
     readonly quantity: FieldRef<"InventoryRequest", 'Int'>
@@ -4126,16 +3152,6 @@ export namespace Prisma {
   export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
-  export const PostScalarFieldEnum: {
-    id: 'id',
-    title: 'title',
-    content: 'content',
-    createdAt: 'createdAt'
-  };
-
-  export type PostScalarFieldEnum = (typeof PostScalarFieldEnum)[keyof typeof PostScalarFieldEnum]
-
-
   export const InventoryScalarFieldEnum: {
     id: 'id',
     name: 'name',
@@ -4202,20 +3218,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Int'
-   */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int[]'
-   */
-  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
-    
-
-
-  /**
    * Reference to a field of type 'String'
    */
   export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
@@ -4226,6 +3228,34 @@ export namespace Prisma {
    * Reference to a field of type 'String[]'
    */
   export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Category'
+   */
+  export type EnumCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Category'>
+    
+
+
+  /**
+   * Reference to a field of type 'Category[]'
+   */
+  export type ListEnumCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Category[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int'
+   */
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int[]'
+   */
+  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -4244,16 +3274,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Category'
+   * Reference to a field of type 'RequesterRole'
    */
-  export type EnumCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Category'>
+  export type EnumRequesterRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequesterRole'>
     
 
 
   /**
-   * Reference to a field of type 'Category[]'
+   * Reference to a field of type 'RequesterRole[]'
    */
-  export type ListEnumCategoryFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Category[]'>
+  export type ListEnumRequesterRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RequesterRole[]'>
     
 
 
@@ -4302,55 +3332,6 @@ export namespace Prisma {
    */
 
 
-  export type PostWhereInput = {
-    AND?: PostWhereInput | PostWhereInput[]
-    OR?: PostWhereInput[]
-    NOT?: PostWhereInput | PostWhereInput[]
-    id?: IntFilter<"Post"> | number
-    title?: StringFilter<"Post"> | string
-    content?: StringNullableFilter<"Post"> | string | null
-    createdAt?: DateTimeFilter<"Post"> | Date | string
-  }
-
-  export type PostOrderByWithRelationInput = {
-    id?: SortOrder
-    title?: SortOrder
-    content?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type PostWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    AND?: PostWhereInput | PostWhereInput[]
-    OR?: PostWhereInput[]
-    NOT?: PostWhereInput | PostWhereInput[]
-    title?: StringFilter<"Post"> | string
-    content?: StringNullableFilter<"Post"> | string | null
-    createdAt?: DateTimeFilter<"Post"> | Date | string
-  }, "id">
-
-  export type PostOrderByWithAggregationInput = {
-    id?: SortOrder
-    title?: SortOrder
-    content?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    _count?: PostCountOrderByAggregateInput
-    _avg?: PostAvgOrderByAggregateInput
-    _max?: PostMaxOrderByAggregateInput
-    _min?: PostMinOrderByAggregateInput
-    _sum?: PostSumOrderByAggregateInput
-  }
-
-  export type PostScalarWhereWithAggregatesInput = {
-    AND?: PostScalarWhereWithAggregatesInput | PostScalarWhereWithAggregatesInput[]
-    OR?: PostScalarWhereWithAggregatesInput[]
-    NOT?: PostScalarWhereWithAggregatesInput | PostScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"Post"> | number
-    title?: StringWithAggregatesFilter<"Post"> | string
-    content?: StringNullableWithAggregatesFilter<"Post"> | string | null
-    createdAt?: DateTimeWithAggregatesFilter<"Post"> | Date | string
-  }
-
   export type InventoryWhereInput = {
     AND?: InventoryWhereInput | InventoryWhereInput[]
     OR?: InventoryWhereInput[]
@@ -4362,10 +3343,10 @@ export namespace Prisma {
     minStockLevel?: IntFilter<"Inventory"> | number
     unit?: StringFilter<"Inventory"> | string
     location?: StringFilter<"Inventory"> | string
-    photo?: StringFilter<"Inventory"> | string
-    storageInstructions?: StringFilter<"Inventory"> | string
-    handlingProcedure?: StringFilter<"Inventory"> | string
-    safetyNotes?: StringFilter<"Inventory"> | string
+    photo?: StringNullableFilter<"Inventory"> | string | null
+    storageInstructions?: StringNullableFilter<"Inventory"> | string | null
+    handlingProcedure?: StringNullableFilter<"Inventory"> | string | null
+    safetyNotes?: StringNullableFilter<"Inventory"> | string | null
     lastUpdated?: DateTimeFilter<"Inventory"> | Date | string
     requests?: InventoryRequestListRelationFilter
   }
@@ -4378,10 +3359,10 @@ export namespace Prisma {
     minStockLevel?: SortOrder
     unit?: SortOrder
     location?: SortOrder
-    photo?: SortOrder
-    storageInstructions?: SortOrder
-    handlingProcedure?: SortOrder
-    safetyNotes?: SortOrder
+    photo?: SortOrderInput | SortOrder
+    storageInstructions?: SortOrderInput | SortOrder
+    handlingProcedure?: SortOrderInput | SortOrder
+    safetyNotes?: SortOrderInput | SortOrder
     lastUpdated?: SortOrder
     requests?: InventoryRequestOrderByRelationAggregateInput
   }
@@ -4397,10 +3378,10 @@ export namespace Prisma {
     minStockLevel?: IntFilter<"Inventory"> | number
     unit?: StringFilter<"Inventory"> | string
     location?: StringFilter<"Inventory"> | string
-    photo?: StringFilter<"Inventory"> | string
-    storageInstructions?: StringFilter<"Inventory"> | string
-    handlingProcedure?: StringFilter<"Inventory"> | string
-    safetyNotes?: StringFilter<"Inventory"> | string
+    photo?: StringNullableFilter<"Inventory"> | string | null
+    storageInstructions?: StringNullableFilter<"Inventory"> | string | null
+    handlingProcedure?: StringNullableFilter<"Inventory"> | string | null
+    safetyNotes?: StringNullableFilter<"Inventory"> | string | null
     lastUpdated?: DateTimeFilter<"Inventory"> | Date | string
     requests?: InventoryRequestListRelationFilter
   }, "id">
@@ -4413,10 +3394,10 @@ export namespace Prisma {
     minStockLevel?: SortOrder
     unit?: SortOrder
     location?: SortOrder
-    photo?: SortOrder
-    storageInstructions?: SortOrder
-    handlingProcedure?: SortOrder
-    safetyNotes?: SortOrder
+    photo?: SortOrderInput | SortOrder
+    storageInstructions?: SortOrderInput | SortOrder
+    handlingProcedure?: SortOrderInput | SortOrder
+    safetyNotes?: SortOrderInput | SortOrder
     lastUpdated?: SortOrder
     _count?: InventoryCountOrderByAggregateInput
     _avg?: InventoryAvgOrderByAggregateInput
@@ -4436,10 +3417,10 @@ export namespace Prisma {
     minStockLevel?: IntWithAggregatesFilter<"Inventory"> | number
     unit?: StringWithAggregatesFilter<"Inventory"> | string
     location?: StringWithAggregatesFilter<"Inventory"> | string
-    photo?: StringWithAggregatesFilter<"Inventory"> | string
-    storageInstructions?: StringWithAggregatesFilter<"Inventory"> | string
-    handlingProcedure?: StringWithAggregatesFilter<"Inventory"> | string
-    safetyNotes?: StringWithAggregatesFilter<"Inventory"> | string
+    photo?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
+    storageInstructions?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
+    handlingProcedure?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
+    safetyNotes?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
     lastUpdated?: DateTimeWithAggregatesFilter<"Inventory"> | Date | string
   }
 
@@ -4449,7 +3430,7 @@ export namespace Prisma {
     NOT?: InventoryRequestWhereInput | InventoryRequestWhereInput[]
     id?: StringFilter<"InventoryRequest"> | string
     requesterName?: StringFilter<"InventoryRequest"> | string
-    requesterRole?: StringFilter<"InventoryRequest"> | string
+    requesterRole?: EnumRequesterRoleFilter<"InventoryRequest"> | $Enums.RequesterRole
     requesterId?: StringFilter<"InventoryRequest"> | string
     itemId?: StringFilter<"InventoryRequest"> | string
     quantity?: IntFilter<"InventoryRequest"> | number
@@ -4484,7 +3465,7 @@ export namespace Prisma {
     OR?: InventoryRequestWhereInput[]
     NOT?: InventoryRequestWhereInput | InventoryRequestWhereInput[]
     requesterName?: StringFilter<"InventoryRequest"> | string
-    requesterRole?: StringFilter<"InventoryRequest"> | string
+    requesterRole?: EnumRequesterRoleFilter<"InventoryRequest"> | $Enums.RequesterRole
     requesterId?: StringFilter<"InventoryRequest"> | string
     itemId?: StringFilter<"InventoryRequest"> | string
     quantity?: IntFilter<"InventoryRequest"> | number
@@ -4523,7 +3504,7 @@ export namespace Prisma {
     NOT?: InventoryRequestScalarWhereWithAggregatesInput | InventoryRequestScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"InventoryRequest"> | string
     requesterName?: StringWithAggregatesFilter<"InventoryRequest"> | string
-    requesterRole?: StringWithAggregatesFilter<"InventoryRequest"> | string
+    requesterRole?: EnumRequesterRoleWithAggregatesFilter<"InventoryRequest"> | $Enums.RequesterRole
     requesterId?: StringWithAggregatesFilter<"InventoryRequest"> | string
     itemId?: StringWithAggregatesFilter<"InventoryRequest"> | string
     quantity?: IntWithAggregatesFilter<"InventoryRequest"> | number
@@ -4535,52 +3516,6 @@ export namespace Prisma {
     responseNote?: StringNullableWithAggregatesFilter<"InventoryRequest"> | string | null
   }
 
-  export type PostCreateInput = {
-    title: string
-    content?: string | null
-    createdAt?: Date | string
-  }
-
-  export type PostUncheckedCreateInput = {
-    id?: number
-    title: string
-    content?: string | null
-    createdAt?: Date | string
-  }
-
-  export type PostUpdateInput = {
-    title?: StringFieldUpdateOperationsInput | string
-    content?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type PostUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    content?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type PostCreateManyInput = {
-    id?: number
-    title: string
-    content?: string | null
-    createdAt?: Date | string
-  }
-
-  export type PostUpdateManyMutationInput = {
-    title?: StringFieldUpdateOperationsInput | string
-    content?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type PostUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    content?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type InventoryCreateInput = {
     id?: string
     name: string
@@ -4589,10 +3524,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo?: string | null
+    storageInstructions?: string | null
+    handlingProcedure?: string | null
+    safetyNotes?: string | null
     lastUpdated?: Date | string
     requests?: InventoryRequestCreateNestedManyWithoutItemInput
   }
@@ -4605,10 +3540,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo?: string | null
+    storageInstructions?: string | null
+    handlingProcedure?: string | null
+    safetyNotes?: string | null
     lastUpdated?: Date | string
     requests?: InventoryRequestUncheckedCreateNestedManyWithoutItemInput
   }
@@ -4621,10 +3556,10 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
     requests?: InventoryRequestUpdateManyWithoutItemNestedInput
   }
@@ -4637,10 +3572,10 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
     requests?: InventoryRequestUncheckedUpdateManyWithoutItemNestedInput
   }
@@ -4653,10 +3588,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo?: string | null
+    storageInstructions?: string | null
+    handlingProcedure?: string | null
+    safetyNotes?: string | null
     lastUpdated?: Date | string
   }
 
@@ -4668,10 +3603,10 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -4683,17 +3618,17 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type InventoryRequestCreateInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     quantity: number
     reason: string
@@ -4708,7 +3643,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedCreateInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     itemId: string
     quantity: number
@@ -4723,7 +3658,7 @@ export namespace Prisma {
   export type InventoryRequestUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     reason?: StringFieldUpdateOperationsInput | string
@@ -4738,7 +3673,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     itemId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
@@ -4753,7 +3688,7 @@ export namespace Prisma {
   export type InventoryRequestCreateManyInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     itemId: string
     quantity: number
@@ -4768,7 +3703,7 @@ export namespace Prisma {
   export type InventoryRequestUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     reason?: StringFieldUpdateOperationsInput | string
@@ -4782,7 +3717,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     itemId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
@@ -4792,17 +3727,6 @@ export namespace Prisma {
     requestDate?: DateTimeFieldUpdateOperationsInput | Date | string
     responseDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     responseNote?: NullableStringFieldUpdateOperationsInput | string | null
-  }
-
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -4818,6 +3742,24 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringFilter<$PrismaModel> | string
+  }
+
+  export type EnumCategoryFilter<$PrismaModel = never> = {
+    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCategoryFilter<$PrismaModel> | $Enums.Category
+  }
+
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type StringNullableFilter<$PrismaModel = never> = {
@@ -4846,117 +3788,15 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
-  }
-
-  export type PostCountOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    content?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type PostAvgOrderByAggregateInput = {
-    id?: SortOrder
-  }
-
-  export type PostMaxOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    content?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type PostMinOrderByAggregateInput = {
-    id?: SortOrder
-    title?: SortOrder
-    content?: SortOrder
-    createdAt?: SortOrder
-  }
-
-  export type PostSumOrderByAggregateInput = {
-    id?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type StringWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedStringFilter<$PrismaModel>
-    _max?: NestedStringFilter<$PrismaModel>
-  }
-
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    mode?: QueryMode
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type EnumCategoryFilter<$PrismaModel = never> = {
-    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
-    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    not?: NestedEnumCategoryFilter<$PrismaModel> | $Enums.Category
-  }
-
   export type InventoryRequestListRelationFilter = {
     every?: InventoryRequestWhereInput
     some?: InventoryRequestWhereInput
     none?: InventoryRequestWhereInput
+  }
+
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
   }
 
   export type InventoryRequestOrderByRelationAggregateInput = {
@@ -5018,6 +3858,24 @@ export namespace Prisma {
     minStockLevel?: SortOrder
   }
 
+  export type StringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
+  }
+
   export type EnumCategoryWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
     in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
@@ -5026,6 +3884,61 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumCategoryFilter<$PrismaModel>
     _max?: NestedEnumCategoryFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    mode?: QueryMode
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type EnumRequesterRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequesterRole | EnumRequesterRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequesterRoleFilter<$PrismaModel> | $Enums.RequesterRole
   }
 
   export type EnumUrgencyFilter<$PrismaModel = never> = {
@@ -5111,6 +4024,16 @@ export namespace Prisma {
     quantity?: SortOrder
   }
 
+  export type EnumRequesterRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequesterRole | EnumRequesterRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequesterRoleWithAggregatesFilter<$PrismaModel> | $Enums.RequesterRole
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRequesterRoleFilter<$PrismaModel>
+    _max?: NestedEnumRequesterRoleFilter<$PrismaModel>
+  }
+
   export type EnumUrgencyWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.Urgency | EnumUrgencyFieldRefInput<$PrismaModel>
     in?: $Enums.Urgency[] | ListEnumUrgencyFieldRefInput<$PrismaModel>
@@ -5145,26 +4068,6 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type StringFieldUpdateOperationsInput = {
-    set?: string
-  }
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null
-  }
-
-  export type DateTimeFieldUpdateOperationsInput = {
-    set?: Date | string
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
   export type InventoryRequestCreateNestedManyWithoutItemInput = {
     create?: XOR<InventoryRequestCreateWithoutItemInput, InventoryRequestUncheckedCreateWithoutItemInput> | InventoryRequestCreateWithoutItemInput[] | InventoryRequestUncheckedCreateWithoutItemInput[]
     connectOrCreate?: InventoryRequestCreateOrConnectWithoutItemInput | InventoryRequestCreateOrConnectWithoutItemInput[]
@@ -5179,8 +4082,28 @@ export namespace Prisma {
     connect?: InventoryRequestWhereUniqueInput | InventoryRequestWhereUniqueInput[]
   }
 
+  export type StringFieldUpdateOperationsInput = {
+    set?: string
+  }
+
   export type EnumCategoryFieldUpdateOperationsInput = {
     set?: $Enums.Category
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null
+  }
+
+  export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date | string
   }
 
   export type InventoryRequestUpdateManyWithoutItemNestedInput = {
@@ -5217,6 +4140,10 @@ export namespace Prisma {
     connect?: InventoryWhereUniqueInput
   }
 
+  export type EnumRequesterRoleFieldUpdateOperationsInput = {
+    set?: $Enums.RequesterRole
+  }
+
   export type EnumUrgencyFieldUpdateOperationsInput = {
     set?: $Enums.Urgency
   }
@@ -5237,17 +4164,6 @@ export namespace Prisma {
     update?: XOR<XOR<InventoryUpdateToOneWithWhereWithoutRequestsInput, InventoryUpdateWithoutRequestsInput>, InventoryUncheckedUpdateWithoutRequestsInput>
   }
 
-  export type NestedIntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -5260,6 +4176,24 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringFilter<$PrismaModel> | string
+  }
+
+  export type NestedEnumCategoryFilter<$PrismaModel = never> = {
+    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCategoryFilter<$PrismaModel> | $Enums.Category
+  }
+
+  export type NestedIntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -5287,6 +4221,33 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
+  export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel>
+    in?: string[] | ListStringFieldRefInput<$PrismaModel>
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedStringFilter<$PrismaModel>
+    _max?: NestedStringFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCategoryWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
+    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
+    not?: NestedEnumCategoryWithAggregatesFilter<$PrismaModel> | $Enums.Category
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumCategoryFilter<$PrismaModel>
+    _max?: NestedEnumCategoryFilter<$PrismaModel>
+  }
+
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -5312,23 +4273,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
-  export type NestedStringWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel>
-    in?: string[] | ListStringFieldRefInput<$PrismaModel>
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel>
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringWithAggregatesFilter<$PrismaModel> | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedStringFilter<$PrismaModel>
-    _max?: NestedStringFilter<$PrismaModel>
   }
 
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -5373,21 +4317,11 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type NestedEnumCategoryFilter<$PrismaModel = never> = {
-    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
-    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    not?: NestedEnumCategoryFilter<$PrismaModel> | $Enums.Category
-  }
-
-  export type NestedEnumCategoryWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Category | EnumCategoryFieldRefInput<$PrismaModel>
-    in?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    notIn?: $Enums.Category[] | ListEnumCategoryFieldRefInput<$PrismaModel>
-    not?: NestedEnumCategoryWithAggregatesFilter<$PrismaModel> | $Enums.Category
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumCategoryFilter<$PrismaModel>
-    _max?: NestedEnumCategoryFilter<$PrismaModel>
+  export type NestedEnumRequesterRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequesterRole | EnumRequesterRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequesterRoleFilter<$PrismaModel> | $Enums.RequesterRole
   }
 
   export type NestedEnumUrgencyFilter<$PrismaModel = never> = {
@@ -5413,6 +4347,16 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedEnumRequesterRoleWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.RequesterRole | EnumRequesterRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.RequesterRole[] | ListEnumRequesterRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumRequesterRoleWithAggregatesFilter<$PrismaModel> | $Enums.RequesterRole
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumRequesterRoleFilter<$PrismaModel>
+    _max?: NestedEnumRequesterRoleFilter<$PrismaModel>
   }
 
   export type NestedEnumUrgencyWithAggregatesFilter<$PrismaModel = never> = {
@@ -5452,7 +4396,7 @@ export namespace Prisma {
   export type InventoryRequestCreateWithoutItemInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     quantity: number
     reason: string
@@ -5466,7 +4410,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedCreateWithoutItemInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     quantity: number
     reason: string
@@ -5509,7 +4453,7 @@ export namespace Prisma {
     NOT?: InventoryRequestScalarWhereInput | InventoryRequestScalarWhereInput[]
     id?: StringFilter<"InventoryRequest"> | string
     requesterName?: StringFilter<"InventoryRequest"> | string
-    requesterRole?: StringFilter<"InventoryRequest"> | string
+    requesterRole?: EnumRequesterRoleFilter<"InventoryRequest"> | $Enums.RequesterRole
     requesterId?: StringFilter<"InventoryRequest"> | string
     itemId?: StringFilter<"InventoryRequest"> | string
     quantity?: IntFilter<"InventoryRequest"> | number
@@ -5529,10 +4473,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo?: string | null
+    storageInstructions?: string | null
+    handlingProcedure?: string | null
+    safetyNotes?: string | null
     lastUpdated?: Date | string
   }
 
@@ -5544,10 +4488,10 @@ export namespace Prisma {
     minStockLevel: number
     unit: string
     location: string
-    photo: string
-    storageInstructions: string
-    handlingProcedure: string
-    safetyNotes: string
+    photo?: string | null
+    storageInstructions?: string | null
+    handlingProcedure?: string | null
+    safetyNotes?: string | null
     lastUpdated?: Date | string
   }
 
@@ -5575,10 +4519,10 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -5590,17 +4534,17 @@ export namespace Prisma {
     minStockLevel?: IntFieldUpdateOperationsInput | number
     unit?: StringFieldUpdateOperationsInput | string
     location?: StringFieldUpdateOperationsInput | string
-    photo?: StringFieldUpdateOperationsInput | string
-    storageInstructions?: StringFieldUpdateOperationsInput | string
-    handlingProcedure?: StringFieldUpdateOperationsInput | string
-    safetyNotes?: StringFieldUpdateOperationsInput | string
+    photo?: NullableStringFieldUpdateOperationsInput | string | null
+    storageInstructions?: NullableStringFieldUpdateOperationsInput | string | null
+    handlingProcedure?: NullableStringFieldUpdateOperationsInput | string | null
+    safetyNotes?: NullableStringFieldUpdateOperationsInput | string | null
     lastUpdated?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type InventoryRequestCreateManyItemInput = {
     id?: string
     requesterName: string
-    requesterRole: string
+    requesterRole: $Enums.RequesterRole
     requesterId: string
     quantity: number
     reason: string
@@ -5614,7 +4558,7 @@ export namespace Prisma {
   export type InventoryRequestUpdateWithoutItemInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     reason?: StringFieldUpdateOperationsInput | string
@@ -5628,7 +4572,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedUpdateWithoutItemInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     reason?: StringFieldUpdateOperationsInput | string
@@ -5642,7 +4586,7 @@ export namespace Prisma {
   export type InventoryRequestUncheckedUpdateManyWithoutItemInput = {
     id?: StringFieldUpdateOperationsInput | string
     requesterName?: StringFieldUpdateOperationsInput | string
-    requesterRole?: StringFieldUpdateOperationsInput | string
+    requesterRole?: EnumRequesterRoleFieldUpdateOperationsInput | $Enums.RequesterRole
     requesterId?: StringFieldUpdateOperationsInput | string
     quantity?: IntFieldUpdateOperationsInput | number
     reason?: StringFieldUpdateOperationsInput | string
@@ -5662,10 +4606,6 @@ export namespace Prisma {
      * @deprecated Use InventoryCountOutputTypeDefaultArgs instead
      */
     export type InventoryCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InventoryCountOutputTypeDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use PostDefaultArgs instead
-     */
-    export type PostArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = PostDefaultArgs<ExtArgs>
     /**
      * @deprecated Use InventoryDefaultArgs instead
      */

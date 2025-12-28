@@ -45,17 +45,24 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   '/api/inventory',
   fetcher
 );
-   if (!inventoryItems) return <div>Loading inventory...</div>;
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
+    // ✅ loading check BEFORE using inventoryItems
+  if (error) return <div>Failed to load inventory</div>;
+  if (!inventoryItems) return <div>Loading inventory...</div>;
 
 const filteredItems = inventoryItems.filter((item: InventoryItem) => {
   const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
   const matchesCategory =
     selectedCategory === 'all' || item.category === selectedCategory;
+
   return matchesSearch && matchesCategory;
 });
+  
+    const canEdit = userRole === 'teacher' || userRole === 'staff';
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -63,8 +70,9 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
     }
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
+   if (!inventoryItems) return <div>Loading inventory...</div>;
 
-  const canEdit = userRole === 'teacher' || userRole === 'staff';
+
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">

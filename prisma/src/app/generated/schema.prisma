@@ -14,13 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  createdAt DateTime @default(now())
-}
-
 model Inventory {
   id                  String             @id @default(cuid())
   name                String
@@ -29,10 +22,10 @@ model Inventory {
   minStockLevel       Int
   unit                String
   location            String
-  photo               String
-  storageInstructions String
-  handlingProcedure   String
-  safetyNotes         String
+  photo               String?
+  storageInstructions String?
+  handlingProcedure   String?
+  safetyNotes         String?
   lastUpdated         DateTime           @default(now())
   requests            InventoryRequest[]
 }
@@ -40,7 +33,7 @@ model Inventory {
 model InventoryRequest {
   id            String        @id @default(cuid())
   requesterName String
-  requesterRole String
+  requesterRole RequesterRole // changed to enum for safety
   requesterId   String
   itemId        String
   item          Inventory     @relation(fields: [itemId], references: [id])
@@ -71,4 +64,10 @@ enum RequestStatus {
   pending
   approved
   rejected
+}
+
+// Optional improvement: Use enum for requester roles
+enum RequesterRole {
+  LAB_ASSISTANT
+  ADMIN
 }

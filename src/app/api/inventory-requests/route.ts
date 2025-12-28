@@ -1,27 +1,38 @@
-import { NextResponse } from 'next/server';
+// src/app/api/inventory-requests/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const requests = await prisma.inventoryRequest.findMany({
-    include: { item: true },
-  });
-  return NextResponse.json(requests);
+  try {
+    const requests = await prisma.inventoryRequest.findMany();
+    return NextResponse.json(requests);
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Failed to fetch requests' }, { status: 500 });
+  }
 }
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const newRequest = await prisma.inventoryRequest.create({
-    data: {
-      requesterName: body.requesterName,
-      requesterRole: body.requesterRole,
-      requesterId: body.requesterId,
-      itemId: body.itemId,
-      quantity: body.quantity,
-      reason: body.reason,
-      urgency: body.urgency,
-    },
-  });
-  return NextResponse.json(newRequest);
+export async function POST(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const created = await prisma.inventoryRequest.create({
+      data: {
+        requesterName: data.requesterName,
+        requesterRole: data.requesterRole,
+        requesterId: data.requesterId,
+        itemId: data.itemId,
+        quantity: data.quantity,
+        reason: data.reason,
+        urgency: data.urgency,
+        status: data.status,
+        requestDate: data.requestDate,
+      },
+    });
+    return NextResponse.json(created, { status: 201 });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
+  }
 }

@@ -122,13 +122,6 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
-exports.Prisma.PostScalarFieldEnum = {
-  id: 'id',
-  title: 'title',
-  content: 'content',
-  createdAt: 'createdAt'
-};
-
 exports.Prisma.InventoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -181,6 +174,11 @@ exports.Category = exports.$Enums.Category = {
   Instruments: 'Instruments'
 };
 
+exports.RequesterRole = exports.$Enums.RequesterRole = {
+  LAB_ASSISTANT: 'LAB_ASSISTANT',
+  ADMIN: 'ADMIN'
+};
+
 exports.Urgency = exports.$Enums.Urgency = {
   low: 'low',
   medium: 'medium',
@@ -194,7 +192,6 @@ exports.RequestStatus = exports.$Enums.RequestStatus = {
 };
 
 exports.Prisma.ModelName = {
-  Post: 'Post',
   Inventory: 'Inventory',
   InventoryRequest: 'InventoryRequest'
 };

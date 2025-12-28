@@ -34,7 +34,7 @@ interface InventoryRequest {
   requesterName: string;
   requesterRole: string;
   requesterId: string;
-  itemName: string;
+  itemId: string;
   quantity: number;
   reason: string;
   urgency: 'low' | 'medium' | 'high';
@@ -43,6 +43,17 @@ interface InventoryRequest {
   responseDate?: string;
   responseNote?: string;
 }
+interface InventoryRequestCreate {
+  requesterName: string;
+  requesterRole: string;
+  requesterId: string;
+  itemId: string;
+  quantity: number;
+  reason: string;
+  urgency: 'low' | 'medium' | 'high';
+  status: 'pending';
+  requestDate: string;
+}
 
 interface InventoryRequestsPageProps {
   userRole: string;
@@ -50,52 +61,25 @@ interface InventoryRequestsPageProps {
   userName: string;
 }
 
-// Mock data
-const mockRequests: InventoryRequest[] = [
-  {
-    id: 'req-001',
-    requesterName: 'Mr. Perera',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-001',
-    itemName: 'Beakers (250ml)',
-    quantity: 20,
-    reason: 'Chemistry practical session for Grade 10 students scheduled next week',
-    urgency: 'high',
-    status: 'pending',
-    requestDate: '2025-11-26',
-  },
-  {
-    id: 'req-002',
-    requesterName: 'Lab Assistant Kumar',
-    requesterRole: 'Lab Assistant',
-    requesterId: 'lab-001',
-    itemName: 'Microscope Slides',
-    quantity: 50,
-    reason: 'Current stock running low, needed for Biology practicals',
-    urgency: 'medium',
-    status: 'approved',
-    requestDate: '2025-11-25',
-    responseDate: '2025-11-25',
-    responseNote: 'Approved. Purchase order initiated.',
-  },
-  {
-    id: 'req-003',
-    requesterName: 'Mrs. Fernando',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-002',
-    itemName: 'Safety Goggles',
-    quantity: 30,
-    reason: 'Additional safety equipment needed for expanded class size',
-    urgency: 'high',
-    status: 'approved',
-    requestDate: '2025-11-24',
-    responseDate: '2025-11-24',
-    responseNote: 'Approved. Safety is priority.',
-  },
-];
+interface NewRequestState {
+  itemId: string;
+  quantity: number;
+  reason: string;
+  urgency: 'low' | 'medium' | 'high';
+}
+
+
 
 export function InventoryRequestsPage({ userRole, userId, userName }: InventoryRequestsPageProps) {
-  const fetcher = (url: string) => fetch(url).then(res => res.json());
+    const [newRequest, setNewRequest] = useState<NewRequestState>({
+    itemId: '',
+    quantity: 1,
+    reason: '',
+    urgency: 'medium',
+});
+
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
   '/api/inventory-requests',
@@ -103,24 +87,31 @@ const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
 );
 if (error) return <div>Failed to load requests</div>;
 if (!requests) return <div>Loading requests...</div>;
-  const [newRequest, setNewRequest] = useState({
-    itemName: '',
-    quantity: 1,
-    reason: '',
-    urgency: 'medium' as const,
-  });
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
-  const canApproveRequest = userRole === 'principal';
+  
 
-  const handleCreateRequest = () => {
-    const request: InventoryRequest = {
-      id: `req-${Date.now()}`,
+  //const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
+  //const canApproveRequest = userRole === 'principal';
+const role = userRole
+  .toUpperCase()
+  .replace('-', '_')
+  .replace(' ', '_');
+
+const canCreateRequest =
+  role === 'LAB_ASSISTANT';
+
+const canApproveRequest =
+  role === 'ADMIN';
+console.log('userRole:', userRole);
+console.log('normalized role:', role);
+
+  const handleCreateRequest = async () => {  
+   const request: InventoryRequestCreate = {
+      
       requesterName: userName,
-      requesterRole: userRole === 'teacher' ? 'Teacher' : 'Lab Assistant',
+      requesterRole: userRole === 'LAB_ASSISTANT' ? 'LAB_ASSISTANT' : 'ADMIN',
       requesterId: userId,
-      itemName: newRequest.itemName,
+      itemId: newRequest.itemId,
       quantity: newRequest.quantity,
       reason: newRequest.reason,
       urgency: newRequest.urgency,
@@ -128,15 +119,27 @@ if (!requests) return <div>Loading requests...</div>;
       requestDate: new Date().toISOString().split('T')[0],
     };
 
-  mutate([request, ...requests], false);
+    try {
+     await fetch('/api/inventory-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+   
 
-  setNewRequest({ itemName: '', quantity: 1, reason: '', urgency: 'medium' });
+   // Refetch from the database
+    mutate();
+
+  setNewRequest({ itemId: '', quantity: 1, reason: '', urgency: 'medium' });
   setIsDialogOpen(false);
     
     // Mock email notification
     toast.success('Request Sent Successfully', {
       description: 'Your inventory request has been sent to the principal via email and portal.',
     });
+  } catch (err) {
+    toast.error('Failed to send request');
+    }
   };
 
   const handleApproveRequest = (requestId: string) => {
@@ -199,10 +202,11 @@ const handleRejectRequest = (requestId: string) => {
   };
 
   // Filter requests based on user role
-  const displayRequests = canApproveRequest 
-    ? requests 
-    : requests.filter(req => req.requesterId === userId);
+  //const displayRequests = canApproveRequest 
+    //? requests 
+    //: requests.filter(req => req.requesterId === userId);
 
+  const displayRequests = requests;
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -237,13 +241,13 @@ const handleRejectRequest = (requestId: string) => {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="itemName">Item Name</Label>
+                 <Label htmlFor="itemId">Item</Label>
                   <Input
-                    id="itemName"
-                    placeholder="e.g., Beakers (250ml)"
-                    value={newRequest.itemName}
-                    onChange={(e) => setNewRequest({ ...newRequest, itemName: e.target.value })}
-                  />
+                    id="itemId"
+                    placeholder="Enter Item ID"
+                    value={newRequest.itemId}
+                    onChange={(e) => setNewRequest({ ...newRequest, itemId: e.target.value })}
+                />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quantity">Quantity</Label>
@@ -285,7 +289,7 @@ const handleRejectRequest = (requestId: string) => {
                 </Button>
                 <Button 
                   onClick={handleCreateRequest}
-                  disabled={!newRequest.itemName || !newRequest.reason}
+                  disabled={!newRequest.itemId || !newRequest.reason}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                 >
                   <Send className="w-4 h-4 mr-2" />
@@ -382,7 +386,7 @@ const handleRejectRequest = (requestId: string) => {
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                     <div className="flex-1">
                       <div className="flex items-start gap-3 mb-2">
-                        <CardTitle className="text-blue-900">{request.itemName}</CardTitle>
+                        <CardTitle className="text-blue-900">{request.itemId}</CardTitle>
                         <Badge className={getStatusColor(request.status)}>
                           {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                         </Badge>
