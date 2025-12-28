@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { Plus, Trash2, X } from 'lucide-react';
-import { QuizQuestion, QuestionType } from '@/lib/types';
+import { Question, QuestionType } from '@/lib/types';
 
 interface QuizFormProps {
   practicalId: string;
@@ -31,11 +31,11 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
   const [description, setDescription] = useState(initialData?.description || '');
   const [passingMarks, setPassingMarks] = useState(initialData?.passingMarks || 50);
   const [timeLimit, setTimeLimit] = useState(initialData?.timeLimit || 30);
-  const [questions, setQuestions] = useState<QuizQuestion[]>(initialData?.questions || []);
+  const [questions, setQuestions] = useState<Question[]>(initialData?.questions || []);
 
   const [newQuestion, setNewQuestion] = useState<NewQuestionState>({
     question: '',
-    type: 'multiple-choice',
+    type: QuestionType.MULTIPLE_CHOICE,
     options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
     correctAnswer: '',
     correctAnswers: [],
@@ -47,47 +47,48 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
     if (!newQuestion.question.trim()) return;
 
     // Validate based on question type
-    if (newQuestion.type === 'multiple-choice' && !newQuestion.correctAnswer) {
+    if (newQuestion.type === QuestionType.MULTIPLE_CHOICE && !newQuestion.correctAnswer) {
       alert('Please select a correct answer for multiple choice question');
       return;
     }
     
-    if (newQuestion.type === 'msq' && newQuestion.correctAnswers.length === 0) {
+    if (newQuestion.type === QuestionType.MSQ && newQuestion.correctAnswers.length === 0) {
       alert('Please select at least one correct answer for MSQ');
       return;
     }
     
-    if (newQuestion.type === 'true-false' && !newQuestion.correctAnswer) {
+    if (newQuestion.type === QuestionType.TRUE_FALSE && !newQuestion.correctAnswer) {
       alert('Please select correct answer for True/False question');
       return;
     }
     
-    if (newQuestion.type === 'short-answer' && !newQuestion.correctAnswer.trim()) {
+    if (newQuestion.type === QuestionType.SHORT_ANSWER && !newQuestion.correctAnswer.trim()) {
       alert('Please enter correct answer for short answer question');
       return;
     }
 
-    const question: QuizQuestion = {
-      id: Date.now().toString(),
-      quizId: 'temp', // Temporary, will be set when quiz is created
+    const question: Question = {
+      id: Date.now(), // Changed to number
+      quizId: 0, // Temporary number, will be set when quiz is created
       question: newQuestion.question,
       type: newQuestion.type,
-      options: (newQuestion.type === 'multiple-choice' || newQuestion.type === 'msq') 
+      options: (newQuestion.type === QuestionType.MULTIPLE_CHOICE || newQuestion.type === QuestionType.MSQ) 
         ? newQuestion.options.filter(o => o.trim()) 
-        : [], // Always provide an array, even if empty
-      correctAnswer: newQuestion.type === 'msq' 
-        ? newQuestion.correctAnswers.join(', ') // Convert array to string for single answer field
+        : [],
+      correctAnswer: newQuestion.type === QuestionType.MSQ 
+        ? newQuestion.correctAnswers.join(', ')
         : newQuestion.correctAnswer,
-      correctAnswers: newQuestion.type === 'msq' ? newQuestion.correctAnswers : undefined,
+      correctAnswers: newQuestion.type === QuestionType.MSQ ? newQuestion.correctAnswers : undefined,
       marks: newQuestion.marks,
       explanation: newQuestion.explanation,
-      order: questions.length // Add order for sorting
+      order: questions.length,
+      createdAt: new Date() // ADD THIS LINE
     };
 
     setQuestions([...questions, question]);
     setNewQuestion({
       question: '',
-      type: 'multiple-choice',
+      type: QuestionType.MULTIPLE_CHOICE,
       options: ['Option 1', 'Option 2', 'Option 3', 'Option 4'],
       correctAnswer: '',
       correctAnswers: [],
@@ -96,7 +97,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
     });
   };
 
-  const removeQuestion = (id: string) => {
+  const removeQuestion = (id: number) => { // Changed parameter type to number
     setQuestions(questions.filter(q => q.id !== id));
   };
 
@@ -131,15 +132,14 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
       passingMarks,
       timeLimit,
       questions,
-      status: 'DRAFT', // Add status field
+      status: 'DRAFT',
       isPublished: true,
       createdBy: 'current-user'
     });
   };
 
-  // Helper function to check if question type is multiple-choice or msq
   const isMultipleChoiceOrMSQ = (type: QuestionType): boolean => {
-    return type === 'multiple-choice' || type === 'msq';
+    return type === QuestionType.MULTIPLE_CHOICE || type === QuestionType.MSQ;
   };
 
   return (
@@ -192,7 +192,6 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
         </div>
       </div>
 
-      {/* Question Builder */}
       <div className="border rounded-lg p-4">
         <h4 className="font-medium mb-4">Add Questions</h4>
         
@@ -231,10 +230,10 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="multiple-choice">Multiple Choice (Single Answer)</SelectItem>
-                  <SelectItem value="msq">Multiple Select (MSQ)</SelectItem>
-                  <SelectItem value="true-false">True/False</SelectItem>
-                  <SelectItem value="short-answer">Short Answer</SelectItem>
+                  <SelectItem value={QuestionType.MULTIPLE_CHOICE}>Multiple Choice (Single Answer)</SelectItem>
+                  <SelectItem value={QuestionType.MSQ}>Multiple Select (MSQ)</SelectItem>
+                  <SelectItem value={QuestionType.TRUE_FALSE}>True/False</SelectItem>
+                  <SelectItem value={QuestionType.SHORT_ANSWER}>Short Answer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -255,7 +254,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
               <Label>Options</Label>
               {newQuestion.options.map((option, index) => (
                 <div key={index} className="flex items-center gap-2">
-                  {newQuestion.type === 'msq' ? (
+                  {newQuestion.type === QuestionType.MSQ ? (
                     <div className="flex items-center gap-2 w-full">
                       <Checkbox
                         checked={newQuestion.correctAnswers.includes(option)}
@@ -270,7 +269,6 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                           const newOptions = [...newQuestion.options];
                           newOptions[index] = e.target.value;
                           
-                          // Update correct answers if the option was selected
                           const updatedCorrectAnswers = newQuestion.correctAnswers.map(a => 
                             a === oldOption ? e.target.value : a
                           );
@@ -292,7 +290,6 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                         const newOptions = [...newQuestion.options];
                         newOptions[index] = e.target.value;
                         
-                        // Update correct answer if it was this option
                         const updatedCorrectAnswer = 
                           newQuestion.correctAnswer === oldOption ? e.target.value : newQuestion.correctAnswer;
                         
@@ -313,7 +310,6 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                       const optionToRemove = option;
                       const newOptions = newQuestion.options.filter((_, i) => i !== index);
                       
-                      // Remove from correct answers if selected
                       const updatedCorrectAnswer = 
                         newQuestion.correctAnswer === optionToRemove ? '' : newQuestion.correctAnswer;
                       
@@ -351,10 +347,10 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
           <div>
             <Label>
               Correct Answer
-              {newQuestion.type === 'msq' && ' (Select all that apply)'}
+              {newQuestion.type === QuestionType.MSQ && ' (Select all that apply)'}
             </Label>
             
-            {newQuestion.type === 'multiple-choice' ? (
+            {newQuestion.type === QuestionType.MULTIPLE_CHOICE ? (
               <Select
                 value={newQuestion.correctAnswer}
                 onValueChange={(value) => setNewQuestion({...newQuestion, correctAnswer: value})}
@@ -364,7 +360,6 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                 </SelectTrigger>
                 <SelectContent>
                   {newQuestion.options.map((option, index) => {
-                    // Ensure value is never empty
                     const value = option.trim() === "" ? `option-${index}` : option;
                     const label = option.trim() === "" ? `Option ${index + 1}` : option;
                     
@@ -376,7 +371,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                   })}
                 </SelectContent>
               </Select>
-            ) : newQuestion.type === 'msq' ? (
+            ) : newQuestion.type === QuestionType.MSQ ? (
               <div className="mt-2 space-y-2">
                 <p className="text-sm text-gray-600">
                   Selected: {newQuestion.correctAnswers.length} option(s)
@@ -391,7 +386,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                   </div>
                 )}
               </div>
-            ) : newQuestion.type === 'true-false' ? (
+            ) : newQuestion.type === QuestionType.TRUE_FALSE ? (
               <Select
                 value={newQuestion.correctAnswer}
                 onValueChange={(value) => setNewQuestion({...newQuestion, correctAnswer: value})}
@@ -433,24 +428,23 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
           </Button>
         </div>
 
-        {/* Questions List */}
         {questions.length > 0 && (
           <div className="border-t pt-4">
             <h5 className="font-medium mb-2">Added Questions ({questions.length})</h5>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {questions.map((q, index) => (
-                <div key={q.id.toString()} className="flex items-start justify-between border rounded p-3 hover:bg-gray-50">
+                <div key={q.id} className="flex items-start justify-between border rounded p-3 hover:bg-gray-50"> {/* Removed .toString() */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-medium">Q{index + 1}: {q.question}</p>
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
-                        {q.type === 'msq' ? 'MSQ' : 
-                         q.type === 'multiple-choice' ? 'MCQ' : 
-                         q.type === 'true-false' ? 'T/F' : 'Short'}
+                        {q.type === QuestionType.MSQ ? 'MSQ' : 
+                         q.type === QuestionType.MULTIPLE_CHOICE ? 'MCQ' : 
+                         q.type === QuestionType.TRUE_FALSE ? 'T/F' : 'Short'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600">
-                      {q.type === 'msq' 
+                      {q.type === QuestionType.MSQ 
                         ? `Correct answers: ${Array.isArray(q.correctAnswers) ? q.correctAnswers.length : 0} selected`
                         : `Answer: ${q.correctAnswer}`
                       }
@@ -461,7 +455,7 @@ export function QuizForm({ practicalId, onSubmit, initialData }: QuizFormProps) 
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeQuestion(q.id.toString())}
+                    onClick={() => removeQuestion(q.id)} 
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />

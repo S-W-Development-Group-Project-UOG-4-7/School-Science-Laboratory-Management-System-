@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, Clock, BarChart3, X } from 'lucide-react';
+import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video as VideoIcon, Clock, BarChart3, X, Loader2, Edit, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -18,157 +18,229 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserRole, Quiz, QuizAttempt, Practical, QuizQuestion } from '@/lib/types'; 
+import { 
+  UserRole, 
+  Practical, 
+  Quiz, 
+  QuizAttempt, 
+  Question,
+  DifficultyLevel, 
+  QuizStatus,
+  difficultyFromUI, 
+  difficultyToUI,
+  CreatePracticalInput,
+  UpdatePracticalInput,
+  AttemptStatus
+} from '@/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
 import { QuizPlayer } from './quiz/QuizPlayer';
 
-interface PracticalsPageProps {
-  userRole: UserRole;
-}
-
-// Sample data with quizzes - ensure unique IDs
-const practicals: Practical[] = [
+// Mock data for development (use until API is ready)
+const mockPracticals: Practical[] = [
   {
-    id: 'practical-1',
+    id: 1,
     title: 'Acid-Base Titration',
-    grade: 'Grade 11',
-    subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '45 min',
-    difficulty: 'Intermediate',
     description: 'Learn the proper technique for conducting acid-base titrations using standard solutions.',
-    thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
-    quizzes: [
-      {
-        id: 'quiz-1',
-        practicalId: 'practical-1',
-        title: 'Acid-Base Titration Quiz',
-        description: 'Test your knowledge of acid-base titration concepts',
-        totalMarks: 20,
-        passingMarks: 60,
-        timeLimit: 30,
-        status: 'PUBLISHED',
-        teacherId: 1,
-        questions: [
-          {
-            id: 'q-1-1',
-            quizId: 'quiz-1',
-            question: 'What is the endpoint in a titration?',
-            type: 'multiple-choice' as const,
-            options: [
-              'When the indicator changes color',
-              'When all reactant is consumed',
-              'When pH equals 7',
-              'When temperature stabilizes'
-            ],
-            correctAnswer: 'When the indicator changes color',
-            marks: 5,
-            explanation: 'The endpoint is indicated by a color change of the indicator.',
-            order: 0
-          }
-        ],
-        isPublished: true,
-        createdAt: new Date(),
-        createdBy: 'teacher1'
-      }
-    ]
-  },
-  {
-    id: 'practical-2',
-    title: 'Microscope Usage and Cell Observation',
-    grade: 'Grade 9',
-    subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '30 min',
-    difficulty: 'Beginner',
-    description: 'Introduction to compound microscope operation and observing plant and animal cells.',
-    thumbnail: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    quizzes: []
-  },
-  {
-    id: 'practical-3',
-    title: "Newton's Laws of Motion Experiments",
-    grade: 'Grade 10',
-    subject: 'Physics',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '60 min',
-    difficulty: 'Intermediate',
-    description: 'Practical demonstrations of Newton\'s three laws of motion with calculations.',
-    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    quizzes: []
-  },
-  {
-    id: 'practical-4',
-    title: 'Chemical Reactions and Equations',
-    grade: 'Grade 10',
     subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '50 min',
-    difficulty: 'Intermediate',
-    description: 'Observe and identify different types of chemical reactions.',
-    thumbnail: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2MzE2ODA5Nnww&ixlib=rb-4.1.0&q=80&w=1080',
+    grade: 'Grade 11',
+    duration: '45 min',
+    difficulty: DifficultyLevel.INTERMEDIATE,
+    videoUrl: 'https://example.com/video1.mp4',
+    labSheetUrl: 'https://example.com/lab1.pdf',
+    thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    teacherId: 1,
     quizzes: []
   },
   {
-    id: 'practical-5',
-    title: 'Photosynthesis Experiment',
-    grade: 'Grade 9',
+    id: 2,
+    title: 'Microscope Usage and Cell Observation',
+    description: 'Introduction to compound microscope operation and observing plant and animal cells.',
     subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '40 min',
-    difficulty: 'Beginner',
-    description: 'Demonstrate the process of photosynthesis in plants.',
-    thumbnail: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaG90b3N5bnRoZXNpc3xlbnwxfHx8fDE3NjMxNjgxMTh8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    grade: 'Grade 9',
+    duration: '30 min',
+    difficulty: DifficultyLevel.BEGINNER,
+    videoUrl: 'https://example.com/video2.mp4',
+    labSheetUrl: 'https://example.com/lab2.pdf',
+    thumbnail: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    teacherId: 1,
     quizzes: []
   },
-];
-
-// Mock quiz attempts data
-const mockQuizAttempts: QuizAttempt[] = [
   {
-    id: 'attempt-1',
-    quizId: 'quiz-1',
-    studentId: 'student-1',
-    studentName: 'John Doe',
-    answers: [
-      {
-        questionId: 'q-1-1',
-        answer: 'When the indicator changes color',
-        isCorrect: true,
-        marksObtained: 5
-      }
-    ],
-    totalMarks: 20,
-    obtainedMarks: 18,
-    percentage: 90,
-    passed: true,
-    startedAt: new Date(),
-    completedAt: new Date(),
-    status: 'completed'
+    id: 3,
+    title: "Newton's Laws of Motion Experiments",
+    description: 'Practical demonstrations of Newton\'s three laws of motion with calculations.',
+    subject: 'Physics',
+    grade: 'Grade 10',
+    duration: '60 min',
+    difficulty: DifficultyLevel.INTERMEDIATE,
+    videoUrl: 'https://example.com/video3.mp4',
+    labSheetUrl: 'https://example.com/lab3.pdf',
+    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    teacherId: 1,
+    quizzes: []
   }
 ];
 
-export function PracticalsPage({ userRole }: PracticalsPageProps) {
+// Mock service for development
+const practicalService = {
+  async getAll(filters?: any): Promise<Practical[]> {
+    console.log('Using mock practical service');
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Filter mock data
+    let filtered = [...mockPracticals];
+    
+    if (filters?.search) {
+      const search = filters.search.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.title.toLowerCase().includes(search) ||
+        (p.description && p.description.toLowerCase().includes(search))
+      );
+    }
+    
+    if (filters?.subject && filters.subject !== 'all') {
+      filtered = filtered.filter(p => p.subject === filters.subject);
+    }
+    
+    if (filters?.grade && filters.grade !== 'all') {
+      filtered = filtered.filter(p => p.grade === filters.grade);
+    }
+    
+    return filtered;
+  },
+
+  async create(data: CreatePracticalInput): Promise<Practical> {
+    console.log('Mock: Creating practical:', data);
+    
+    const newPractical: Practical = {
+      id: Date.now(),
+      title: data.title,
+      description: data.description || null,
+      subject: data.subject,
+      grade: data.grade,
+      duration: data.duration || '45 min',
+      difficulty: data.difficulty || DifficultyLevel.INTERMEDIATE,
+      videoUrl: data.videoUrl || null,
+      labSheetUrl: data.labSheetUrl || null,
+      thumbnail: data.thumbnail || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      teacherId: data.teacherId,
+      quizzes: []
+    };
+    
+    // Add to mock data
+    mockPracticals.unshift(newPractical);
+    
+    return newPractical;
+  },
+
+  async update(id: number, data: UpdatePracticalInput): Promise<Practical> {
+    console.log(`Mock: Updating practical ${id}:`, data);
+    
+    const index = mockPracticals.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error(`Practical ${id} not found`);
+    }
+    
+    mockPracticals[index] = {
+      ...mockPracticals[index],
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return mockPracticals[index];
+  },
+
+  async delete(id: number): Promise<void> {
+    console.log(`Mock: Deleting practical ${id}`);
+    
+    const index = mockPracticals.findIndex(p => p.id === id);
+    if (index !== -1) {
+      mockPracticals.splice(index, 1);
+    }
+  }
+};
+
+interface PracticalsPageProps {
+  userRole: UserRole;
+  userId?: number;
+}
+
+export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
+  const [practicals, setPracticals] = useState<Practical[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPractical, setSelectedPractical] = useState<Practical | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
-  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>(mockQuizAttempts);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingPractical, setEditingPractical] = useState<Practical | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  // Generate unique ID for the component
   const componentId = useId();
-
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+
+  useEffect(() => {
+    fetchPracticals();
+  }, [searchQuery, selectedSubject, selectedGrade]);
+
+  const fetchPracticals = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching practicals...'); // Debug log
+      
+      const filters = {
+        search: searchQuery || undefined,
+        subject: selectedSubject !== 'all' ? selectedSubject : undefined,
+        grade: selectedGrade !== 'all' ? selectedGrade : undefined,
+      };
+      
+      // TRY-CATCH with better error handling
+      let data: Practical[];
+      try {
+        data = await practicalService.getAll(filters);
+        console.log('Received practicals:', data.length); // Debug log
+      } catch (fetchError) {
+        console.error('API fetch failed, using mock data:', fetchError);
+        // Fallback to mock data
+        data = mockPracticals.filter(p => {
+          const matchesSearch = !filters.search || 
+            p.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+            (p.description && p.description.toLowerCase().includes(filters.search.toLowerCase()));
+          const matchesSubject = !filters.subject || p.subject === filters.subject;
+          const matchesGrade = !filters.grade || p.grade === filters.grade;
+          return matchesSearch && matchesSubject && matchesGrade;
+        });
+      }
+      
+      setPracticals(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error in fetchPracticals:', err); // Better logging
+      setError(err instanceof Error ? err.message : 'Failed to fetch practicals');
+      
+      // Fallback to empty array instead of crashing
+      setPracticals([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = searchQuery === '' || 
@@ -178,6 +250,96 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     const matchesGrade = selectedGrade === 'all' || practical.grade === selectedGrade;
     return matchesSearch && matchesSubject && matchesGrade;
   });
+
+  // Handle adding new practical
+  const handleAddPractical = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      const practicalData: CreatePracticalInput = {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || undefined,
+        subject: formData.get('subject') as string,
+        grade: formData.get('grade') as string,
+        duration: formData.get('duration') as string,
+        difficulty: difficultyFromUI(formData.get('difficulty') as string || 'Intermediate'),
+        videoUrl: formData.get('videoUrl') as string || undefined,
+        labSheetUrl: formData.get('labSheetUrl') as string || undefined,
+        thumbnail: formData.get('thumbnail') as string || undefined,
+        teacherId: userId || 1,
+      };
+      
+      const newPractical = await practicalService.create(practicalData);
+      setPracticals([newPractical, ...practicals]);
+      setIsAddDialogOpen(false);
+      alert('Practical created successfully!');
+    } catch (err) {
+      console.error('Error creating practical:', err);
+      alert('Failed to create practical: ' + (err instanceof Error ? err.message : 'Unknown error'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle updating practical
+  const handleUpdatePractical = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingPractical) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const formData = new FormData(e.currentTarget);
+      
+      const updateData: UpdatePracticalInput = {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || undefined,
+        subject: formData.get('subject') as string,
+        grade: formData.get('grade') as string,
+        duration: formData.get('duration') as string,
+        difficulty: difficultyFromUI(formData.get('difficulty') as string || 'Intermediate'),
+        videoUrl: formData.get('videoUrl') as string || undefined,
+        labSheetUrl: formData.get('labSheetUrl') as string || undefined,
+        thumbnail: formData.get('thumbnail') as string || undefined,
+      };
+      
+      const updatedPractical = await practicalService.update(editingPractical.id, updateData);
+      setPracticals(practicals.map(p => p.id === updatedPractical.id ? updatedPractical : p));
+      setIsEditDialogOpen(false);
+      setEditingPractical(null);
+      alert('Practical updated successfully!');
+    } catch (err) {
+      console.error('Error updating practical:', err);
+      alert('Failed to update practical');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle deleting practical
+  const handleDeletePractical = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this practical? This will also delete all associated quizzes.')) {
+      return;
+    }
+
+    try {
+      await practicalService.delete(id);
+      setPracticals(practicals.filter(p => p.id !== id));
+      alert('Practical deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting practical:', err);
+      alert('Failed to delete practical');
+    }
+  };
+
+  // Handle starting edit
+  const handleStartEdit = (practical: Practical) => {
+    setEditingPractical(practical);
+    setIsEditDialogOpen(true);
+  };
 
   const getSubjectColor = (subject: string) => {
     switch (subject) {
@@ -194,8 +356,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
+  const getDifficultyColor = (difficulty: DifficultyLevel) => {
+    const uiDifficulty = difficultyToUI(difficulty);
+    switch (uiDifficulty) {
       case 'Beginner':
         return 'bg-green-100 text-green-700';
       case 'Intermediate':
@@ -215,84 +378,6 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
   };
 
-  // Quiz Management Functions - CORRECTED VERSION
-  const handleAddQuiz = (quizData: {
-    practicalId: string | number;
-    title: string;
-    description?: string;
-    totalMarks: number;
-    passingMarks: number;
-    timeLimit?: number;
-    questions: Array<{
-      question: string;
-      type: 'multiple-choice' | 'true-false' | 'short-answer' | 'msq';
-      options: string[];
-      correctAnswer?: string;
-      correctAnswers?: string[];
-      marks: number;
-      explanation?: string;
-    }>;
-    status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-    teacherId?: number;
-  }) => {
-    const quizId = `quiz-${crypto.randomUUID()}`;
-    
-    const newQuiz: Quiz = {
-      ...quizData,
-      id: quizId,
-      practicalId: quizData.practicalId,
-      createdAt: new Date(),
-      status: quizData.status || 'DRAFT',
-      teacherId: quizData.teacherId || 1,
-      questions: quizData.questions.map((q, index) => ({
-        ...q,
-        id: `q-${quizId}-${index}`,
-        quizId: quizId,
-        order: index,
-      })),
-      isPublished: (quizData.status || 'DRAFT') === 'PUBLISHED',
-      createdBy: 'teacher1'
-    };
-    
-    console.log('Adding quiz:', newQuiz);
-    
-    // Update the practical with new quiz
-    const practicalIndex = practicals.findIndex(p => p.id.toString() === quizData.practicalId.toString());
-    if (practicalIndex !== -1) {
-      practicals[practicalIndex].quizzes = [...(practicals[practicalIndex].quizzes || []), newQuiz];
-    }
-  };
-
-  const handleEditQuiz = (quizId: string, updates: Partial<Quiz>) => {
-    // In real app, update database
-    console.log('Editing quiz:', quizId, updates);
-  };
-
-  const handleDeleteQuiz = (quizId: string) => {
-    // In real app, delete from database
-    console.log('Deleting quiz:', quizId);
-  };
-
-  const handleStartQuiz = (quiz: Quiz) => {
-    setSelectedQuiz(quiz);
-  };
-
-  const handleSubmitQuiz = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
-    const newAttempt: QuizAttempt = {
-      ...attempt,
-      id: `attempt-${crypto.randomUUID()}`,
-      startedAt: new Date(),
-      completedAt: new Date(),
-      status: 'completed'
-    };
-    
-    setQuizAttempts([...quizAttempts, newAttempt]);
-    setSelectedQuiz(null);
-    
-    // In real app, save to database
-    console.log('Quiz submitted:', newAttempt);
-  };
-
   // Helper function to get safe thumbnail URL
   const getSafeThumbnail = (thumbnail: string | null | undefined): string => {
     if (!thumbnail || thumbnail === '#') {
@@ -300,6 +385,92 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
     return thumbnail;
   };
+
+  // Quiz Management Functions
+  const handleAddQuiz = (quizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+    console.log('Adding quiz:', quizData);
+    fetchPracticals();
+  };
+
+  const handleEditQuiz = (quizId: string, updates: Partial<Quiz>) => {
+    console.log('Editing quiz:', quizId, updates);
+    fetchPracticals();
+  };
+
+  const handleDeleteQuiz = (quizId: string) => {
+    console.log('Deleting quiz:', quizId);
+    fetchPracticals();
+  };
+
+  const handleSubmitQuiz = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
+    const newAttempt: QuizAttempt = {
+      ...attempt,
+      id: Number(new Date()),
+      startedAt: new Date(),
+      completedAt: new Date(),
+      status: AttemptStatus.COMPLETED
+    };
+    
+    setQuizAttempts([...quizAttempts, newAttempt]);
+    setSelectedQuiz(null);
+    
+    console.log('Quiz submitted:', newAttempt);
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+            <p className="mt-4 text-gray-600">Loading practicals...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - show but don't crash
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <p className="text-yellow-700">
+            <strong>Note:</strong> {error}. Using demo data for now.
+          </p>
+          <div className="mt-4">
+            <Button 
+              onClick={fetchPracticals} 
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              Retry
+            </Button>
+            <Button 
+              onClick={() => {
+                setError(null);
+                setPracticals(mockPracticals);
+              }}
+              variant="outline"
+              className="ml-2"
+            >
+              Use Demo Data
+            </Button>
+          </div>
+        </div>
+        
+        {/* Show demo data anyway */}
+        <div className="mt-6">
+          <h2 className="text-gray-900 mb-2">Demo Practicals</h2>
+          <p className="text-gray-600 mb-4">
+            Showing demo data while database is being set up
+          </p>
+          {/* Render the practicals grid with mock data */}
+          {/* ... copy the grid rendering code from below ... */}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -337,15 +508,20 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     Upload a new practical video and lab sheet for students
                   </DialogDescription>
                 </DialogHeader>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={handleAddPractical}>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <Label htmlFor="title">Practical Title</Label>
-                      <Input id="title" placeholder="e.g., Acid-Base Titration" />
+                      <Label htmlFor="title">Practical Title *</Label>
+                      <Input 
+                        id="title" 
+                        name="title"
+                        placeholder="e.g., Acid-Base Titration" 
+                        required
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="subject">Subject</Label>
-                      <Select>
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Select name="subject" required>
                         <SelectTrigger id="subject">
                           <SelectValue placeholder="Select subject" />
                         </SelectTrigger>
@@ -358,8 +534,8 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="grade">Grade</Label>
-                      <Select>
+                      <Label htmlFor="grade">Grade *</Label>
+                      <Select name="grade" required>
                         <SelectTrigger id="grade">
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
@@ -377,7 +553,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
                     <div>
                       <Label htmlFor="difficulty">Difficulty Level</Label>
-                      <Select>
+                      <Select name="difficulty">
                         <SelectTrigger id="difficulty">
                           <SelectValue placeholder="Select difficulty" />
                         </SelectTrigger>
@@ -389,21 +565,51 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="duration">Duration</Label>
-                      <Input id="duration" placeholder="e.g., 45 min" />
+                      <Label htmlFor="duration">Duration *</Label>
+                      <Input 
+                        id="duration" 
+                        name="duration"
+                        placeholder="e.g., 45 min" 
+                        required
+                      />
                     </div>
                     <div className="col-span-2">
                       <Label htmlFor="description">Description</Label>
                       <Textarea
                         id="description"
+                        name="description"
                         placeholder="Describe the practical and learning objectives..."
                         rows={3}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="videoUrl">Video URL (optional)</Label>
+                      <Input 
+                        id="videoUrl" 
+                        name="videoUrl"
+                        placeholder="https://example.com/video.mp4" 
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="labSheetUrl">Lab Sheet URL (optional)</Label>
+                      <Input 
+                        id="labSheetUrl" 
+                        name="labSheetUrl"
+                        placeholder="https://example.com/lab-sheet.pdf" 
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="thumbnail">Thumbnail URL (optional)</Label>
+                      <Input 
+                        id="thumbnail" 
+                        name="thumbnail"
+                        placeholder="https://example.com/thumbnail.jpg" 
                       />
                     </div>
                   </div>
 
                   <div className="space-y-4 pt-4 border-t">
-                    <h4 className="text-gray-900">Upload Files</h4>
+                    <h4 className="text-gray-900">Or Upload Files Directly</h4>
                     
                     <div className="space-y-2">
                       <Label htmlFor="video">Practical Video</Label>
@@ -411,7 +617,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         <VideoIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload video or drag and drop</p>
                         <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
-                        <Input id="video" type="file" accept="video/*" className="hidden" />
+                        <Input id="video" name="video" type="file" accept="video/*" className="hidden" />
                       </div>
                     </div>
 
@@ -421,28 +627,46 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload PDF or drag and drop</p>
                         <p className="text-xs text-gray-500">PDF up to 10MB</p>
-                        <Input id="labsheet" type="file" accept=".pdf" className="hidden" />
+                        <Input id="labsheet" name="labsheet" type="file" accept=".pdf" className="hidden" />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                      <Label htmlFor="thumbnailFile">Thumbnail Image</Label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
                         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload image or drag and drop</p>
                         <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
-                        <Input id="thumbnail" type="file" accept="image/*" className="hidden" />
+                        <Input id="thumbnailFile" name="thumbnailFile" type="file" accept="image/*" className="hidden" />
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsAddDialogOpen(false)}
+                      disabled={isSubmitting}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Practical
+                    <Button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Practical
+                        </>
+                      )}
                     </Button>
                   </div>
                 </form>
@@ -586,7 +810,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredPracticals.map((practical) => (
               <motion.div
-                key={practical.id.toString()}
+                key={practical.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -623,7 +847,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                       <CardContent className="flex-1 flex flex-col justify-between">
                         <div className="flex flex-wrap gap-2 mb-4">
                           <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
-                            {practical.difficulty}
+                            {difficultyToUI(practical.difficulty)}
                           </Badge>
                           <Badge variant="outline" className="bg-gray-50">
                             ⏱️ {practical.duration}
@@ -636,17 +860,34 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
-                            <Play className="w-4 h-4 mr-2" />
-                            Watch Video
-                          </Button>
-                          <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                            <FileText className="w-4 h-4 mr-2" />
-                            Lab Sheet
-                          </Button>
+                          {practical.videoUrl && (
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                              asChild
+                            >
+                              <a href={practical.videoUrl} target="_blank" rel="noopener noreferrer">
+                                <Play className="w-4 h-4 mr-2" />
+                                Watch Video
+                              </a>
+                            </Button>
+                          )}
+                          {practical.labSheetUrl && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="hover:bg-blue-50 hover:border-blue-300"
+                              asChild
+                            >
+                              <a href={practical.labSheetUrl} target="_blank" rel="noopener noreferrer">
+                                <FileText className="w-4 h-4 mr-2" />
+                                Lab Sheet
+                              </a>
+                            </Button>
+                          )}
                           
                           {/* Quiz Button */}
-                          <Dialog key={`dialog-${practical.id.toString()}`}>
+                          <Dialog key={`dialog-${practical.id}`}>
                             <DialogTrigger asChild>
                               <Button 
                                 size="sm" 
@@ -675,16 +916,33 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                                 onEditQuiz={handleEditQuiz}
                                 onDeleteQuiz={handleDeleteQuiz}
                                 quizAttempts={quizAttempts.filter(a => 
-                                  (practical.quizzes || []).some(q => q.id.toString() === a.quizId.toString())
+                                  (practical.quizzes || []).some(q => q.id === a.quizId)
                                 )}
                               />
                             </DialogContent>
                           </Dialog>
                           
-                          <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
+                          {canUpload && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="hover:bg-green-50 hover:border-green-300 hover:text-green-700"
+                                onClick={() => handleStartEdit(practical)}
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleDeletePractical(practical.id)}
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </CardContent>
                     </div>
@@ -728,14 +986,154 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
         )}
       </AnimatePresence>
 
-      {/* Quiz Player Modal */}
-      {selectedQuiz && userRole === 'student' && (
-        <QuizPlayer
-          key={`quiz-player-${selectedQuiz.id.toString()}`}
-          quiz={selectedQuiz}
-          onSubmit={handleSubmitQuiz}
-          onClose={() => setSelectedQuiz(null)}
-        />
+      {/* Edit Practical Dialog */}
+      {editingPractical && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Practical</DialogTitle>
+              <DialogDescription>
+                Update practical details and files
+              </DialogDescription>
+            </DialogHeader>
+            <form className="space-y-4" onSubmit={handleUpdatePractical}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="edit-title">Practical Title *</Label>
+                  <Input 
+                    id="edit-title" 
+                    name="title"
+                    defaultValue={editingPractical.title}
+                    placeholder="e.g., Acid-Base Titration" 
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-subject">Subject *</Label>
+                  <Select name="subject" defaultValue={editingPractical.subject}>
+                    <SelectTrigger id="edit-subject">
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Physics">Physics</SelectItem>
+                      <SelectItem value="Chemistry">Chemistry</SelectItem>
+                      <SelectItem value="Biology">Biology</SelectItem>
+                      <SelectItem value="Science">Science</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-grade">Grade *</Label>
+                  <Select name="grade" defaultValue={editingPractical.grade}>
+                    <SelectTrigger id="edit-grade">
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Grade 6">Grade 6</SelectItem>
+                      <SelectItem value="Grade 7">Grade 7</SelectItem>
+                      <SelectItem value="Grade 8">Grade 8</SelectItem>
+                      <SelectItem value="Grade 9">Grade 9</SelectItem>
+                      <SelectItem value="Grade 10">Grade 10</SelectItem>
+                      <SelectItem value="Grade 11">Grade 11</SelectItem>
+                      <SelectItem value="Grade 12">Grade 12</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-difficulty">Difficulty Level</Label>
+                  <Select name="difficulty" defaultValue={difficultyToUI(editingPractical.difficulty)}>
+                    <SelectTrigger id="edit-difficulty">
+                      <SelectValue placeholder="Select difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Beginner">Beginner</SelectItem>
+                      <SelectItem value="Intermediate">Intermediate</SelectItem>
+                      <SelectItem value="Advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-duration">Duration *</Label>
+                  <Input 
+                    id="edit-duration" 
+                    name="duration"
+                    defaultValue={editingPractical.duration}
+                    placeholder="e.g., 45 min" 
+                    required
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    name="description"
+                    defaultValue={editingPractical.description || ''}
+                    placeholder="Describe the practical and learning objectives..."
+                    rows={3}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-videoUrl">Video URL</Label>
+                  <Input 
+                    id="edit-videoUrl" 
+                    name="videoUrl"
+                    defaultValue={editingPractical.videoUrl || ''}
+                    placeholder="https://example.com/video.mp4" 
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-labSheetUrl">Lab Sheet URL</Label>
+                  <Input 
+                    id="edit-labSheetUrl" 
+                    name="labSheetUrl"
+                    defaultValue={editingPractical.labSheetUrl || ''}
+                    placeholder="https://example.com/lab-sheet.pdf" 
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="edit-thumbnail">Thumbnail URL</Label>
+                  <Input 
+                    id="edit-thumbnail" 
+                    name="thumbnail"
+                    defaultValue={editingPractical.thumbnail || ''}
+                    placeholder="https://example.com/thumbnail.jpg" 
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingPractical(null);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Practical
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

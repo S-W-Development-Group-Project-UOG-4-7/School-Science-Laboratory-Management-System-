@@ -28,6 +28,7 @@ enum QuestionType {
   MULTIPLE_CHOICE
   TRUE_FALSE
   SHORT_ANSWER
+  MSQ
 }
 
 enum QuizStatus {
@@ -41,92 +42,199 @@ enum QuizStatus {
 ////////////////////
 model User {
   id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
   role      Role
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  teacher Teacher?
+  teacher         Teacher?
+  quizAttempts    QuizAttempt[]
+  fileUploads     FileUpload[]
+  studentProgress StudentProgress[]
+
+  @@map("users")
 }
 
 model Teacher {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique
-  subject   String?
+  subject   String?  @db.VarChar(100)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   practicals Practical[]
   schedules  Schedule[]
-  quizzes    Quiz[] // ✅ FIX ADDED
+  quizzes    Quiz[]
+
+  @@map("teachers")
 }
 
 model Practical {
   id          Int             @id @default(autoincrement())
-  title       String
-  description String?
-  subject     String
-  grade       String
-  duration    String
+  title       String          @db.VarChar(255)
+  description String?         @db.Text
+  subject     String          @db.VarChar(100)
+  grade       String          @db.VarChar(20)
+  duration    String          @db.VarChar(50)
   difficulty  DifficultyLevel @default(INTERMEDIATE)
-  videoUrl    String?
-  labSheetUrl String?
-  thumbnail   String?
+  videoUrl    String?         @db.VarChar(500)
+  labSheetUrl String?         @db.VarChar(500)
+  thumbnail   String?         @db.VarChar(500)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   // Relations
   teacherId Int
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher   Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   quizzes   Quiz[]
+  studentProgress StudentProgress[]
+
+  // Indexes for better query performance
+  @@index([subject])
+  @@index([grade])
+  @@index([teacherId])
+  @@index([createdAt])
+  @@map("practicals")
 }
 
 model Quiz {
   id           Int        @id @default(autoincrement())
-  title        String
-  description  String?
+  title        String     @db.VarChar(255)
+  description  String?    @db.Text
   practicalId  Int
   totalMarks   Int        @default(100)
   passingMarks Int        @default(60)
-  timeLimit    Int?
+  timeLimit    Int?       // in minutes
   status       QuizStatus @default(DRAFT)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   // Relations
-  practical Practical  @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-  teacherId Int
-  teacher   Teacher    @relation(fields: [teacherId], references: [id])
-  questions Question[]
+  practical    Practical    @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+  teacherId    Int
+  teacher      Teacher      @relation(fields: [teacherId], references: [id])
+  questions    Question[]
+  quizAttempts QuizAttempt[]
+
+  // Indexes
+  @@index([practicalId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("quizzes")
 }
 
 model Question {
   id             Int          @id @default(autoincrement())
   quizId         Int
-  question       String
+  question       String       @db.Text
   type           QuestionType @default(MULTIPLE_CHOICE)
-  options        String[]
-  correctAnswer  String?
-  correctAnswers Json?
+  options        String[]     // Array of strings
+  correctAnswer  String?      @db.VarChar(255)
+  correctAnswers Json?        // For MSQ (Multiple Select Questions)
   marks          Int          @default(1)
-  explanation    String?
+  explanation    String?      @db.Text
   order          Int          @default(0)
   createdAt      DateTime     @default(now())
 
   // Relations
   quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([quizId])
+  @@index([order])
+  @@map("questions")
+}
+
+model QuizAttempt {
+  id           Int      @id @default(autoincrement())
+  quizId       Int
+  studentId    Int      // Reference to User with STUDENT role
+  answers      Json     // Store student's answers
+  totalMarks   Int
+  obtainedMarks Int
+  percentage   Float
+  passed       Boolean
+  startedAt    DateTime
+  completedAt  DateTime
+  status       String   @db.VarChar(20) // 'in_progress', 'completed', 'abandoned'
+
+  // Relations
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id])
+
+  // Indexes
+  @@index([quizId])
+  @@index([studentId])
+  @@index([completedAt])
+  @@map("quiz_attempts")
 }
 
 model Schedule {
   id          Int      @id @default(autoincrement())
-  title       String
+  title       String   @db.VarChar(255)
   date        DateTime
-  description String?
+  description String?  @db.Text
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   teacherId Int
   teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([teacherId])
+  @@index([date])
+  @@map("schedules")
+}
+
+model FileUpload {
+  id          Int      @id @default(autoincrement())
+  filename    String   @db.VarChar(255)
+  originalName String  @db.VarChar(255)
+  mimeType    String   @db.VarChar(100)
+  size        Int      // in bytes
+  path        String   @db.VarChar(500)
+  url         String   @db.VarChar(500)
+  uploadedBy  Int      // User ID
+  entityType  String   @db.VarChar(50) // 'practical_video', 'lab_sheet', 'thumbnail', 'quiz_attachment'
+  entityId    Int?     // ID of the related entity
+  createdAt   DateTime @default(now())
+
+  // Relations
+  uploader User? @relation(fields: [uploadedBy], references: [id])
+
+  // Indexes
+  @@index([entityType, entityId])
+  @@index([uploadedBy])
+  @@map("file_uploads")
+}
+
+model StudentProgress {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  practicalId Int
+  watched     Boolean  @default(false)
+  completed   Boolean  @default(false)
+  watchTime   Int?     // in seconds
+  lastWatched DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student   User     @relation(fields: [studentId], references: [id])
+  practical Practical @relation(fields: [practicalId], references: [id])
+
+  // Unique constraint
+  @@unique([studentId, practicalId])
+  
+  // Indexes
+  @@index([studentId])
+  @@index([practicalId])
+  @@map("student_progress")
 }

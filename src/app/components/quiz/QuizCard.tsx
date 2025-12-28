@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Edit, Trash2, Play, BarChart3, Users, Clock, CheckCircle } from 'lucide-react';
-import { Quiz, UserRole } from '@/lib/types';
+import { Quiz, UserRole, QuizStatus } from '@/lib/types';
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -30,6 +30,12 @@ export function QuizCard({
 
   // Convert quiz.id to string for the function calls
   const quizIdString = quiz.id.toString();
+  
+  // Safely get questions count
+  const questionsCount = quiz.questions?.length || 0;
+  
+  // Safely get isPublished
+  const isPublished = quiz.isPublished ?? quiz.status === QuizStatus.PUBLISHED;
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -37,10 +43,14 @@ export function QuizCard({
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg">{quiz.title}</CardTitle>
-            <CardDescription>{quiz.description}</CardDescription>
+            <CardDescription>{quiz.description || 'No description'}</CardDescription>
           </div>
-          <div className="px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-            {quiz.isPublished ? 'Published' : 'Draft'}
+          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+            isPublished 
+              ? 'bg-green-100 text-green-700' 
+              : 'bg-yellow-100 text-yellow-700'
+          }`}>
+            {isPublished ? 'Published' : 'Draft'}
           </div>
         </div>
       </CardHeader>
@@ -54,7 +64,7 @@ export function QuizCard({
             </div>
           )}
           <div className="px-2 py-1 rounded border text-xs">
-            {quiz.questions.length} questions
+            {questionsCount} question{questionsCount !== 1 ? 's' : ''}
           </div>
           <div className="px-2 py-1 rounded border text-xs bg-blue-50">
             {quiz.totalMarks} marks total
@@ -65,7 +75,7 @@ export function QuizCard({
           {canManage && attemptCount > 0 && (
             <div className="px-2 py-1 rounded border text-xs flex items-center gap-1">
               <Users className="w-3 h-3" />
-              {attemptCount} attempts
+              {attemptCount} attempt{attemptCount !== 1 ? 's' : ''}
             </div>
           )}
         </div>
@@ -76,9 +86,10 @@ export function QuizCard({
               size="sm" 
               className="bg-gradient-to-r from-emerald-600 to-emerald-700"
               onClick={() => onStartQuiz?.(quiz)}
+              disabled={!isPublished || questionsCount === 0}
             >
               <Play className="w-4 h-4 mr-2" />
-              Start Quiz
+              {questionsCount === 0 ? 'No Questions' : 'Start Quiz'}
             </Button>
           ) : (
             <>
@@ -95,10 +106,13 @@ export function QuizCard({
               <Button 
                 size="sm" 
                 variant="outline"
-                onClick={() => onEdit(quizIdString, { isPublished: !quiz.isPublished })}
+                onClick={() => onEdit(quizIdString, { 
+                  isPublished: !isPublished,
+                  status: !isPublished ? QuizStatus.PUBLISHED : QuizStatus.DRAFT
+                })}
               >
                 <Edit className="w-4 h-4 mr-2" />
-                {quiz.isPublished ? 'Unpublish' : 'Publish'}
+                {isPublished ? 'Unpublish' : 'Publish'}
               </Button>
               <Button 
                 size="sm" 
