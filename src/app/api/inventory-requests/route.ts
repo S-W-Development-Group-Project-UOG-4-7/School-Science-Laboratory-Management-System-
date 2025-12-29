@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
         reason: data.reason,
         urgency: data.urgency,
         status: data.status,
-        requestDate: data.requestDate,
+        requestDate: new Date(),
       },
     });
     return NextResponse.json(created, { status: 201 });

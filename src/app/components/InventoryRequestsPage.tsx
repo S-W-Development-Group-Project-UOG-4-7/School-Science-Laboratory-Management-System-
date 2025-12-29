@@ -116,29 +116,31 @@ console.log('normalized role:', role);
       reason: newRequest.reason,
       urgency: newRequest.urgency,
       status: 'pending',
-      requestDate: new Date().toISOString().split('T')[0],
+      requestDate: new Date().toISOString(),
     };
 
     try {
-     await fetch('/api/inventory-requests', {
+     const res = await fetch('/api/inventory-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     });
+    if (!res.ok) {
+      throw new Error('Failed to create request');
+    }
    
+    await mutate(); // re-fetch from DB
 
-   // Refetch from the database
-    mutate();
-
-  setNewRequest({ itemId: '', quantity: 1, reason: '', urgency: 'medium' });
-  setIsDialogOpen(false);
+   setNewRequest({ itemId: '', quantity: 1, reason: '', urgency: 'medium' });
+   setIsDialogOpen(false);
     
     // Mock email notification
-    toast.success('Request Sent Successfully', {
-      description: 'Your inventory request has been sent to the principal via email and portal.',
-    });
-  } catch (err) {
+    toast.success('Request Sent Successfully'); 
+      //description: 'Your inventory request has been sent to the principal via email and portal.',
+    
+  } catch (error) {
     toast.error('Failed to send request');
+    console.error(error);
     }
   };
 
