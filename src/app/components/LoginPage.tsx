@@ -13,27 +13,71 @@ import type { User, UserRole } from '@/lib/types';
 interface LoginPageProps {
   onLogin: (user: User) => void;
 }
-
-// Predefined credentials for different roles
-const CREDENTIALS = {
-  // Admin
-  'admin@school.lk': { password: 'admin123', role: 'admin' as const, name: 'System Administrator', id: 'admin-001' },
-  
-  // Principal
-  'principal@school.lk': { password: 'principal123', role: 'principal' as const, name: 'Principal Silva', id: 'principal-001' },
-  
-  // Teachers
-  'teacher1@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mr. Perera', id: 'teacher-001' },
-  'teacher2@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mrs. Fernando', id: 'teacher-002' },
-  
-  // Lab Assistants
-  'labassist1@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Kumar', id: 'lab-001' },
-  'labassist2@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Nimal', id: 'lab-002' },
-  
-  // Students (default role for any other email)
-  'student1@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Amal', id: 'student-001' },
-  'student2@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Sahan', id: 'student-002' },
+type Credential = {
+  password: string;
+  role: UserRole;
+  name: string;
+  id: string;
 };
+// Predefined credentials for different roles
+const CREDENTIALS: Record<string, Credential> = {
+  'admin@school.lk': {
+    password: 'admin123',
+    role: 'admin',
+    name: 'System Administrator',
+    id: 'admin-001',
+  },
+
+  'principal@school.lk': {
+    password: 'principal123',
+    role: 'principal',
+    name: 'Principal Silva',
+    id: 'principal-001',
+  },
+
+  'teacher1@school.lk': {
+    password: 'teacher123',
+    role: 'teacher',
+    name: 'Mr. Perera',
+    id: 'teacher-001',
+  },
+
+  'teacher2@school.lk': {
+    password: 'teacher123',
+    role: 'teacher',
+    name: 'Mrs. Fernando',
+    id: 'teacher-002',
+  },
+
+  'labassist1@school.lk': {
+    password: 'labassist123',
+    role: 'lab-assistant',
+    name: 'Lab Assistant Kumar',
+    id: 'lab-001',
+  },
+
+  'labassist2@school.lk': {
+    password: 'labassist123',
+    role: 'lab-assistant',
+    name: 'Lab Assistant Nimal',
+    id: 'lab-002',
+  },
+
+  'student1@school.lk': {
+    password: 'student123',
+    role: 'student',
+    name: 'Student Amal',
+    id: 'student-001',
+  },
+
+  'student2@school.lk': {
+    password: 'student123',
+    role: 'student',
+    name: 'Student Sahan',
+    id: 'student-002',
+  },
+};
+
 
 // DNA Helix Animation Component
 const DNAHelix = () => {
