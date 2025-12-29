@@ -1,39 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import * as React from 'react';;
+import * as React from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { FlaskConical, ArrowRight, Shield } from 'lucide-react';
+import { FlaskConical, ArrowRight, Shield, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User, UserRole } from '@/src/app/lib/types';
+import type { User } from '@/src/app/lib/types';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
 }
-
-// Predefined credentials for different roles
-const CREDENTIALS = {
-  // Admin
-  'admin@school.lk': { password: 'admin123', role: 'admin' as const, name: 'System Administrator', id: 'admin-001' },
-  
-  // Principal
-  'principal@school.lk': { password: 'principal123', role: 'principal' as const, name: 'Principal Silva', id: 'principal-001' },
-  
-  // Teachers
-  'teacher1@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mr. Perera', id: 'teacher-001' },
-  'teacher2@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mrs. Fernando', id: 'teacher-002' },
-  
-  // Lab Assistants
-  'labassist1@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Kumar', id: 'lab-001' },
-  'labassist2@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Nimal', id: 'lab-002' },
-  
-  // Students (default role for any other email)
-  'student1@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Amal', id: 'student-001' },
-  'student2@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Sahan', id: 'student-002' },
-};
 
 // DNA Helix Animation Component
 const DNAHelix = () => {
@@ -49,15 +28,14 @@ const DNAHelix = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Don't render on server to avoid hydration mismatch
   if (!mounted) return null;
   
   const numPoints = 50;
   const points = Array.from({ length: numPoints });
   const centerX = 250;
   const centerY = 300;
-  const amplitude = 150; // Increased width
-  const verticalSpacing = 18; //increase height
+  const amplitude = 150;
+  const verticalSpacing = 18;
   
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -132,21 +110,45 @@ const DNAHelix = () => {
   );
 };
 
-
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<'login' | '2fa'>('login');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
+  const [sessionToken, setSessionToken] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate login API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setStep('2fa');
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+
+      // Store user data and session token for 2FA verification
+      setPendingUser(data.user);
+      setSessionToken(data.sessionToken);
+      setStep('2fa');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -155,7 +157,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto-focus next input
     if (value && index < 5) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       nextInput?.focus();
@@ -172,30 +173,88 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    
-    // Mock login - determine role from email
-    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];
-    if (credentials && credentials.password === password) {
-      onLogin({
-        name: credentials.name,
-        role: credentials.role,
-        email,
-        id: credentials.id,
+    setError('');
+
+    try {
+      const otpValue = otp.join('');
+      
+      if (otpValue.length !== 6) {
+        throw new Error('Please enter a 6-digit OTP');
+      }
+
+      // Verify OTP with backend
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionToken,
+          otp: otpValue,
+        }),
       });
-    } else {
-      alert('Invalid OTP or credentials');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'OTP verification failed');
+      }
+
+      // OTP verified successfully, log user in
+      if (pendingUser) {
+        onLogin(pendingUser);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'OTP verification failed');
+      // Clear OTP on error
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('otp-0')?.focus();
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleResendOtp = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to resend OTP');
+      }
+
+      // Show success message (you could use a toast notification here)
+      alert('OTP has been resent to your registered device');
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('otp-0')?.focus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToLogin = () => {
+    setStep('login');
+    setOtp(['', '', '', '', '', '']);
+    setError('');
+    setPendingUser(null);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50/30 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* DNA Helix Animation */}
       <DNAHelix />
       
-      {/* Animated Background Elements */}
       <motion.div
         className="absolute top-20 left-10 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"
         animate={{
@@ -223,7 +282,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
         <motion.div
           className="text-center mb-8"
           initial={{ opacity: 0, y: -20 }}
@@ -240,12 +298,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </div>
           </motion.div>
           <motion.h1
-            className="text-blue-900 mb-2"
+            className="text-3xl font-bold text-blue-900 mb-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
-            Science Lab Management System
+            Science Mate
           </motion.h1>
           <motion.p
             className="text-gray-600"
@@ -257,7 +315,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </motion.p>
         </motion.div>
 
-        {/* Login Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -276,6 +333,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
+                >
+                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-600">{error}</p>
+                </motion.div>
+              )}
+
               {step === 'login' ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <motion.div
@@ -398,16 +466,25 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
                   <div className="text-center space-y-2">
                     <p className="text-sm text-gray-600">Didn't receive the code?</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => {
-                        // Resend OTP logic
-                      }}
-                    >
-                      Resend Code
-                    </Button>
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={handleResendOtp}
+                        disabled={isLoading}
+                      >
+                        Resend Code
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                        onClick={handleBackToLogin}
+                      >
+                        Back to Login
+                      </Button>
+                    </div>
                   </div>
                 </form>
               )}
@@ -415,7 +492,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </Card>
         </motion.div>
 
-        {/* Footer */}
         <motion.div
           className="mt-6 text-center text-sm text-gray-600"
           initial={{ opacity: 0 }}
@@ -423,27 +499,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           transition={{ delay: 0.8 }}
         >
           <p>Secure access for authorized school personnel only</p>
-        </motion.div>
-
-        {/* Test Credentials Info */}
-        <motion.div
-          className="mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          <Card className="bg-blue-50/50 border-blue-200">
-            <CardContent className="pt-4">
-              <p className="text-xs text-gray-700 mb-2">Demo Credentials:</p>
-              <div className="space-y-1 text-xs text-gray-600">
-                <p><span className="font-semibold text-blue-700">Admin:</span> admin@school.lk / admin123</p>
-                <p><span className="font-semibold text-blue-700">Principal:</span> principal@school.lk / principal123</p>
-                <p><span className="font-semibold text-green-700">Teacher:</span> teacher1@school.lk / teacher123</p>
-                <p><span className="font-semibold text-yellow-700">Lab Assistant:</span> labassist1@school.lk / labassist123</p>
-                <p><span className="font-semibold text-gray-700">Student:</span> student1@school.lk / student123</p>
-              </div>
-            </CardContent>
-          </Card>
         </motion.div>
       </div>
     </div>
