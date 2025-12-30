@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { FlaskConical, ArrowRight, Shield, AlertCircle } from 'lucide-react';
+import { FlaskConical, ArrowRight, Shield, AlertCircle, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User } from '@/src/app/lib/types';
 
@@ -114,11 +114,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<'login' | '2fa'>('login');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [totpCode, setTotpCode] = useState('');
+  const [isBackupCode, setIsBackupCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [pendingUser, setPendingUser] = useState<User | null>(null);
-  const [sessionToken, setSessionToken] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,10 +140,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Store user data and session token for 2FA verification
+      // Store user data
       setPendingUser(data.user);
-      setSessionToken(data.sessionToken);
-      setStep('2fa');
+
+      // Check if 2FA is required
+      if (data.twoFactorRequired) {
+        // 2FA enabled - show TOTP input
+        setStep('2fa');
+      } else {
+        // No 2FA - login directly
+        onLogin(data.user);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {
@@ -151,94 +158,44 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
-  const handleOtpChange = (index: number, value: string) => {
-    if (value.length > 1) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      const prevInput = document.getElementById(`otp-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleVerifyTOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const otpValue = otp.join('');
-      
-      if (otpValue.length !== 6) {
-        throw new Error('Please enter a 6-digit OTP');
+      if (!pendingUser) {
+        throw new Error('Session expired. Please login again.');
       }
 
-      // Verify OTP with backend
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await fetch('/api/auth/totp/verify-login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionToken,
-          otp: otpValue,
+          userId: pendingUser.id,
+          token: totpCode.replace(/\s|-/g, ''), // Remove spaces and dashes
+          isBackupCode,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'OTP verification failed');
+        throw new Error(data.error || 'Verification failed');
       }
 
-      // OTP verified successfully, log user in
-      if (pendingUser) {
-        onLogin(pendingUser);
+      // Show warning if using backup codes
+      if (data.warning) {
+        alert(data.warning);
       }
+
+      // Login successful
+      onLogin(pendingUser);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'OTP verification failed');
-      // Clear OTP on error
-      setOtp(['', '', '', '', '', '']);
-      document.getElementById('otp-0')?.focus();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/auth/resend-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ sessionToken }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to resend OTP');
-      }
-
-      // Show success message (you could use a toast notification here)
-      alert('OTP has been resent to your registered device');
-      setOtp(['', '', '', '', '', '']);
-      document.getElementById('otp-0')?.focus();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend OTP');
+      setError(err instanceof Error ? err.message : 'Verification failed');
+      setTotpCode('');
     } finally {
       setIsLoading(false);
     }
@@ -246,7 +203,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleBackToLogin = () => {
     setStep('login');
-    setOtp(['', '', '', '', '', '']);
+    setTotpCode('');
+    setIsBackupCode(false);
     setError('');
     setPendingUser(null);
   };
@@ -323,13 +281,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/90">
             <CardHeader className="space-y-1">
               <CardTitle className="flex items-center gap-2">
-                {step === 'login' ? 'Welcome Back' : '2-Factor Authentication'}
+                {step === 'login' ? 'Welcome Back' : 'Two-Factor Authentication'}
                 {step === '2fa' && <Shield className="w-5 h-5 text-blue-600" />}
               </CardTitle>
               <CardDescription>
                 {step === 'login'
                   ? 'Sign in to access the laboratory management system'
-                  : 'Enter the 6-digit code sent to your registered device'}
+                  : isBackupCode
+                  ? 'Enter one of your backup recovery codes'
+                  : 'Enter the 6-digit code from your authenticator app'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -414,43 +374,43 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   </div>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                <form onSubmit={handleVerifyTOTP} className="space-y-6">
                   <motion.div
-                    className="flex justify-center gap-2"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    className="space-y-2"
+                    initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    {otp.map((digit, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                      >
-                        <Input
-                          id={`otp-${index}`}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={1}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(index, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                          className="w-12 h-12 text-center text-lg font-semibold transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                        />
-                      </motion.div>
-                    ))}
+                    <Label htmlFor="totp" className="flex items-center gap-2">
+                      <Key className="w-4 h-4" />
+                      {isBackupCode ? 'Backup Code' : 'Authenticator Code'}
+                    </Label>
+                    <Input
+                      id="totp"
+                      type="text"
+                      placeholder={isBackupCode ? "XXXX-XXXX" : "000000"}
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value)}
+                      className="text-center text-lg font-mono tracking-wider transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      maxLength={isBackupCode ? 9 : 6}
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 text-center">
+                      {isBackupCode
+                        ? 'Enter the backup code in format: XXXX-XXXX'
+                        : 'Open your authenticator app to get the code'}
+                    </p>
                   </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
+                    transition={{ delay: 0.4 }}
                   >
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
-                      disabled={isLoading || otp.some(d => !d)}
+                      disabled={isLoading || !totpCode}
                     >
                       {isLoading ? (
                         <motion.div
@@ -465,21 +425,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   </motion.div>
 
                   <div className="text-center space-y-2">
-                    <p className="text-sm text-gray-600">Didn't receive the code?</p>
-                    <div className="flex gap-2 justify-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm"
+                      onClick={() => {
+                        setIsBackupCode(!isBackupCode);
+                        setTotpCode('');
+                        setError('');
+                      }}
+                    >
+                      {isBackupCode ? 'Use authenticator code' : 'Use backup code'}
+                    </Button>
+                    <div>
                       <Button
                         type="button"
                         variant="ghost"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={handleResendOtp}
-                        disabled={isLoading}
-                      >
-                        Resend Code
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                        className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 text-sm"
                         onClick={handleBackToLogin}
                       >
                         Back to Login

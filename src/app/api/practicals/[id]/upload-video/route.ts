@@ -1,219 +1,21 @@
 // File: src/app/api/practicals/[id]/upload-video/route.ts
-// This handles video uploads (both local and Cloudinary)
+// Simplified route for saving video URLs to database
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import prisma from '@/lib/prisma';
-import { v2 as cloudinary } from 'cloudinary';
 
 // ==========================================
-// OPTION 1: LOCAL STORAGE (Free, Simple)
+// SAVE VIDEO URL TO DATABASE
 // ==========================================
 
-export async function POST_LOCAL(
+export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const practicalId = params.id;
-    const formData = await request.formData();
-    const videoFile = formData.get('video') as File;
+    // Await params in Next.js 15
+    const { id: practicalId } = await params;
     
-    if (!videoFile) {
-      return NextResponse.json(
-        { error: 'No video file provided' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file type
-    const allowedTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime'];
-    if (!allowedTypes.includes(videoFile.type)) {
-      return NextResponse.json(
-        { error: 'Invalid file type. Only MP4, AVI, and MOV are allowed.' },
-        { status: 400 }
-      );
-    }
-
-    // Validate file size (max 500MB)
-    const maxSize = 500 * 1024 * 1024; // 500MB in bytes
-    if (videoFile.size > maxSize) {
-      return NextResponse.json(
-        { error: 'File too large. Maximum size is 500MB.' },
-        { status: 400 }
-      );
-    }
-
-    // Create unique filename
-    const timestamp = Date.now();
-    const sanitizedName = videoFile.name.replace(/[^a-z0-9.-]/gi, '_');
-    const fileName = `practical-${practicalId}-${timestamp}-${sanitizedName}`;
-    
-    // Ensure uploads directory exists
-    const uploadsDir = path.join(process.cwd(), 'public', 'videos');
-    await mkdir(uploadsDir, { recursive: true });
-    
-    // Save file to public/videos/
-    const filePath = path.join(uploadsDir, fileName);
-    const bytes = await videoFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-    
-    // Create public URL
-    const videoUrl = `/videos/${fileName}`;
-    
-    // Save to database
-    const video = await prisma.video.upsert({
-      where: { practicalId },
-      update: {
-        videoUrl,
-        fileName,
-        fileSize: videoFile.size,
-        mimeType: videoFile.type,
-        videoType: 'UPLOADED',
-        cloudProvider: 'local',
-        updatedAt: new Date(),
-      },
-      create: {
-        practicalId,
-        videoUrl,
-        fileName,
-        fileSize: videoFile.size,
-        mimeType: videoFile.type,
-        videoType: 'UPLOADED',
-        cloudProvider: 'local',
-        uploadedById: 'USER_ID_HERE', // Get from session
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      videoUrl,
-      video,
-    });
-  } catch (error) {
-    console.error('Video upload error:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload video' },
-      { status: 500 }
-    );
-  }
-}
-
-
-// ==========================================
-// OPTION 2: CLOUDINARY (Recommended, Free Tier)
-// ==========================================
-
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-export async function POST_CLOUDINARY(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const practicalId = params.id;
-    const formData = await request.formData();
-    const videoFile = formData.get('video') as File;
-    
-    if (!videoFile) {
-      return NextResponse.json(
-        { error: 'No video file provided' },
-        { status: 400 }
-      );
-    }
-
-    // Convert File to Buffer
-    const bytes = await videoFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
-    // Upload to Cloudinary
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'video',
-          folder: 'practicals',
-          public_id: `practical-${practicalId}-${Date.now()}`,
-          // Optional: Add transformations
-          eager: [
-            { width: 1280, height: 720, crop: 'limit', quality: 'auto' }
-          ],
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      
-      uploadStream.end(buffer);
-    });
-
-    const result = uploadResult as any;
-
-    // Save to database
-    const video = await prisma.video.upsert({
-      where: { practicalId },
-      update: {
-        videoUrl: result.secure_url,
-        fileName: videoFile.name,
-        fileSize: videoFile.size,
-        mimeType: videoFile.type,
-        duration: result.duration,
-        videoType: 'UPLOADED',
-        cloudProvider: 'cloudinary',
-        publicId: result.public_id,
-        updatedAt: new Date(),
-      },
-      create: {
-        practicalId,
-        videoUrl: result.secure_url,
-        fileName: videoFile.name,
-        fileSize: videoFile.size,
-        mimeType: videoFile.type,
-        duration: result.duration,
-        videoType: 'UPLOADED',
-        cloudProvider: 'cloudinary',
-        publicId: result.public_id,
-        uploadedById: 'USER_ID_HERE', // Get from session
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      videoUrl: result.secure_url,
-      video,
-      cloudinary: {
-        publicId: result.public_id,
-        format: result.format,
-        duration: result.duration,
-      },
-    });
-  } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload video to Cloudinary' },
-      { status: 500 }
-    );
-  }
-}
-
-
-// ==========================================
-// OPTION 3: YOUTUBE URL (No Upload, Just Save)
-// ==========================================
-
-export async function POST_URL(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const practicalId = params.id;
     const body = await request.json();
     const { videoUrl } = body;
     
@@ -221,6 +23,18 @@ export async function POST_URL(
       return NextResponse.json(
         { error: 'No video URL provided' },
         { status: 400 }
+      );
+    }
+
+    // Check if practical exists
+    const practicalExists = await prisma.practical.findUnique({
+      where: { id: practicalId },
+    });
+
+    if (!practicalExists) {
+      return NextResponse.json(
+        { error: 'Practical not found' },
+        { status: 404 }
       );
     }
 
@@ -237,13 +51,31 @@ export async function POST_URL(
 
     // Convert to embed URL
     let embedUrl = videoUrl;
+    let videoId: string | null = null;
+    
     if (isYouTube) {
-      const videoId = extractYouTubeId(videoUrl);
+      videoId = extractYouTubeId(videoUrl);
+      if (!videoId) {
+        return NextResponse.json(
+          { error: 'Invalid YouTube URL. Could not extract video ID.' },
+          { status: 400 }
+        );
+      }
       embedUrl = `https://www.youtube.com/embed/${videoId}`;
     } else if (isVimeo) {
-      const videoId = extractVimeoId(videoUrl);
+      videoId = extractVimeoId(videoUrl);
+      if (!videoId) {
+        return NextResponse.json(
+          { error: 'Invalid Vimeo URL. Could not extract video ID.' },
+          { status: 400 }
+        );
+      }
       embedUrl = `https://player.vimeo.com/video/${videoId}`;
     }
+
+    // TODO: Get real user ID from session/auth
+    // For now, using the practical creator's ID
+    const uploadedById = practicalExists.createdById;
 
     // Save to database
     const video = await prisma.video.upsert({
@@ -259,7 +91,7 @@ export async function POST_URL(
         videoUrl: embedUrl,
         videoType: 'EMBEDDED',
         cloudProvider: isYouTube ? 'youtube' : 'vimeo',
-        uploadedById: 'USER_ID_HERE', // Get from session
+        uploadedById,
       },
     });
 
@@ -267,6 +99,7 @@ export async function POST_URL(
       success: true,
       videoUrl: embedUrl,
       video,
+      videoId,
     });
   } catch (error) {
     console.error('URL save error:', error);
@@ -278,36 +111,35 @@ export async function POST_URL(
 }
 
 // Helper functions
-function extractYouTubeId(url: string): string {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[7].length === 11 ? match[7] : '';
-}
-
-function extractVimeoId(url: string): string {
-  const regExp = /vimeo\.com\/(\d+)/;
-  const match = url.match(regExp);
-  return match ? match[1] : '';
-}
-
-
-// ==========================================
-// MAIN ROUTE HANDLER (Choose your method)
-// ==========================================
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const contentType = request.headers.get('content-type') || '';
+function extractYouTubeId(url: string): string | null {
+  // Handle different YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+  ];
   
-  // If it's a URL submission (JSON)
-  if (contentType.includes('application/json')) {
-    return POST_URL(request, { params });
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
   }
   
-  // If it's a file upload (FormData)
-  // Change this to use your preferred storage method:
-  // return POST_LOCAL(request, { params });      // For local storage
-  return POST_CLOUDINARY(request, { params });   // For Cloudinary
+  return null;
+}
+
+function extractVimeoId(url: string): string | null {
+  const patterns = [
+    /vimeo\.com\/(\d+)/,
+    /player\.vimeo\.com\/video\/(\d+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
 }

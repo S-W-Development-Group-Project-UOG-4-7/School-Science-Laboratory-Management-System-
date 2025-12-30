@@ -24,6 +24,11 @@ model User {
   lastLogin   DateTime?
   updatedAt   DateTime @updatedAt
 
+  // TOTP 2FA Settings (Google Authenticator)
+  twoFactorEnabled Boolean @default(false)
+  twoFactorSecret  String?  // Encrypted TOTP secret
+  twoFactorBackupCodes String[] @default([]) // Backup recovery codes
+
   @@index([email])
   @@index([role])
 

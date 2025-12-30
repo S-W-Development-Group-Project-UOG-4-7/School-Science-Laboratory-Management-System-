@@ -170,36 +170,36 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }, 300);
   };
 
-  const handleSubmitVideo = () => {
-    if (!selectedPracticalForVideo) return;
+  const handleSubmitVideo = async () => {
+    if (!selectedPracticalForVideo || !videoUrlInput) return;
 
-    if (videoFile) {
-      // Simulate file upload
-      simulateUpload();
-      setTimeout(() => {
-        // In real implementation, this would be the URL returned from your server
-        const mockUploadedUrl = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
-        
+    try {
+      const response = await fetch(`/api/practicals/${selectedPracticalForVideo}/upload-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoUrl: videoUrlInput }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state with the embed URL
         setPracticals(prev => prev.map(p => 
           p.id === selectedPracticalForVideo 
-            ? { ...p, videoUrl: mockUploadedUrl }
+            ? { ...p, videoUrl: data.videoUrl }
             : p
         ));
         
-        setVideoFile(null);
         setVideoUrlInput('');
-        setUploadProgress(0);
         setIsVideoUploadDialogOpen(false);
-      }, 3500);
-    } else if (videoUrlInput) {
-      // Use provided URL
-      setPracticals(prev => prev.map(p => 
-        p.id === selectedPracticalForVideo 
-          ? { ...p, videoUrl: videoUrlInput }
-          : p
-      ));
-      setVideoUrlInput('');
-      setIsVideoUploadDialogOpen(false);
+      } else {
+        alert(data.error || 'Failed to save video URL');
+      }
+    } catch (error) {
+      console.error('Error saving video URL:', error);
+      alert('Failed to save video URL');
     }
   };
 

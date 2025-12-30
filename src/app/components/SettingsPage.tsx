@@ -15,17 +15,18 @@ import {
   Lock, 
   Bell, 
   Shield, 
-  Mail, 
-  Smartphone,
   Camera,
   Save,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Smartphone,
+  Key,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User as UserType } from '@/src/app/lib/types';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface SettingsPageProps {
   user: UserType;
@@ -41,7 +42,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
   const [phone, setPhone] = useState('+94 71 234 5678');
   
   // Security settings state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false); // Default: false
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [practicalReminders, setPracticalReminders] = useState(true);
@@ -52,6 +53,37 @@ export function SettingsPage({ user }: SettingsPageProps) {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  // 2FA Handler Functions
+  const handleDisable2FA = async () => {
+    try {
+      const response = await fetch('/api/auth/totp/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (response.ok) {
+        setTwoFactorEnabled(false);
+        alert('2FA has been disabled');
+      } else {
+        alert('Failed to disable 2FA');
+      }
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+      alert('An error occurred');
+    }
+  };
+
+  const handleReset2FA = async () => {
+    try {
+      // Disable first, then redirect to setup
+      await handleDisable2FA();
+      window.location.href = '/settings/2fa-setup';
+    } catch (error) {
+      console.error('Error resetting 2FA:', error);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <motion.div
@@ -59,7 +91,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-gray-900 mb-2">Settings</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Settings</h2>
         <p className="text-gray-600">Manage your account settings and preferences</p>
       </motion.div>
 
@@ -110,7 +142,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
                     </motion.button>
                   </div>
                   <div>
-                    <p className="text-gray-900 mb-1">Profile Picture</p>
+                    <p className="font-semibold text-gray-900 mb-1">Profile Picture</p>
                     <p className="text-sm text-gray-600 mb-3">JPG, PNG or GIF. Max size 2MB</p>
                     <Button variant="outline" size="sm">
                       <Camera className="w-4 h-4 mr-2" />
@@ -245,17 +277,17 @@ export function SettingsPage({ user }: SettingsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Two-Factor Authentication */}
+            {/* Two-Factor Authentication (TOTP) */}
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="w-5 h-5" />
-                      Two-Factor Authentication
+                      Two-Factor Authentication (TOTP)
                     </CardTitle>
                     <CardDescription className="mt-2">
-                      Add an extra layer of security to your account
+                      Use Google Authenticator or similar app for extra security
                     </CardDescription>
                   </div>
                   <Badge className={twoFactorEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
@@ -264,33 +296,98 @@ export function SettingsPage({ user }: SettingsPageProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-600 rounded-lg">
-                      <Smartphone className="w-5 h-5 text-white" />
+                {!twoFactorEnabled ? (
+                  // Not Enabled - Show Enable Button
+                  <div className="p-6 bg-blue-50 rounded-lg border border-blue-200 text-center space-y-4">
+                    <div className="flex justify-center">
+                      <div className="p-3 bg-blue-600 rounded-full">
+                        <Smartphone className="w-8 h-8 text-white" />
+                      </div>
                     </div>
                     <div>
-                      <p className="text-gray-900">SMS Authentication</p>
-                      <p className="text-sm text-gray-600">Receive codes via SMS</p>
+                      <h4 className="text-gray-900 font-medium mb-2">Secure Your Account</h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Add an extra layer of security with Google Authenticator. 
+                        It's free, works offline, and takes only 1 minute to setup.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          // Navigate to setup page or open setup modal
+                          window.location.href = '/settings/2fa-setup';
+                        }}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Enable 2FA
+                      </Button>
                     </div>
                   </div>
-                  <Switch
-                    checked={twoFactorEnabled}
-                    onCheckedChange={setTwoFactorEnabled}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-600 rounded-lg">
-                      <Mail className="w-5 h-5 text-white" />
+                ) : (
+                  // Enabled - Show Management Options
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-600 rounded-lg">
+                          <Check className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">2FA Active</p>
+                          <p className="text-sm text-gray-600">Your account is protected</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={twoFactorEnabled}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            // Show confirmation dialog
+                            if (confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) {
+                              handleDisable2FA();
+                            }
+                          }
+                        }}
+                      />
                     </div>
-                    <div>
-                      <p className="text-gray-900">Email Authentication</p>
-                      <p className="text-sm text-gray-600">Receive codes via email</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          // Show backup codes
+                          window.location.href = '/settings/2fa-backup-codes';
+                        }}
+                        className="justify-start"
+                      >
+                        <Key className="w-4 h-4 mr-2" />
+                        View Backup Codes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          // Reset 2FA
+                          if (confirm('Reset 2FA? You will need to scan a new QR code.')) {
+                            handleReset2FA();
+                          }
+                        }}
+                        className="justify-start"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reset 2FA
+                      </Button>
+                    </div>
+
+                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="flex gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="text-yellow-900 font-medium mb-1">Keep Your Backup Codes Safe</p>
+                          <p className="text-yellow-700">
+                            Save your backup codes in a secure location. You'll need them if you lose your phone.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <Switch checked={false} />
-                </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -314,7 +411,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h4 className="text-gray-900 mb-4">Communication</h4>
+                  <h4 className="font-semibold text-gray-900 mb-4">Communication</h4>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -343,7 +440,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
                 <Separator />
 
                 <div>
-                  <h4 className="text-gray-900 mb-4">Activity</h4>
+                  <h4 className="font-semibold text-gray-900 mb-4">Activity</h4>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>

@@ -2,8 +2,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { SessionManager, generateOTP, sendOTP } from '@/src/app/lib/sessionManager';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +25,7 @@ export async function POST(request: NextRequest) {
         password: true,
         role: true,
         status: true,
+        twoFactorEnabled: true,
       },
     });
 
@@ -55,23 +54,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate OTP and session token
-    const otp = generateOTP();
-    const sessionToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
-
-    // Create session
-    SessionManager.create(sessionToken, {
-      userId: user.id,
-      otp,
-      expiresAt,
-      email: user.email,
-      attempts: 0,
-    });
-
-    // Send OTP to user
-    await sendOTP(user.email, otp);
-
     // Convert role from database format to app format
     const roleMap: Record<string, string> = {
       'STUDENT': 'student',
@@ -81,16 +63,32 @@ export async function POST(request: NextRequest) {
       'ADMIN': 'admin',
     };
 
-    // Return user data and session token (excluding password)
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: roleMap[user.role] || 'student',
+    };
+
+    // Check if 2FA is enabled
+    if (!user.twoFactorEnabled) {
+      // No 2FA required, log in directly
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() },
+      });
+
+      return NextResponse.json({
+        user: userData,
+        twoFactorRequired: false,
+      });
+    }
+
+    // 2FA enabled, require TOTP verification
     return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: roleMap[user.role] || 'student',
-      },
-      sessionToken,
-      message: 'OTP sent successfully',
+      user: userData,
+      twoFactorRequired: true,
+      message: 'Please enter your authenticator code',
     });
   } catch (error) {
     console.error('Login error:', error);
