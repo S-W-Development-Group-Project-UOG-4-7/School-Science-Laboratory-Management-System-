@@ -95,8 +95,8 @@ const DNAHelix = () => {
   const points = Array.from({ length: numPoints });
   const centerX = 250;
   const centerY = 300;
-  const amplitude = 150; // Increased width
-  const verticalSpacing = 18; //increase height
+  const amplitude = 150;
+  const verticalSpacing = 18;
   
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -116,11 +116,16 @@ const DNAHelix = () => {
           const y = i * verticalSpacing;
           const angle = (i * 20 + rotation) * (Math.PI / 180);
           
-          const blueX = centerX + Math.sin(angle) * amplitude;
+          // Calculate values and round to prevent floating-point mismatches
+          const blueXFloat = centerX + Math.sin(angle) * amplitude;
           const blueZ = Math.cos(angle);
           
-          const yellowX = centerX - Math.sin(angle) * amplitude;
+          const yellowXFloat = centerX - Math.sin(angle) * amplitude;
           const yellowZ = -Math.cos(angle);
+          
+          // Round to 10 decimal places
+          const blueX = Math.round(blueXFloat * 1e10) / 1e10;
+          const yellowX = Math.round(yellowXFloat * 1e10) / 1e10;
           
           const blueOpacity = blueZ > 0 ? 0.9 : 0.3;
           const yellowOpacity = yellowZ > 0 ? 0.9 : 0.3;
@@ -128,7 +133,7 @@ const DNAHelix = () => {
           const blueSize = blueZ > 0 ? 8 : 5;
           const yellowSize = yellowZ > 0 ? 8 : 5;
           
-          const showBar = Math.abs(blueX - yellowX) < amplitude * 0.5;
+          const showBar = Math.abs(blueXFloat - yellowXFloat) < amplitude * 0.5;
           
           return (
             <g key={i}>

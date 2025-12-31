@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,7 +9,90 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  name  String? @db.VarChar(100)
-  email String  @unique @db.VarChar(100)
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // 'admin', 'principal', 'teacher', 'lab-assistant', 'student'
+  phone     String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  requests  InventoryRequest[]
+  schedules LabSchedule[]
+  activities ActivityLog[]
+}
+
+model Practical {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  subject     String   // 'Chemistry', 'Physics', 'Biology'
+  grade       Int
+  duration    Int      // in minutes
+  difficulty  String   // 'Beginner', 'Intermediate', 'Advanced'
+  videoUrl    String?
+  labSheetUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InventoryItem {
+  id         String   @id @default(cuid())
+  name       String
+  category   String
+  quantity   Int
+  minQuantity Int
+  location   String
+  status     String   // 'In Stock', 'Low Stock', 'Out of Stock'
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model InventoryRequest {
+  id          String   @id @default(cuid())
+  itemName    String
+  quantity    Int
+  priority    String   // 'Low', 'Medium', 'High'
+  status      String   // 'Pending', 'Approved', 'Rejected'
+  reason      String
+  response    String?
+  
+  // Relations
+  requestedBy String
+  user        User     @relation(fields: [requestedBy], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LabSchedule {
+  id       String   @id @default(cuid())
+  title    String
+  subject  String
+  date     DateTime
+  time     DateTime
+  location String
+  status   String   // 'Scheduled', 'Completed', 'Cancelled'
+  
+  // Relations
+  teacherId String
+  teacher   User     @relation(fields: [teacherId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  timestamp DateTime @default(now())
 }
