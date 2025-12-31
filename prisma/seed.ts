@@ -172,36 +172,25 @@ async function main() {
   ]);
   console.log(`✅ Created ${reportSubmissions.length} report submissions`);
 
-  // 6. Create 3 Quiz records
-  console.log('📚 Creating quizzes...');
-  const quizzes = await Promise.all([
-    prisma.quiz.create({
-      data: {
-        practicalId: practicals[0].id,
-        title: 'Chemistry Quiz: Acid-Base Reactions',
-        totalMarks: 100,
-      },
-    }),
-    prisma.quiz.create({
-      data: {
-        practicalId: practicals[1].id,
-        title: 'Physics Quiz: Motion and Forces',
-        totalMarks: 100,
-      },
-    }),
-    prisma.quiz.create({
-      data: {
-        practicalId: practicals[2].id,
-        title: 'Biology Quiz: Cell Biology',
-        totalMarks: 100,
-      },
-    }),
-  ]);
-  console.log(`✅ Created ${quizzes.length} quizzes`);
+  // 6. Create quizzes for ALL practicals (ensuring every practical has a quiz)
+  console.log('📚 Creating quizzes for all practicals...');
+  const quizzes = await Promise.all(
+    practicals.map((practical) =>
+      prisma.quiz.create({
+        data: {
+          practicalId: practical.id,
+          title: `${practical.subject} Quiz: ${practical.title}`,
+          totalMarks: 100,
+        },
+      })
+    )
+  );
+  console.log(`✅ Created ${quizzes.length} quizzes (one for each practical)`);
 
-  // 7. Create 3 QuizQuestion records (one for each quiz)
+  // 7. Create quiz questions for each quiz (2 questions per quiz)
   console.log('❓ Creating quiz questions...');
   const quizQuestions = await Promise.all([
+    // Chemistry quiz questions
     prisma.quizQuestion.create({
       data: {
         quizId: quizzes[0].id,
@@ -216,6 +205,19 @@ async function main() {
     }),
     prisma.quizQuestion.create({
       data: {
+        quizId: quizzes[0].id,
+        questionText: 'What is the chemical formula for water?',
+        optionA: 'H2O',
+        optionB: 'CO2',
+        optionC: 'NaCl',
+        optionD: 'O2',
+        correctAnswer: 'A',
+        marks: 10,
+      },
+    }),
+    // Physics quiz questions
+    prisma.quizQuestion.create({
+      data: {
         quizId: quizzes[1].id,
         questionText: 'What is Newton\'s First Law of Motion?',
         optionA: 'F = ma',
@@ -228,6 +230,19 @@ async function main() {
     }),
     prisma.quizQuestion.create({
       data: {
+        quizId: quizzes[1].id,
+        questionText: 'What is the unit of force?',
+        optionA: 'Joule',
+        optionB: 'Newton',
+        optionC: 'Watt',
+        optionD: 'Pascal',
+        correctAnswer: 'B',
+        marks: 10,
+      },
+    }),
+    // Biology quiz questions
+    prisma.quizQuestion.create({
+      data: {
         quizId: quizzes[2].id,
         questionText: 'Which organelle is responsible for protein synthesis?',
         optionA: 'Mitochondria',
@@ -235,6 +250,18 @@ async function main() {
         optionC: 'Nucleus',
         optionD: 'Golgi Apparatus',
         correctAnswer: 'B',
+        marks: 10,
+      },
+    }),
+    prisma.quizQuestion.create({
+      data: {
+        quizId: quizzes[2].id,
+        questionText: 'What is the basic unit of life?',
+        optionA: 'Tissue',
+        optionB: 'Organ',
+        optionC: 'Cell',
+        optionD: 'Organelle',
+        correctAnswer: 'C',
         marks: 10,
       },
     }),

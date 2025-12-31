@@ -16,13 +16,6 @@ enum UserRole {
   ADMIN
 }
 
-enum MaterialRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  FULFILLED
-}
-
 enum CorrectAnswer {
   A
   B
@@ -45,7 +38,7 @@ model User {
   updatedAt DateTime   @updatedAt
 
   // Relations
-  materialRequests  MaterialRequest[]
+
   reportSubmissions ReportSubmission[]
   quizAttempts      QuizAttempt[]
   sessions          Session[]
@@ -62,7 +55,7 @@ model Practical {
   updatedAt DateTime @updatedAt
 
   // Relations
-  materialRequests  MaterialRequest[]
+
   notes             Note[]
   reportSubmissions ReportSubmission[]
   quizzes           Quiz[]
@@ -92,23 +85,7 @@ model Attendance {
   @@index([practicalId])
 }
 
-model MaterialRequest {
-  id          Int                   @id @default(autoincrement())
-  studentId   Int
-  practicalId Int
-  itemName    String                @db.VarChar(200)
-  quantity    Int                   @default(1)
-  status      MaterialRequestStatus @default(PENDING)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
 
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-
-  @@index([studentId])
-  @@index([practicalId])
-}
 
 model Note {
   id          Int      @id @default(autoincrement())

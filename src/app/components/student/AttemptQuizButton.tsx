@@ -70,12 +70,38 @@ export function AttemptQuizButton({
       if (response.success && response.data && response.data.length > 0) {
         setQuiz(response.data[0]); // Get first quiz
       } else {
-        toast.info('No quiz available for this practical');
-        setIsOpen(false);
+        // If no quiz found, try to ensure all practicals have quizzes
+        try {
+          await post('/api/quizzes', {});
+          // Retry fetching the quiz
+          const retryResponse = await get(`/api/quizzes?practicalId=${practicalId}`);
+          if (retryResponse.success && retryResponse.data && retryResponse.data.length > 0) {
+            setQuiz(retryResponse.data[0]);
+          } else {
+            toast.error('No quiz available for this practical. Please contact your teacher.');
+            setIsOpen(false);
+          }
+        } catch (retryError: any) {
+          toast.error('Failed to create quiz. Please contact your teacher.');
+          setIsOpen(false);
+        }
       }
     } catch (error: any) {
-      toast.error(error.message || 'Failed to fetch quiz');
-      setIsOpen(false);
+      console.error('Error fetching quiz:', error);
+      // Try to ensure all practicals have quizzes and retry
+      try {
+        await post('/api/quizzes', {});
+        const retryResponse = await get(`/api/quizzes?practicalId=${practicalId}`);
+        if (retryResponse.success && retryResponse.data && retryResponse.data.length > 0) {
+          setQuiz(retryResponse.data[0]);
+        } else {
+          toast.error(error.message || 'Failed to fetch quiz');
+          setIsOpen(false);
+        }
+      } catch (retryError: any) {
+        toast.error(error.message || 'Failed to fetch quiz');
+        setIsOpen(false);
+      }
     } finally {
       setIsLoading(false);
     }
