@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState,  useEffect } from 'react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -39,104 +40,121 @@ interface ScheduledPractical {
   status: 'upcoming' | 'completed' | 'cancelled';
 }
 
-const scheduledPracticals: ScheduledPractical[] = [
-  {
-    id: '1',
-    title: 'Acid-Base Titration',
-    date: '2025-11-13',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 11',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    location: 'Chemistry Lab A',
-    notes: 'Students must bring their lab coats and safety goggles. Pre-read Chapter 8 on acid-base reactions. Lab sheets will be provided.',
-    attachments: ['titration_procedure.pdf', 'safety_guidelines.pdf'],
-    maxStudents: 25,
-    status: 'upcoming',
-  },
-  {
-    id: '2',
-    title: 'Microscope Practical',
-    date: '2025-11-14',
-    time: '10:30',
-    duration: '1.5 hours',
-    grade: 'Grade 9',
-    subject: 'Biology',
-    teacher: 'Mr. Silva',
-    location: 'Biology Lab',
-    notes: 'Introduction to compound microscope usage. Students will observe prepared slides of plant and animal cells.',
-    attachments: ['microscope_guide.pdf'],
-    maxStudents: 30,
-    status: 'upcoming',
-  },
-  {
-    id: '3',
-    title: 'Simple Pendulum Experiment',
-    date: '2025-11-15',
-    time: '14:00',
-    duration: '1 hour',
-    grade: 'Grade 10',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    location: 'Physics Lab',
-    notes: 'Study of simple harmonic motion. Bring calculators for data analysis. Work in pairs.',
-    attachments: ['pendulum_theory.pdf', 'data_sheet.xlsx'],
-    maxStudents: 20,
-    status: 'upcoming',
-  },
-  {
-    id: '4',
-    title: 'Photosynthesis Experiment',
-    date: '2025-11-12',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 10',
-    subject: 'Biology',
-    teacher: 'Mr. Silva',
-    location: 'Biology Lab',
-    notes: 'Investigating factors affecting photosynthesis rate using aquatic plants. Completed successfully.',
-    maxStudents: 30,
-    status: 'completed',
-  },
-  {
-    id: '5',
-    title: 'Qualitative Salt Analysis',
-    date: '2025-11-18',
-    time: '13:00',
-    duration: '3 hours',
-    grade: 'Grade 12',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    location: 'Chemistry Lab B',
-    notes: 'Advanced practical for A/L students. Systematic identification of cations and anions. Essential for exam preparation.',
-    attachments: ['salt_analysis_flowchart.pdf', 'reagent_list.pdf'],
-    maxStudents: 20,
-    status: 'upcoming',
-  },
-  {
-    id: '6',
-    title: 'Ohm\'s Law Verification',
-    date: '2025-11-20',
-    time: '11:00',
-    duration: '1.5 hours',
-    grade: 'Grade 11',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    location: 'Physics Lab',
-    notes: 'Verification of Ohm\'s law using resistors and ammeters. Graph plotting required.',
-    attachments: ['circuit_diagram.pdf'],
-    maxStudents: 24,
-    status: 'upcoming',
-  },
-];
+
 
 export function SchedulePage({ userRole }: SchedulePageProps) {
+
+  const [scheduledPracticals, setScheduledPracticals] =
+    useState<ScheduledPractical[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12)); // November 2025
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null)
 
-  const canSchedule = userRole === 'teacher' || userRole === 'staff';
+  const [formData, setFormData] = useState({
+  title: '',
+  subject: '',
+  date: '',
+  time: '',
+  teacher: '',
+  location: '',
+})
+  const canSchedule =
+    userRole === 'teacher' || userRole === 'lab-assistant';
+
+  useEffect(() => {
+  loadPracticals();
+}, []);
+
+const loadPracticals = async () => {
+  const res = await fetch('/api/practicals');
+  setScheduledPracticals(await res.json());
+};
+   
+  const handleCreate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  await fetch('/api/practicals', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData),
+  });
+  setIsAddDialogOpen(false);
+  setFormData({ title: '', subject: '', date: '', time: '', teacher: '', location: '' });
+  loadPracticals();
+  const startEdit = (p: ScheduledPractical) => {
+  setEditingId(p.id);
+  setFormData({
+      title: p.title,
+      subject: p.subject,
+      date: p.date,
+      time: p.time,
+      teacher: p.teacher,
+      location: p.location,
+    });
+    setIsAddDialogOpen(true);
+  };
+  // ✅ UPDATE
+  const handleUpdate = async () => {
+    if (!editingId) return;
+
+    await fetch(`/api/practicals/${editingId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    setEditingId(null);
+    setIsAddDialogOpen(false);
+    loadPracticals();
+  };
+  // ✅ DELETE
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this practical?')) return;
+
+    await fetch(`/api/practicals/${id}`, { method: 'DELETE' });
+
+    setScheduledPracticals(prev =>
+      prev.filter(p => p.id !== id)
+    );
+  };
+  const res = await fetch('/api/practicals');
+  setScheduledPracticals(await res.json());
+};
+// ✅ UPDATE
+
+  const handleUpdate = async (id: string) => {
+    await fetch(`/api/practicals/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData),
+    });
+    setEditingId(null);
+    setIsAddDialogOpen(false);
+    loadPracticals();
+  const handleDelete = async (id: string) => {
+  if (!confirm('Delete this practical?')) return;
+
+  await fetch(`/api/practicals/${id}`, { method: 'DELETE' });
+
+  setScheduledPracticals(prev =>
+    prev.filter(p => p.id !== id)
+  );
+};
+
+    const res = await fetch('/api/practicals');
+    setScheduledPracticals(await res.json());
+  };
+
+  // ✅ DELETE
+  const handleDelete = async (id: string) => {
+    await fetch(`/api/practicals/${id}`, {
+      method: 'DELETE',
+    });
+
+    setScheduledPracticals(prev =>
+      prev.filter(p => p.id !== id)
+    );
+  };
+  
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {

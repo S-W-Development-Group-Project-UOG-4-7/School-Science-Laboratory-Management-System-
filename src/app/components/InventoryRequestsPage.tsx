@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { toast } from 'sonner';
+import { RequesterRole } from '../../../prisma/src/app/generated';
 
 interface InventoryRequest {
   id: string;
@@ -45,7 +46,7 @@ interface InventoryRequest {
 }
 interface InventoryRequestCreate {
   requesterName: string;
-  requesterRole: string;
+  requesterRole: RequesterRole
   requesterId: string;
   itemId: string;
   quantity: number;

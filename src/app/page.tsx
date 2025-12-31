@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import {LoginPage} from '@/app/components/LoginPage';
 import {Dashboard} from '@/app/components/Dashboard';
+import { SchedulePage } from './components/SchedulePage';
 import { Toaster } from '@/app/components/ui/sonner';
-import type { User } from '@/app/lib/types';
+import type { User } from '@/lib/types';
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const handleLogin = (userData: User) => {
@@ -23,5 +24,8 @@ export default function Home() {
       <Toaster position="top-right" />
     </>
   );
+   <SchedulePage userRole="teacher" />;
+
+
 }
 

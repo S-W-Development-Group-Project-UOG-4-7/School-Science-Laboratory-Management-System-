@@ -13,7 +13,7 @@ datasource db {
 
 
 model Inventory {
-  id                  String   @id @default(cuid())
+  id                  Int    @id @default(autoincrement())
   name                String
   category            Category
   stockLevel          Int
@@ -24,16 +24,18 @@ model Inventory {
   storageInstructions String?
   handlingProcedure   String?
   safetyNotes         String?
-  lastUpdated         DateTime @default(now())
+  lastUpdated         DateTime  @updatedAt
   requests            InventoryRequest[]
+
+   
 }
 
 model InventoryRequest {
-  id            String    @id @default(cuid())
+  id            Int    @id @default(autoincrement())
   requesterName String
-  requesterRole RequesterRole  // changed to enum for safety
-  requesterId   String
-  itemId        String
+  requesterRole String 
+  requesterId   String  
+  itemId        Int
   item          Inventory @relation(fields: [itemId], references: [id])
   quantity      Int
   reason        String
@@ -69,4 +71,34 @@ enum RequestStatus {
 enum RequesterRole {
   LAB_ASSISTANT
   ADMIN
+}
+
+model PracticalSchedule {
+  id           String   @id @default(cuid())
+  title        String
+  subject      Subject
+  grade        String
+  date         DateTime
+  time         String
+  duration     String
+  teacher      String
+  location     String
+  notes        String?
+  maxStudents  Int
+  status       ScheduleStatus @default(UPCOMING)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum Subject {
+  Physics
+  Chemistry
+  Biology
+}
+
+enum ScheduleStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
 }

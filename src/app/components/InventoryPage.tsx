@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import useSWR from 'swr';
-import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
+import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -16,7 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import type { UserRole } from '@/app/lib/types'
+import type { UserRole } from '@/lib/types'
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface InventoryPageProps {
@@ -42,27 +42,42 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function InventoryPage({ userRole }: InventoryPageProps) {
   const { data: inventoryItems, error } = useSWR<InventoryItem[]>(
-  '/api/inventory',
-  fetcher
-);
+    '/api/inventory',
+    fetcher
+  );
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [openAdd, setOpenAdd] = useState(false);
+  const [showMoreInfo, setShowMoreInfo] = useState(false);
+  const [openDetails, setOpenDetails] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    category: 'Equipment' as InventoryItem['category'],
+    stockLevel: 0,
+    minStockLevel: 0,
+    unit: '',
+    location: '',
+    storageInstructions: '',
+    handlingProcedure: '',
+    safetyNotes: '',
+    photo: '',
+  });
 
-    // ✅ loading check BEFORE using inventoryItems
   if (error) return <div>Failed to load inventory</div>;
   if (!inventoryItems) return <div>Loading inventory...</div>;
 
-const filteredItems = inventoryItems.filter((item: InventoryItem) => {
-  const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-  const matchesCategory =
-    selectedCategory === 'all' || item.category === selectedCategory;
+  const filteredItems = inventoryItems.filter((item: InventoryItem) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'all' || item.category === selectedCategory;
 
-  return matchesSearch && matchesCategory;
-});
+    return matchesSearch && matchesCategory;
+  });
   
-    const canEdit = userRole === 'teacher' || userRole === 'staff';
+  // Fix: Adjust based on your actual UserRole values
+  const canEdit = userRole === 'admin' || userRole === 'lab-assistant'; // Changed from 'teacher'/'staff'
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -70,10 +85,50 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
     }
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
-   if (!inventoryItems) return <div>Loading inventory...</div>;
 
+  const handleAddItem = async () => {
+    await fetch('/api/inventory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    setOpenAdd(false);
+    setForm({
+      name: '',
+      category: 'Equipment',
+      stockLevel: 0,
+      minStockLevel: 0,
+      unit: '',
+      location: '',
+      storageInstructions: '',
+      handlingProcedure: '',
+      safetyNotes: '',
+      photo: '',
+    });
+    mutate('/api/inventory');
+  };
 
+  const handleUpdateItem = async () => {
+    if (!selectedItem) return;
+    await fetch('/api/inventory', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, id: selectedItem.id }),
+    });
+    setSelectedItem(null);
+    mutate('/api/inventory');
+  };
 
+  const handleDeleteItem = async (itemId: string) => { // Fixed: itemId is string, not number
+    if (!confirm('Delete this item?')) return;
+    await fetch('/api/inventory', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: itemId }),
+    });
+    mutate('/api/inventory');
+  };
+ 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -85,12 +140,119 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
           </p>
         </div>
         {canEdit && (
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={() => setOpenAdd(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Item
           </Button>
         )}
-      </div>
+        </div>
+      
+          <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+             <DialogContent>
+              <DialogHeader>
+                 <DialogTitle>Add Inventory Item</DialogTitle>
+              </DialogHeader>
+            <div className="space-y-4">
+
+            {/* BASIC INFO */}
+            <h3 className="text-sm font-semibold text-gray-800">Basic Information</h3>
+
+            <Input
+                 placeholder="Item name"
+                 value={form.name}
+                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+
+           {/* Stock Level */}
+            <div>
+             <label className="text-sm font-medium">Stock Level</label>
+             <Input
+                type="number"
+                min={0}
+                 value={form.stockLevel}
+                  onChange={(e) =>
+                  setForm({ ...form, stockLevel: Number(e.target.value) })
+                }
+               />
+             </div>
+
+             {/* Min Stock Level */}
+             <div>
+              <label className="text-sm font-medium">Min Stock Level</label>
+              <Input
+                 type="number"
+                 min={0}
+                 value={form.minStockLevel}
+                 onChange={(e) =>
+                 setForm({ ...form, minStockLevel: Number(e.target.value) })
+              }
+             />
+            </div>
+
+              <Input
+                placeholder="Unit (pcs, ml, kg)"
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              />
+
+             <Input
+                placeholder="Location"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+               />
+
+          {/* TOGGLE OPTIONAL INFO */}
+             <button
+                 type="button"
+                 className="text-blue-600 text-sm underline"
+                  onClick={() => setShowMoreInfo(!showMoreInfo)}
+             >
+              {showMoreInfo ? 'Hide more information' : 'Add more information (optional)'}
+            </button>
+
+          {/* OPTIONAL INFO */}
+          {showMoreInfo && (
+          <div className="space-y-3 pt-2 border-t">
+
+              <Input
+                 placeholder="Photo URL"
+                 value={form.photo}
+                 onChange={(e) => setForm({ ...form, photo: e.target.value })}
+               />
+
+               <Input
+                 placeholder="Storage Instructions"
+                 value={form.storageInstructions}
+                onChange={(e) =>
+                setForm({ ...form, storageInstructions: e.target.value })
+                }
+                 />
+
+                <Input
+                 placeholder="Handling Procedure"
+                 value={form.handlingProcedure}
+                 onChange={(e) =>
+                 setForm({ ...form, handlingProcedure: e.target.value })
+                 }
+                />
+
+                 <Input
+                  placeholder="Safety Notes"
+                  value={form.safetyNotes}
+                  onChange={(e) =>
+                  setForm({ ...form, safetyNotes: e.target.value })
+                   }
+                 />
+                </div>
+              )}
+
+               <Button onClick={handleAddItem}>Save Item</Button>
+              </div>
+           </DialogContent>
+         </Dialog>
 
       {/* Filters */}
       <Card>
@@ -108,19 +270,21 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
               </div>
             </div>
             <div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="hover:border-blue-400 transition-colors">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Glassware">Glassware</SelectItem>
-                  <SelectItem value="Equipment">Equipment</SelectItem>
-                  <SelectItem value="Chemicals">Chemicals</SelectItem>
-                  <SelectItem value="Safety">Safety Equipment</SelectItem>
-                  <SelectItem value="Instruments">Instruments</SelectItem>
-                </SelectContent>
-              </Select>
+              <select
+                value={form.category}
+                onChange={(e) =>
+                setForm({ ...form, category: e.target.value })
+              }
+               className="border rounded p-2"
+              >
+                <option value="">Select Category</option>
+                <option value="Glassware">Glassware</option>
+                <option value="Equipment">Equipment</option>
+                <option value="Chemicals">Chemicals</option>
+                <option value="Safety">Safety</option>
+                <option value="Instruments">Instruments</option>
+              </select>
+
             </div>
           </div>
         </CardContent>
@@ -200,13 +364,19 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Dialog>
+                  {/* Details Dialog */}
+                  <Dialog open={openDetails && selectedItem?.id === item.id} onOpenChange={(open) => {
+                    if (!open) setOpenDetails(false);
+                  }}>
                     <DialogTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
                         className="flex-1"
-                        onClick={() => setSelectedItem(item)}
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setOpenDetails(true);
+                        }}
                       >
                         <Info className="w-4 h-4 mr-2" />
                         Details
@@ -220,54 +390,65 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
-                        <div className="h-64 bg-gray-100 rounded-lg overflow-hidden">
-                          <ImageWithFallback
-                            src={item.photo}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-sm text-gray-600">Category</p>
-                            <p className="text-gray-900">{item.category}</p>
+                            <p className="text-sm font-medium">Category</p>
+                            <p>{item.category}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Location</p>
-                            <p className="text-gray-900">{item.location}</p>
+                            <p className="text-sm font-medium">Location</p>
+                            <p>{item.location}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Stock Level</p>
-                            <p className="text-gray-900">
-                              {item.stockLevel} {item.unit}
-                            </p>
+                            <p className="text-sm font-medium">Stock Level</p>
+                            <p>{item.stockLevel} {item.unit}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">Last Updated</p>
-                            <p className="text-gray-900">{item.lastUpdated}</p>
+                            <p className="text-sm font-medium">Minimum Stock</p>
+                            <p>{item.minStockLevel} {item.unit}</p>
                           </div>
                         </div>
-
-                        <div className="space-y-3">
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <h4 className="text-blue-900 mb-2">Handling Procedure</h4>
-                            <p className="text-sm text-gray-700">{item.handlingProcedure}</p>
-                          </div>
-
-                          <div className="p-4 bg-red-50 rounded-lg border border-red-200">
-                            <h4 className="text-red-900 mb-2">⚠️ Safety Notes</h4>
-                            <p className="text-sm text-gray-700">{item.safetyNotes}</p>
-                          </div>
+                        <div>
+                          <p className="text-sm font-medium">Storage Instructions</p>
+                          <p>{item.storageInstructions}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Handling Procedure</p>
+                          <p>{item.handlingProcedure}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Safety Notes</p>
+                          <p>{item.safetyNotes}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Last Updated</p>
+                          <p>{item.lastUpdated}</p>
                         </div>
                       </div>
                     </DialogContent>
                   </Dialog>
 
                   {canEdit && (
-                    <Button size="sm" variant="outline">
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setForm(item);
+                        }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
@@ -276,18 +457,24 @@ const filteredItems = inventoryItems.filter((item: InventoryItem) => {
         })}
       </div>
 
-      {/* Empty State */}
-      {filteredItems.length === 0 && (
-        <Card className="py-12">
-          <CardContent className="text-center">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-gray-900 mb-2">No items found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search query</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Edit Item Dialog */}
+      <Dialog open={!!selectedItem && !openDetails} onOpenChange={(open) => {
+        if (!open) setSelectedItem(null);
+      }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            <Input type="number" value={form.stockLevel} onChange={e => setForm({ ...form, stockLevel: Number(e.target.value) })} />
+            <Input type="number" value={form.minStockLevel} onChange={e => setForm({ ...form, minStockLevel: Number(e.target.value) })} />
+            <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+            <Input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
+            <Button onClick={handleUpdateItem}>Update</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-
-
 }
