@@ -1,8 +1,11 @@
 // src/app/api/inventory-requests/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { sendLowStockEmail } from '@/lib/mailer';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
+
 
 export async function GET() {
   try {
@@ -17,22 +20,64 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json();
+    const itemId = Number(data.itemId);
+        // ✅ VALIDATION
+    if (!itemId || isNaN(itemId)) {
+      return NextResponse.json(
+        { error: 'Invalid inventory item ID' },
+        { status: 400 }
+      );
+    }
+     // ✅ CHECK IF INVENTORY ITEM EXISTS
+     const inventoryItem = await prisma.inventory.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!inventoryItem) {
+      return NextResponse.json(
+        { error: 'Inventory item not found' },
+        { status: 404 }
+      );
+    }
+        // ✅ GENERATE APPROVAL TOKEN
+    const approvalToken = crypto.randomUUID();
+    const tokenExpiresAt = new Date(
+      Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+    );
+
     const created = await prisma.inventoryRequest.create({
       data: {
         requesterName: data.requesterName,
         requesterRole: data.requesterRole,
         requesterId: data.requesterId,
-        itemId: data.itemId,
+        itemId: itemId,
         quantity: data.quantity,
         reason: data.reason,
         urgency: data.urgency,
         status: data.status,
         requestDate: new Date(),
+
+        approvalToken,
+        tokenExpiresAt,
       },
     });
+        // ✅ SEND EMAIL
+        const approveUrl = `http://localhost:3000/approval?action=approve&id=${created.id}`;
+        const rejectUrl  = `http://localhost:3000/approval?action=reject&id=${created.id}`;
+        const itemName = data.itemName;
+        const quantity = data.quantity;
+        const requesterName = data.requesterName;
+        await sendLowStockEmail({
+         itemName,
+         quantity,
+         requesterName,
+         approveUrl,
+         rejectUrl,
+      });
     return NextResponse.json(created, { status: 201 });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
-  }
+  }  
+  catch (err) {
+  console.error("Error in POST /inventory-requests:", err);
+  return NextResponse.json({ error: 'Failed to create request', details: err instanceof Error ? err.message : err }, { status: 500 });
+}
 }

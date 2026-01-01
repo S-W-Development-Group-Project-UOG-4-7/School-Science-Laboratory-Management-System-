@@ -1,8 +1,5 @@
-
-
 generator client {
-   provider = "prisma-client-js"
- 
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,10 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model Inventory {
-  id                  Int    @id @default(autoincrement())
+  id                  Int                @id @default(autoincrement())
   name                String
   category            Category
   stockLevel          Int
@@ -24,28 +19,28 @@ model Inventory {
   storageInstructions String?
   handlingProcedure   String?
   safetyNotes         String?
-  lastUpdated         DateTime  @updatedAt
+  lastUpdated         DateTime           @updatedAt
   requests            InventoryRequest[]
-
-   
 }
 
 model InventoryRequest {
-  id            Int    @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   requesterName String
-  requesterRole String 
-  requesterId   String  
+  requesterRole String
+  requesterId   String
   itemId        Int
-  item          Inventory @relation(fields: [itemId], references: [id])
+  item          Inventory     @relation(fields: [itemId], references: [id])
   quantity      Int
   reason        String
   urgency       Urgency
   status        RequestStatus @default(pending)
-  requestDate   DateTime @default(now())
+  requestDate   DateTime      @default(now())
   responseDate  DateTime?
   responseNote  String?
-}
 
+  approvalToken  String   @unique
+  tokenExpiresAt DateTime
+}
 
 enum Category {
   Glassware
@@ -74,21 +69,21 @@ enum RequesterRole {
 }
 
 model PracticalSchedule {
-  id           String   @id @default(cuid())
-  title        String
-  subject      Subject
-  grade        String
-  date         DateTime
-  time         String
-  duration     String
-  teacher      String
-  location     String
-  notes        String?
-  maxStudents  Int
-  status       ScheduleStatus @default(UPCOMING)
+  id          String         @id @default(cuid())
+  title       String
+  subject     Subject
+  grade       String
+  date        DateTime
+  time        String
+  duration    String
+  teacher     String
+  location    String
+  notes       String?
+  maxStudents Int
+  status      ScheduleStatus @default(UPCOMING)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Subject {
