@@ -32,10 +32,11 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import type { User } from "@/lib/types";
+import type { AuthUser } from "@/lib/types";
+
 
 interface DashboardProps {
-  user: User;
+  user: AuthUser;
   onLogout: () => void;
 }
 

@@ -24,11 +24,11 @@ import {
   Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User as UserType } from '@/lib/types';
+import type { AuthUser } from "@/lib/types";
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface SettingsPageProps {
-  user: UserType;
+  user: AuthUser;
 }
 
 export function SettingsPage({ user }: SettingsPageProps) {

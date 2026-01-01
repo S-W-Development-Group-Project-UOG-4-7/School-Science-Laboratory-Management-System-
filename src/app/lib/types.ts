@@ -1,7 +1,6 @@
 // lib/types.ts
 export type UserRole = 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin';
-
-// Database Enums (matching Prisma schema)
+// UI / Auth user (used for session, JWT, frontend)
 export enum Role {
   STUDENT = 'STUDENT',
   TEACHER = 'TEACHER',
@@ -9,6 +8,16 @@ export enum Role {
   PRINCIPAL = 'PRINCIPAL',
   ADMIN = 'ADMIN'
 }
+// UI / Auth user (used for session, JWT, frontend)
+export type AuthUser = {
+  id: string;        // string because JWT / session IDs are strings
+  name: string;
+  email: string;
+  role: UserRole;   // frontend-safe role
+};
+
+
+
 
 export enum DifficultyLevel {
   BEGINNER = 'BEGINNER',

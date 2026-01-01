@@ -5,18 +5,17 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Plus } from 'lucide-react';
-import { Quiz, QuizAttempt, UserRole, QuizStatus, CreateQuizInput, Question, QuestionType } from '@/lib/types'; 
+import { Quiz, QuizAttempt, UserRole, QuizStatus } from '@/lib/types'; 
 import { QuizForm } from './QuizForm';
 import { QuizCard } from './QuizCard';
 import { QuizAttemptsView } from './QuizAttemptsView';
-import { quizService } from '@/services/quizService';
 import { Loader2 } from 'lucide-react';
 
 interface QuizManagerProps {
   practicalId: string;
   userRole: UserRole;
   quizzes?: Quiz[];
-  onAddQuiz?: (quiz: Omit<Quiz, 'id' | 'createdAt'>) => void;
+  onAddQuiz?: (quiz: any) => void;
   onEditQuiz?: (id: string, quiz: Partial<Quiz>) => void;
   onDeleteQuiz?: (id: string) => void;
   quizAttempts?: QuizAttempt[];
@@ -36,71 +35,48 @@ export function QuizManager({
   const [quizzes, setQuizzes] = useState<Quiz[]>(initialQuizzes);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const canManage = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+  // Check if user can manage quizzes
+  const canManage = ['teacher', 'lab-assistant', 'admin', 'principal'].includes(userRole);
 
-  // Fetch quizzes from database on mount
+  // Simple initialization - NO async calls
   useEffect(() => {
-    fetchQuizzes();
-  }, [practicalId]);
-
-  const fetchQuizzes = async () => {
-    try {
-      setLoading(true);
-      const numericPracticalId = parseInt(practicalId);
-      const fetchedQuizzes = await quizService.getAll(numericPracticalId);
-      
-      // Ensure isPublished is set correctly
-      const formattedQuizzes = fetchedQuizzes.map(quiz => ({
-        ...quiz,
-        isPublished: quiz.isPublished || quiz.status === QuizStatus.PUBLISHED
-      }));
-      
-      setQuizzes(formattedQuizzes);
-    } catch (error) {
-      console.error('Error fetching quizzes:', error);
-      // Keep initial quizzes if fetch fails
-    } finally {
-      setLoading(false);
+    console.log('QuizManager mounted with practicalId:', practicalId);
+    // Just use the initial quizzes
+    if (initialQuizzes.length > 0) {
+      setQuizzes(initialQuizzes);
     }
-  };
+  }, [practicalId, initialQuizzes]);
 
-  const handleAddQuiz = async (quizData: Omit<Quiz, 'id' | 'createdAt'>) => {
+  // Remove the fetchQuizzes function entirely for now
+  // const fetchQuizzes = async () => { ... }
+
+  const handleAddQuiz = async (quizData: any) => {
     try {
-      // Convert questions to proper format
-      const questions = quizData.questions?.map((q: any, index: number) => ({
-        question: q.question,
-        type: q.type,
-        options: q.options || [],
-        correctAnswer: q.correctAnswer || '',
-        correctAnswers: q.correctAnswers || [],
-        marks: q.marks || 1,
-        explanation: q.explanation || '',
-        order: index
-      })) || [];
-
-      // Convert to CreateQuizInput - handle null description properly
-      const createData: CreateQuizInput = {
-        title: quizData.title,
+      setError(null);
+      
+      // Create a new quiz object
+      const newQuiz: Quiz = {
+        id: Date.now(),
+        title: quizData.title || 'New Quiz',
         description: quizData.description || null,
-        practicalId: parseInt(practicalId),
-        teacherId: 1, // Get from auth/session - this should be dynamic
-        status: quizData.status || QuizStatus.DRAFT,
-        totalMarks: quizData.totalMarks || 100,
+        practicalId: parseInt(practicalId) || 1,
+        totalMarks: quizData.totalMarks || quizData.questions?.reduce((sum: number, q: any) => sum + (q.marks || 1), 0) || 100,
         passingMarks: quizData.passingMarks || 60,
         timeLimit: quizData.timeLimit !== undefined ? quizData.timeLimit : null,
-        questions: questions
+        status: QuizStatus.DRAFT,
+        teacherId: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        questions: quizData.questions || [],
+        isPublished: false
       };
       
-      const newQuiz = await quizService.create(createData);
+      console.log('Creating quiz:', newQuiz);
       
-      // Ensure isPublished is set
-      const formattedQuiz = {
-        ...newQuiz,
-        isPublished: newQuiz.isPublished || newQuiz.status === QuizStatus.PUBLISHED
-      };
-      
-      setQuizzes([formattedQuiz, ...quizzes]);
+      // Add to local state
+      setQuizzes(prev => [newQuiz, ...prev]);
       
       // Call parent callback if provided
       if (onAddQuiz) {
@@ -109,8 +85,9 @@ export function QuizManager({
       
       setIsAddQuizOpen(false);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating quiz:', error);
+      setError(`Failed to create quiz: ${error.message || 'Unknown error'}`);
       alert('Failed to create quiz. Please try again.');
       return false;
     }
@@ -119,40 +96,22 @@ export function QuizManager({
   const handleEditQuiz = async (quizId: string, updates: Partial<Quiz>) => {
     try {
       setRefreshing(true);
+      setError(null);
+      
       const numericQuizId = parseInt(quizId);
       
-      // Prepare update data - handle null description
-      const updateData: any = {
-        ...updates
-      };
-      
-      // If isPublished is being set, update status accordingly
-      if (updates.isPublished !== undefined) {
-        updateData.status = updates.isPublished ? QuizStatus.PUBLISHED : QuizStatus.DRAFT;
-      }
-      
-      // Handle description - convert undefined to null for database
-      if ('description' in updates) {
-        updateData.description = updates.description || null;
-      }
-      
-      // Handle timeLimit - convert undefined to null for database
-      if ('timeLimit' in updates) {
-        updateData.timeLimit = updates.timeLimit !== undefined ? updates.timeLimit : null;
-      }
-      
-      const updatedQuiz = await quizService.update(numericQuizId, updateData);
-      
-      // Ensure isPublished is set
-      const formattedQuiz = {
-        ...updatedQuiz,
-        isPublished: updatedQuiz.isPublished || updatedQuiz.status === QuizStatus.PUBLISHED
-      };
-      
       // Update local state
-      setQuizzes(quizzes.map(q => 
-        q.id === formattedQuiz.id ? formattedQuiz : q
-      ));
+      setQuizzes(prev => prev.map(q => {
+        if (q.id === numericQuizId) {
+          return {
+            ...q,
+            ...updates,
+            updatedAt: new Date(),
+            isPublished: updates.status === QuizStatus.PUBLISHED
+          };
+        }
+        return q;
+      }));
       
       // Call parent callback if provided
       if (onEditQuiz) {
@@ -160,8 +119,9 @@ export function QuizManager({
       }
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating quiz:', error);
+      setError(`Failed to update quiz: ${error.message || 'Unknown error'}`);
       alert('Failed to update quiz. Please try again.');
       return false;
     } finally {
@@ -176,11 +136,12 @@ export function QuizManager({
 
     try {
       setRefreshing(true);
+      setError(null);
+      
       const numericQuizId = parseInt(quizId);
-      await quizService.delete(numericQuizId);
       
       // Update local state
-      setQuizzes(quizzes.filter(q => q.id.toString() !== quizId));
+      setQuizzes(prev => prev.filter(q => q.id !== numericQuizId));
       
       // Call parent callback if provided
       if (onDeleteQuiz) {
@@ -188,8 +149,9 @@ export function QuizManager({
       }
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting quiz:', error);
+      setError(`Failed to delete quiz: ${error.message || 'Unknown error'}`);
       alert('Failed to delete quiz. Please try again.');
       return false;
     } finally {
@@ -202,7 +164,12 @@ export function QuizManager({
   };
 
   const handleRefresh = () => {
-    fetchQuizzes();
+    // Simple refresh - just log for now
+    console.log('Refresh clicked');
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 500);
   };
 
   if (loading) {
@@ -210,12 +177,10 @@ export function QuizManager({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Quizzes</h3>
-          {canManage && (
-            <Button size="sm" variant="outline" disabled>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Loading...
-            </Button>
-          )}
+          <Button size="sm" variant="outline" disabled>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Loading...
+          </Button>
         </div>
         <Card className="border-dashed border-2">
           <CardContent className="py-12 text-center">
@@ -239,7 +204,7 @@ export function QuizManager({
             disabled={refreshing}
           >
             {refreshing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               'Refresh'
             )}
@@ -275,6 +240,20 @@ export function QuizManager({
         </div>
       </div>
 
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{error}</p>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="mt-1 text-red-700 hover:text-red-800 hover:bg-red-100"
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
+
       {quizzes.length === 0 ? (
         <Card className="border-dashed border-2">
           <CardContent className="py-8 text-center">
@@ -296,7 +275,7 @@ export function QuizManager({
           {quizzes.map((quiz) => {
             // Calculate attempt count
             const attemptCount = quizAttempts.filter(a => 
-              a.quizId.toString() === quiz.id.toString()
+              a.quizId === quiz.id
             ).length;
             
             return (
@@ -328,7 +307,7 @@ export function QuizManager({
           {selectedQuizForAttempts && (
             <QuizAttemptsView 
               attempts={quizAttempts.filter(a => 
-                a.quizId.toString() === selectedQuizForAttempts.id.toString()
+                a.quizId === selectedQuizForAttempts.id
               )} 
             />
           )}
