@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Helper function to format time ago - define it at the module level
+function formatTimeAgo(date: Date): string {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
+  
+  if (seconds < 60) return 'just now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
+  return `${Math.floor(seconds / 86400)} days ago`
+}
+
 export async function GET() {
   try {
     // Get real data from your seeded database
@@ -47,7 +57,7 @@ export async function GET() {
       recentActivity: recentActivity.map(activity => ({
         action: activity.action,
         details: activity.details,
-        timestamp: this.formatTimeAgo(activity.timestamp),
+        timestamp: formatTimeAgo(activity.timestamp), // CORRECTED: Remove "this."
         user: activity.user.name
       })),
       quickActions: [
@@ -65,13 +75,4 @@ export async function GET() {
     )
   }
 }
-
-// Helper function to format time ago
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
-  
-  if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`
-  return `${Math.floor(seconds / 86400)} days ago`
-}
+// CORRECTED: Removed "this." from formatTimeAgo function call

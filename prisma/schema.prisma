@@ -9,90 +9,83 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   // 'admin', 'principal', 'teacher', 'lab-assistant', 'student'
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+
   phone     String?
-  avatar    String?
+  role      String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  requests  InventoryRequest[]
-  schedules LabSchedule[]
-  activities ActivityLog[]
-}
 
-model Practical {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  subject     String   // 'Chemistry', 'Physics', 'Biology'
-  grade       Int
-  duration    Int      // in minutes
-  difficulty  String   // 'Beginner', 'Intermediate', 'Advanced'
-  videoUrl    String?
-  labSheetUrl String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model InventoryItem {
-  id         String   @id @default(cuid())
-  name       String
-  category   String
-  quantity   Int
-  minQuantity Int
-  location   String
-  status     String   // 'In Stock', 'Low Stock', 'Out of Stock'
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model InventoryRequest {
-  id          String   @id @default(cuid())
-  itemName    String
-  quantity    Int
-  priority    String   // 'Low', 'Medium', 'High'
-  status      String   // 'Pending', 'Approved', 'Rejected'
-  reason      String
-  response    String?
-  
-  // Relations
-  requestedBy String
-  user        User     @relation(fields: [requestedBy], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  activityLogs     ActivityLog[]
+  labSchedules     LabSchedule[]
+  practicals       Practical[]        @relation("CreatedPracticals")
+  InventoryRequest InventoryRequest[]
 }
 
 model LabSchedule {
-  id       String   @id @default(cuid())
+  id       Int      @id @default(autoincrement())
   title    String
   subject  String
   date     DateTime
-  time     DateTime
+  time     String
   location String
-  status   String   // 'Scheduled', 'Completed', 'Cancelled'
-  
-  // Relations
-  teacherId String
-  teacher   User     @relation(fields: [teacherId], references: [id])
-  
+  status   String
+
+  teacherId Int
+  teacher   User @relation(fields: [teacherId], references: [id])
+
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+model Practical {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String
+  subject     String
+  grade       String
+  duration    Int
+  difficulty  String
+  videoUrl    String?
+  labSheetUrl String?
+
+  createdBy Int
+  creator   User @relation("CreatedPracticals", fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model InventoryItem {
+  id          Int    @id @default(autoincrement())
+  name        String
+  category    String
+  quantity    Int
+  minQuantity Int
+  location    String
+  status      String
+}
+
+model InventoryRequest {
+  id       Int     @id @default(autoincrement())
+  itemName String
+  quantity Int
+  priority String
+  status   String
+  reason   String
+  response String?
+
+  requestedBy Int
+  requester   User @relation(fields: [requestedBy], references: [id])
 }
 
 model ActivityLog {
-  id        String   @id @default(cuid())
-  action    String
-  details   String
-  
-  // Relations
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
-  timestamp DateTime @default(now())
+  id      Int    @id @default(autoincrement())
+  action  String
+  details String
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
 }
