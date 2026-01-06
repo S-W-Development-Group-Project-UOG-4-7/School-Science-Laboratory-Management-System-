@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma  from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { Role } from '@prisma/client';
 
 // GET - Fetch all users
 export async function GET(request: NextRequest) {
@@ -174,6 +175,100 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting user:', error);
     return NextResponse.json(
       { error: 'Failed to delete user' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Update user
+export async function PUT(request: NextRequest) {
+  try {
+    const { id, name, email, role } = await request.json();
+
+    if (!id || !name || !email || !role) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if email is already taken by another user
+    const emailTaken = await prisma.user.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        NOT: { id },
+      },
+    });
+
+    if (emailTaken) {
+      return NextResponse.json(
+        { error: 'Email is already in use by another user' },
+        { status: 400 }
+      );
+    }
+
+    // Convert role to enum format
+    const roleMap: { [key: string]: Role } = {
+      'student': Role.STUDENT,
+      'teacher': Role.TEACHER,
+      'lab-assistant': Role.LAB_ASSISTANT,
+      'principal': Role.PRINCIPAL,
+      'admin': Role.ADMIN,
+    };
+
+    const roleEnum = roleMap[role.toLowerCase()];
+    if (!roleEnum) {
+      return NextResponse.json(
+        { error: 'Invalid role' },
+        { status: 400 }
+      );
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        role: roleEnum,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        createdDate: true,
+        lastLogin: true,
+      },
+    });
+
+    return NextResponse.json(updatedUser, { status: 200 });
+  } catch (error: any) {
+    console.error('Update user error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update user', details: error.message },
       { status: 500 }
     );
   }
