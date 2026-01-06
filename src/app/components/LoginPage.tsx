@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { FlaskConical, ArrowRight, Shield, AlertCircle, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User } from '@/src/app/lib/types';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -114,8 +115,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<'login' | '2fa'>('login');
-  const [totpCode, setTotpCode] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isBackupCode, setIsBackupCode] = useState(false);
+  const [backupCode, setBackupCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [pendingUser, setPendingUser] = useState<User | null>(null);
@@ -158,7 +160,29 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
-  const handleVerifyTOTP = async (e: React.FormEvent) => {
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) return;
+    if (value && !/^\d$/.test(value)) return; // Only allow digits
+    
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -168,6 +192,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         throw new Error('Session expired. Please login again.');
       }
 
+      const token = isBackupCode ? backupCode : otp.join('');
+
       const response = await fetch('/api/auth/totp/verify-login', {
         method: 'POST',
         headers: {
@@ -175,7 +201,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         },
         body: JSON.stringify({
           userId: pendingUser.id,
-          token: totpCode.replace(/\s|-/g, ''), // Remove spaces and dashes
+          token: token.replace(/\s|-/g, ''), // Remove spaces and dashes
           isBackupCode,
         }),
       });
@@ -195,7 +221,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       onLogin(pendingUser);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Verification failed');
-      setTotpCode('');
+      setOtp(['', '', '', '', '', '']);
+      setBackupCode('');
     } finally {
       setIsLoading(false);
     }
@@ -203,7 +230,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleBackToLogin = () => {
     setStep('login');
-    setTotpCode('');
+    setOtp(['', '', '', '', '', '']);
+    setBackupCode('');
     setIsBackupCode(false);
     setError('');
     setPendingUser(null);
@@ -297,10 +325,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
+                  className="mb-4"
                 >
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-600">{error}</p>
+                  <Alert variant="destructive">
+                    <AlertCircle className="w-4 h-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 </motion.div>
               )}
 
@@ -374,43 +405,77 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   </div>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyTOTP} className="space-y-6">
-                  <motion.div
-                    className="space-y-2"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <Label htmlFor="totp" className="flex items-center gap-2">
-                      <Key className="w-4 h-4" />
-                      {isBackupCode ? 'Backup Code' : 'Authenticator Code'}
-                    </Label>
-                    <Input
-                      id="totp"
-                      type="text"
-                      placeholder={isBackupCode ? "XXXX-XXXX" : "000000"}
-                      value={totpCode}
-                      onChange={(e) => setTotpCode(e.target.value)}
-                      className="text-center text-lg font-mono tracking-wider transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                      maxLength={isBackupCode ? 9 : 6}
-                      autoFocus
-                    />
-                    <p className="text-xs text-gray-500 text-center">
-                      {isBackupCode
-                        ? 'Enter the backup code in format: XXXX-XXXX'
-                        : 'Open your authenticator app to get the code'}
-                    </p>
-                  </motion.div>
+                <form onSubmit={handleVerifyOtp} className="space-y-6">
+                  {!isBackupCode ? (
+                    // Regular 6-digit OTP input
+                    <>
+                      <motion.div
+                        className="flex justify-center gap-2"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        {otp.map((digit, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                          >
+                            <Input
+                              id={`otp-${index}`}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={digit}
+                              onChange={(e) => handleOtpChange(index, e.target.value)}
+                              onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                              className="w-12 h-12 text-center text-lg font-semibold transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            />
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                      <p className="text-xs text-gray-500 text-center">
+                        Open your authenticator app to get the code
+                      </p>
+                    </>
+                  ) : (
+                    // Backup code input
+                    <motion.div
+                      className="space-y-2"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Label htmlFor="backup" className="flex items-center gap-2">
+                        <Key className="w-4 h-4" />
+                        Backup Recovery Code
+                      </Label>
+                      <Input
+                        id="backup"
+                        type="text"
+                        placeholder="XXXX-XXXX"
+                        value={backupCode}
+                        onChange={(e) => setBackupCode(e.target.value.toUpperCase())}
+                        className="text-center text-lg font-mono tracking-wider transition-all hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        maxLength={9}
+                        autoFocus
+                      />
+                      <p className="text-xs text-gray-500 text-center">
+                        Enter the backup code in format: XXXX-XXXX
+                      </p>
+                    </motion.div>
+                  )}
 
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
+                    transition={{ delay: 0.8 }}
                   >
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
-                      disabled={isLoading || !totpCode}
+                      disabled={isLoading || (!isBackupCode && otp.some(d => !d)) || (isBackupCode && !backupCode)}
                     >
                       {isLoading ? (
                         <motion.div
@@ -431,7 +496,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-sm"
                       onClick={() => {
                         setIsBackupCode(!isBackupCode);
-                        setTotpCode('');
+                        setOtp(['', '', '', '', '', '']);
+                        setBackupCode('');
                         setError('');
                       }}
                     >

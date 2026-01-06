@@ -5,4 +5,9 @@ export interface User {
   role: UserRole;
   email: string;
   id: string;
+
+   // Two-Factor Authentication fields
+  twoFactorEnabled: boolean;
+  twoFactorSecret?: string | null;
+  twoFactorBackupCodes?: string[];
 }

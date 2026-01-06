@@ -27,14 +27,17 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { User as UserType } from '@/src/app/lib/types';
+import { TwoFactorSetupPage } from './TwoFactorSetupPage';
 
 interface SettingsPageProps {
   user: UserType;
+  onUserUpdate?: (user: UserType) => void;
 }
 
-export function SettingsPage({ user }: SettingsPageProps) {
+export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
   
   // Account settings state
   const [fullName, setFullName] = useState(user.name);
@@ -42,7 +45,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
   const [phone, setPhone] = useState('+94 71 234 5678');
   
   // Security settings state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false); // Default: false
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(user.twoFactorEnabled || false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [practicalReminders, setPracticalReminders] = useState(true);
@@ -64,25 +67,52 @@ export function SettingsPage({ user }: SettingsPageProps) {
 
       if (response.ok) {
         setTwoFactorEnabled(false);
-        alert('2FA has been disabled');
+        // Update parent component if callback provided
+        if (onUserUpdate) {
+          onUserUpdate({ ...user, twoFactorEnabled: false });
+        }
+        alert('2FA has been disabled successfully');
       } else {
-        alert('Failed to disable 2FA');
+        const data = await response.json();
+        alert(data.error || 'Failed to disable 2FA');
       }
     } catch (error) {
       console.error('Error disabling 2FA:', error);
-      alert('An error occurred');
+      alert('An error occurred while disabling 2FA');
     }
   };
 
   const handleReset2FA = async () => {
     try {
-      // Disable first, then redirect to setup
+      // Disable first
       await handleDisable2FA();
-      window.location.href = '/settings/2fa-setup';
+      // Then show setup
+      setShow2FASetup(true);
     } catch (error) {
       console.error('Error resetting 2FA:', error);
     }
   };
+
+  const handle2FASetupComplete = () => {
+    setShow2FASetup(false);
+    setTwoFactorEnabled(true);
+    // Update parent component if callback provided
+    if (onUserUpdate) {
+      onUserUpdate({ ...user, twoFactorEnabled: true });
+    }
+    alert('Two-factor authentication has been enabled successfully!');
+  };
+
+  // Show 2FA setup page if user clicked enable
+  if (show2FASetup) {
+    return (
+      <TwoFactorSetupPage
+        user={user}
+        onComplete={handle2FASetupComplete}
+        onCancel={() => setShow2FASetup(false)}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -311,10 +341,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
                         It's free, works offline, and takes only 1 minute to setup.
                       </p>
                       <Button
-                        onClick={() => {
-                          // Navigate to setup page or open setup modal
-                          window.location.href = '/settings/2fa-setup';
-                        }}
+                        onClick={() => setShow2FASetup(true)}
                         className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                       >
                         <Shield className="w-4 h-4 mr-2" />
@@ -352,8 +379,7 @@ export function SettingsPage({ user }: SettingsPageProps) {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          // Show backup codes
-                          window.location.href = '/settings/2fa-backup-codes';
+                          alert('Backup codes feature coming soon. Contact admin for recovery codes.');
                         }}
                         className="justify-start"
                       >
