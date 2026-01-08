@@ -155,18 +155,61 @@ export interface QuizAnswer {
   feedback?: string;
 }
 
+// ✅ NEW Schedule (matches SchedulePage)
 export interface Schedule {
   id: number;
   title: string;
-  date: Date;
-  description?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  date: string; // ISO string
+  time: string;
+  duration: string;
+  grade: string;
+  subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
+  location: string;
+  notes: string | null;
+  maxStudents: number;
+  status: 'upcoming' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
   teacherId: number;
-  
-  // Relations
-  teacher?: Teacher;
+
+  teacher: {
+    id: number;
+    name: string;
+    email: string;
+  };
+
+  attachments?: ScheduleAttachment[];
 }
+
+export interface ScheduleAttachment {
+  id: number;
+  scheduleId: number;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
+}
+
+export interface CreateScheduleData {
+  title: string;
+  date: string;
+  time: string;
+  duration: string;
+  grade: string;
+  subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
+  location: string;
+  notes?: string;
+  studentRequirements?: string;
+  daySchedule?: string;
+  maxStudents: number;
+  status?: 'upcoming' | 'completed' | 'cancelled';
+  teacherId: number;
+}
+
+export interface UpdateScheduleData extends Partial<CreateScheduleData> {}
+
+
 
 export interface FileUpload {
   id: number;

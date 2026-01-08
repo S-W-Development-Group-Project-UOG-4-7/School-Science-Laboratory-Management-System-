@@ -1,9 +1,10 @@
+// app/(dashboard)/schedule/page.tsx or your component location
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -11,16 +12,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, Users, FileText, AlertCircle } from 'lucide-react';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, Users, FileText, AlertCircle, Trash2, Edit, Download, Upload, X, CheckCircle, XCircle, User } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
+import { scheduleApi, transformToApiFormat } from '@/api/schedules';
 
 interface SchedulePageProps {
   userRole: UserRole;
+  currentTeacher?: string;
+  teacherId?: number;
 }
 
 interface ScheduledPractical {
@@ -30,113 +34,213 @@ interface ScheduledPractical {
   time: string;
   duration: string;
   grade: string;
-  subject: 'Physics' | 'Chemistry' | 'Biology'| 'Science';
+  className: string;
+  fullClassName: string;
+  subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
   teacher: string;
   location: string;
-  notes: string;
+  notes?: string;
+  studentRequirements?: string;
+  daySchedule?: string;
   attachments?: string[];
   maxStudents: number;
   status: 'upcoming' | 'completed' | 'cancelled';
 }
 
-const scheduledPracticals: ScheduledPractical[] = [
-  {
-    id: '1',
-    title: 'Acid-Base Titration',
-    date: '2025-11-13',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 11',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    location: 'Chemistry Lab A',
-    notes: 'Students must bring their lab coats and safety goggles. Pre-read Chapter 8 on acid-base reactions. Lab sheets will be provided.',
-    attachments: ['titration_procedure.pdf', 'safety_guidelines.pdf'],
-    maxStudents: 25,
-    status: 'upcoming',
-  },
-  {
-    id: '2',
-    title: 'Microscope Practical',
-    date: '2025-11-14',
-    time: '10:30',
-    duration: '1.5 hours',
-    grade: 'Grade 9',
-    subject: 'Biology',
-    teacher: 'Mr. Silva',
-    location: 'Biology Lab',
-    notes: 'Introduction to compound microscope usage. Students will observe prepared slides of plant and animal cells.',
-    attachments: ['microscope_guide.pdf'],
-    maxStudents: 30,
-    status: 'upcoming',
-  },
-  {
-    id: '3',
-    title: 'Simple Pendulum Experiment',
-    date: '2025-11-15',
-    time: '14:00',
-    duration: '1 hour',
-    grade: 'Grade 10',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    location: 'Physics Lab',
-    notes: 'Study of simple harmonic motion. Bring calculators for data analysis. Work in pairs.',
-    attachments: ['pendulum_theory.pdf', 'data_sheet.xlsx'],
-    maxStudents: 20,
-    status: 'upcoming',
-  },
-  {
-    id: '4',
-    title: 'Photosynthesis Experiment',
-    date: '2025-11-12',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 10',
-    subject: 'Biology',
-    teacher: 'Mr. Silva',
-    location: 'Biology Lab',
-    notes: 'Investigating factors affecting photosynthesis rate using aquatic plants. Completed successfully.',
-    maxStudents: 30,
-    status: 'completed',
-  },
-  {
-    id: '5',
-    title: 'Qualitative Salt Analysis',
-    date: '2025-11-18',
-    time: '13:00',
-    duration: '3 hours',
-    grade: 'Grade 12',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    location: 'Chemistry Lab B',
-    notes: 'Advanced practical for A/L students. Systematic identification of cations and anions. Essential for exam preparation.',
-    attachments: ['salt_analysis_flowchart.pdf', 'reagent_list.pdf'],
-    maxStudents: 20,
-    status: 'upcoming',
-  },
-  {
-    id: '6',
-    title: 'Ohm\'s Law Verification',
-    date: '2025-11-20',
-    time: '11:00',
-    duration: '1.5 hours',
-    grade: 'Grade 11',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    location: 'Physics Lab',
-    notes: 'Verification of Ohm\'s law using resistors and ammeters. Graph plotting required.',
-    attachments: ['circuit_diagram.pdf'],
-    maxStudents: 24,
-    status: 'upcoming',
-  },
-];
+type SubjectType = 'Physics' | 'Chemistry' | 'Biology' | 'Science';
+type ToastType = 'success' | 'error' | 'info';
 
-export function SchedulePage({ userRole }: SchedulePageProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12)); // November 2025
+interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+interface GradeConfig {
+  grades: string[];
+  classSections: string[];
+}
+
+const GRADE_CONFIG: Record<SubjectType, GradeConfig> = {
+  'Science': {
+    grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11'],
+    classSections: ['A', 'B', 'C', 'D']
+  },
+  'Physics': {
+    grades: ['Grade 12', 'Grade 13'],
+    classSections: ['A', 'B', 'C']
+  },
+  'Chemistry': {
+    grades: ['Grade 12', 'Grade 13'],
+    classSections: ['A', 'B', 'C']
+  },
+  'Biology': {
+    grades: ['Grade 12', 'Grade 13'],
+    classSections: ['A', 'B', 'C']
+  }
+};
+
+const currentTeacherName = "John Doe";
+
+export default function SchedulePage({ 
+  userRole, 
+  currentTeacher = currentTeacherName,
+  teacherId = 1
+}: SchedulePageProps) {
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [practicals, setPracticals] = useState<ScheduledPractical[]>([]);
+  const [selectedPractical, setSelectedPractical] = useState<ScheduledPractical | null>(null);
+  const [formData, setFormData] = useState<Partial<ScheduledPractical>>({
+    title: '',
+    date: '',
+    time: '',
+    duration: '1 hour',
+    grade: '',
+    className: 'A',
+    fullClassName: '',
+    subject: 'Science',
+    teacher: currentTeacher,
+    location: '',
+    notes: '',
+    studentRequirements: '',
+    daySchedule: '',
+    maxStudents: 20,
+    status: 'upcoming',
+  });
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isCheckingConflict, setIsCheckingConflict] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
- const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+
+  // Fetch schedules
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
+
+  useEffect(() => {
+    if (currentTeacher) {
+      setFormData(prev => ({
+        ...prev,
+        teacher: currentTeacher
+      }));
+    }
+  }, [currentTeacher]);
+
+  const fetchSchedules = async () => {
+    try {
+      setIsLoading(true);
+      const schedules = await scheduleApi.getSchedules({ teacherId });
+      setPracticals(schedules);
+    } catch (error: any) {
+      addToast(error.message || 'Failed to load schedules', 'error');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = Date.now().toString();
+    const newToast = { id, message, type };
+    setToasts(prev => [...prev, newToast]);
+    
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 3000);
+  };
+
+  const getGradeOptions = (subject: SubjectType): string[] => {
+    return GRADE_CONFIG[subject]?.grades || [];
+  };
+
+  const getClassOptions = (subject: SubjectType, grade: string): string[] => {
+    if (!grade) return GRADE_CONFIG[subject]?.classSections || [];
+    return GRADE_CONFIG[subject]?.classSections || [];
+  };
+
+  useEffect(() => {
+    if (formData.grade && formData.className) {
+      setFormData(prev => ({
+        ...prev,
+        fullClassName: `${formData.grade} - ${formData.className}`
+      }));
+    }
+  }, [formData.grade, formData.className]);
+
+  const handleSubjectChange = (subject: SubjectType) => {
+    const validGrades = getGradeOptions(subject);
+    const currentGrade = formData.grade;
+    
+    if (currentGrade && !validGrades.includes(currentGrade)) {
+      const firstClass = GRADE_CONFIG[subject]?.classSections[0] || 'A';
+      setFormData({
+        ...formData,
+        subject,
+        grade: '',
+        className: firstClass,
+        fullClassName: ''
+      });
+    } else {
+      const firstClass = GRADE_CONFIG[subject]?.classSections[0] || 'A';
+      setFormData({
+        ...formData,
+        subject,
+        className: firstClass,
+        fullClassName: formData.grade ? `${formData.grade} - ${firstClass}` : ''
+      });
+    }
+  };
+
+  const handleGradeChange = (grade: string) => {
+    const subject = formData.subject as SubjectType;
+    const firstClass = GRADE_CONFIG[subject]?.classSections[0] || 'A';
+    setFormData({
+      ...formData,
+      grade,
+      className: firstClass,
+      fullClassName: `${grade} - ${firstClass}`
+    });
+  };
+
+  const handleClassChange = (className: string) => {
+    setFormData({
+      ...formData,
+      className,
+      fullClassName: formData.grade ? `${formData.grade} - ${className}` : ''
+    });
+  };
+
+  const checkScheduleConflict = async (newPractical: Partial<ScheduledPractical>, isEdit: boolean = false) => {
+    setIsCheckingConflict(true);
+    
+    try {
+      const { date, time, location, fullClassName } = newPractical;
+      
+      const conflicts = practicals.filter(p => {
+        if (isEdit && p.id === selectedPractical?.id) return false;
+        
+        if (p.date === date && p.time === time) {
+          if (p.location === location) return true;
+          if (p.fullClassName === fullClassName) return true;
+          if (p.teacher === newPractical.teacher) return true;
+        }
+        return false;
+      });
+      
+      return conflicts.length > 0;
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
+      return false;
+    } finally {
+      setIsCheckingConflict(false);
+    }
+  };
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -165,7 +269,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
   };
 
   const getPracticalsForDate = (dateString: string) => {
-    return scheduledPracticals.filter((p) => p.date === dateString);
+    return practicals.filter((p) => p.date === dateString);
   };
 
   const monthNames = [
@@ -183,6 +287,8 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
         return 'bg-yellow-50 text-yellow-800 border-yellow-200';
       case 'Biology':
         return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'Science':
+        return 'bg-green-50 text-green-700 border-green-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -201,10 +307,243 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
     }
   };
 
+  // CRUD Operations
+  const handleCreate = async () => {
+    if (!formData.title || !formData.date || !formData.time || !formData.subject || !formData.grade || !formData.className) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      const hasConflict = await checkScheduleConflict(formData);
+      if (hasConflict) {
+        addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
+        return;
+      }
+
+      const apiData = transformToApiFormat(formData, teacherId);
+      const newSchedule = await scheduleApi.createSchedule(apiData);
+      
+      setPracticals(prev => [...prev, newSchedule]);
+      resetForm();
+      setIsAddDialogOpen(false);
+      addToast('Practical scheduled successfully!', 'success');
+    } catch (error: any) {
+      addToast(error.message || 'Failed to schedule practical', 'error');
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedPractical || !formData.title || !formData.date || !formData.time || !formData.grade || !formData.className) {
+      addToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      const hasConflict = await checkScheduleConflict(formData, true);
+      if (hasConflict) {
+        addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
+        return;
+      }
+
+      const apiData = transformToApiFormat(formData, teacherId);
+      const updatedSchedule = await scheduleApi.updateSchedule(selectedPractical.id, apiData);
+      
+      setPracticals(prev => prev.map(p => 
+        p.id === selectedPractical.id ? updatedSchedule : p
+      ));
+      resetForm();
+      setIsEditDialogOpen(false);
+      addToast('Practical updated successfully!', 'success');
+    } catch (error: any) {
+      addToast(error.message || 'Failed to update practical', 'error');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedPractical) return;
+
+    try {
+      await scheduleApi.deleteSchedule(selectedPractical.id);
+      
+      setPracticals(prev => prev.filter(p => p.id !== selectedPractical.id));
+      setIsDeleteDialogOpen(false);
+      setSelectedPractical(null);
+      addToast('Practical deleted successfully!', 'success');
+    } catch (error: any) {
+      addToast(error.message || 'Failed to delete practical', 'error');
+    }
+  };
+
+  const handleEditClick = (practical: ScheduledPractical) => {
+    setSelectedPractical(practical);
+    setFormData({
+      title: practical.title,
+      date: practical.date,
+      time: practical.time,
+      duration: practical.duration,
+      grade: practical.grade,
+      className: practical.className,
+      fullClassName: practical.fullClassName,
+      subject: practical.subject,
+      teacher: practical.teacher,
+      location: practical.location,
+      notes: practical.notes,
+      studentRequirements: practical.studentRequirements,
+      daySchedule: practical.daySchedule,
+      maxStudents: practical.maxStudents,
+      status: practical.status,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (practical: ScheduledPractical) => {
+    setSelectedPractical(practical);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    const firstClass = GRADE_CONFIG['Science']?.classSections[0] || 'A';
+    setFormData({
+      title: '',
+      date: '',
+      time: '',
+      duration: '1 hour',
+      grade: '',
+      className: firstClass,
+      fullClassName: '',
+      subject: 'Science',
+      teacher: currentTeacher,
+      location: '',
+      notes: '',
+      studentRequirements: '',
+      daySchedule: '',
+      maxStudents: 20,
+      status: 'upcoming',
+    });
+    setAttachmentFiles([]);
+    setSelectedPractical(null);
+    setIsCheckingConflict(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setAttachmentFiles([...attachmentFiles, ...files]);
+  };
+
+  const removeAttachment = (index: number) => {
+    const newFiles = [...attachmentFiles];
+    newFiles.splice(index, 1);
+    setAttachmentFiles(newFiles);
+  };
+
+  const removeExistingAttachment = (practicalId: string, attachmentName: string) => {
+    const updatedPracticals = practicals.map(p => {
+      if (p.id === practicalId) {
+        const newAttachments = p.attachments?.filter(att => att !== attachmentName) || [];
+        return { ...p, attachments: newAttachments };
+      }
+      return p;
+    });
+    setPracticals(updatedPracticals);
+    addToast('Attachment removed!', 'success');
+  };
+
+  const handleStatusChange = async (practicalId: string, newStatus: 'upcoming' | 'completed' | 'cancelled') => {
+    try {
+      const practical = practicals.find(p => p.id === practicalId);
+      if (!practical) return;
+
+      const apiData = transformToApiFormat({ ...practical, status: newStatus }, teacherId);
+      await scheduleApi.updateSchedule(practicalId, apiData);
+      
+      const updatedPracticals = practicals.map(p => 
+        p.id === practicalId ? { ...p, status: newStatus } : p
+      );
+      setPracticals(updatedPracticals);
+      addToast(`Status changed to ${newStatus}`, 'success');
+    } catch (error: any) {
+      addToast(error.message || 'Failed to update status', 'error');
+    }
+  };
+
   const selectedDatePracticals = selectedDate ? getPracticalsForDate(selectedDate) : [];
+
+  const getLabLocations = () => {
+    const labs = [
+      'Chemistry Lab A',
+      'Chemistry Lab B', 
+      'Physics Lab',
+      'Biology Lab',
+      'Science Lab',
+      'Main Lab'
+    ];
+    
+    const subject = formData.subject;
+    if (subject === 'Chemistry') {
+      return labs.filter(lab => lab.includes('Chemistry') || lab === 'Main Lab');
+    } else if (subject === 'Physics') {
+      return labs.filter(lab => lab.includes('Physics') || lab === 'Main Lab');
+    } else if (subject === 'Biology') {
+      return labs.filter(lab => lab.includes('Biology') || lab === 'Main Lab');
+    }
+    return labs;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-gray-900 mb-2">Schedule & Calendar</h2>
+            <p className="text-gray-600">Loading schedules...</p>
+          </div>
+        </div>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`flex items-center justify-between p-4 rounded-lg shadow-lg min-w-[300px] transform transition-all duration-300 ${
+              toast.type === 'success' 
+                ? 'bg-green-50 border border-green-200 text-green-800' 
+                : toast.type === 'error'
+                ? 'bg-red-50 border border-red-200 text-red-800'
+                : 'bg-blue-50 border border-blue-200 text-blue-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {toast.type === 'success' ? (
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              ) : toast.type === 'error' ? (
+                <XCircle className="w-5 h-5 text-red-600" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-blue-600" />
+              )}
+              <span>{toast.message}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="ml-4"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -216,105 +555,620 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
           </p>
         </div>
         {canSchedule && (
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule Practical
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Schedule New Practical</DialogTitle>
-                <DialogDescription>
-                  Add a new practical session to the calendar
-                </DialogDescription>
-              </DialogHeader>
-              <form className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="title">Practical Title</Label>
-                    <Input id="title" placeholder="e.g., Acid-Base Titration" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="w-4 h-4" />
+              <span>Logged in as: {currentTeacher}</span>
+            </div>
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+              setIsAddDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Schedule Practical
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Schedule New Practical</DialogTitle>
+                  <DialogDescription>
+                    Add a new practical session for a specific class
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => { e.preventDefault(); handleCreate(); }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="title">Practical Title *</Label>
+                      <Input 
+                        id="title" 
+                        placeholder="e.g., Acid-Base Titration"
+                        value={formData.title}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Select 
+                        value={formData.subject}
+                        onValueChange={(value) => handleSubjectChange(value as SubjectType)}
+                      >
+                        <SelectTrigger id="subject">
+                          <SelectValue placeholder="Select subject" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Science">Science</SelectItem>
+                          <SelectItem value="Physics">Physics</SelectItem>
+                          <SelectItem value="Chemistry">Chemistry</SelectItem>
+                          <SelectItem value="Biology">Biology</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="grade">Grade *</Label>
+                      <Select 
+                        value={formData.grade}
+                        onValueChange={handleGradeChange}
+                        disabled={!formData.subject}
+                      >
+                        <SelectTrigger id="grade">
+                          <SelectValue placeholder="Select grade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getGradeOptions(formData.subject as SubjectType).map((grade) => (
+                            <SelectItem key={grade} value={grade}>
+                              {grade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="className">Class *</Label>
+                      <Select 
+                        value={formData.className}
+                        onValueChange={handleClassChange}
+                        disabled={!formData.grade}
+                      >
+                        <SelectTrigger id="className">
+                          <SelectValue placeholder="Select class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getClassOptions(formData.subject as SubjectType, formData.grade || '').map((className) => (
+                            <SelectItem key={className} value={className}>
+                              Class {className}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {formData.grade && formData.className && (
+                      <div className="col-span-2">
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-medium text-blue-900">
+                              Selected Class: {formData.fullClassName}
+                            </span>
+                          </div>
+                          <p className="text-xs text-blue-700 mt-1">
+                            You are scheduling for {formData.grade} Class {formData.className}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <Label htmlFor="date">Date *</Label>
+                      <Input 
+                        id="date" 
+                        type="date" 
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        required
+                        min={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="time">Time *</Label>
+                      <Input 
+                        id="time" 
+                        type="time" 
+                        value={formData.time}
+                        onChange={(e) => setFormData({...formData, time: e.target.value})}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="duration">Duration *</Label>
+                      <Select 
+                        value={formData.duration}
+                        onValueChange={(value) => setFormData({...formData, duration: value})}
+                      >
+                        <SelectTrigger id="duration">
+                          <SelectValue placeholder="Select duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="30 mins">30 minutes</SelectItem>
+                          <SelectItem value="1 hour">1 hour</SelectItem>
+                          <SelectItem value="1.5 hours">1.5 hours</SelectItem>
+                          <SelectItem value="2 hours">2 hours</SelectItem>
+                          <SelectItem value="2.5 hours">2.5 hours</SelectItem>
+                          <SelectItem value="3 hours">3 hours</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="location">Lab Location *</Label>
+                      <Select 
+                        value={formData.location}
+                        onValueChange={(value) => setFormData({...formData, location: value})}
+                      >
+                        <SelectTrigger id="location">
+                          <SelectValue placeholder="Select lab" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getLabLocations().map((location) => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="maxStudents">Max Students *</Label>
+                      <Input 
+                        id="maxStudents" 
+                        type="number" 
+                        placeholder="30"
+                        value={formData.maxStudents}
+                        onChange={(e) => setFormData({...formData, maxStudents: parseInt(e.target.value)})}
+                        required
+                        min="1"
+                        max="40"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="teacher">Teacher</Label>
+                      <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                        <User className="w-4 h-4 text-gray-600" />
+                        <span className="text-sm text-gray-900">{formData.teacher}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Auto-filled with your account</p>
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Label htmlFor="studentRequirements">What Students Should Bring</Label>
+                      <Textarea
+                        id="studentRequirements"
+                        placeholder="e.g., Lab coat, safety goggles, calculator, notebook..."
+                        value={formData.studentRequirements}
+                        onChange={(e) => setFormData({...formData, studentRequirements: e.target.value})}
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Label htmlFor="daySchedule">Day Schedule/Timeline</Label>
+                      <Textarea
+                        id="daySchedule"
+                        placeholder="e.g., 09:00-09:15: Safety briefing\n09:15-10:00: Demonstration\n10:00-11:00: Hands-on practical"
+                        value={formData.daySchedule}
+                        onChange={(e) => setFormData({...formData, daySchedule: e.target.value})}
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Label htmlFor="notes">Notes & Instructions</Label>
+                      <Textarea
+                        id="notes"
+                        placeholder="Add any important notes, prerequisites, or instructions for students..."
+                        value={formData.notes}
+                        onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                        rows={4}
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <Label htmlFor="attachments">Attachments</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="attachments"
+                            type="file"
+                            multiple
+                            onChange={handleFileUpload}
+                            className="flex-1"
+                          />
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        {attachmentFiles.length > 0 && (
+                          <div className="space-y-1">
+                            {attachmentFiles.map((file, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm truncate">{file.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeAttachment(index)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select 
+                        value={formData.status}
+                        onValueChange={(value) => setFormData({...formData, status: value as any})}
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="upcoming">Upcoming</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Select>
-                      <SelectTrigger id="subject">
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Physics">Science</SelectItem>
-                        <SelectItem value="Physics">Physics</SelectItem>
-                        <SelectItem value="Chemistry">Chemistry</SelectItem>
-                        <SelectItem value="Biology">Biology</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  
+                  {isCheckingConflict && (
+                    <div className="col-span-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-900">
+                          Checking for schedule conflicts...
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      disabled={isCheckingConflict}
+                    >
+                      {isCheckingConflict ? 'Checking...' : 'Schedule Practical'}
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="grade">Grade</Label>
-                    <Select>
-                      <SelectTrigger id="grade">
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="9">Grade 6</SelectItem>
-                        <SelectItem value="10">Grade 7</SelectItem>
-                        <SelectItem value="11">Grade 8</SelectItem>
-                        <SelectItem value="9">Grade 9</SelectItem>
-                        <SelectItem value="10">Grade 10</SelectItem>
-                        <SelectItem value="11">Grade 11</SelectItem>
-                        <SelectItem value="12">Grade 12</SelectItem>
-                        <SelectItem value="13">Grade 13</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input id="date" type="date" />
-                  </div>
-                  <div>
-                    <Label htmlFor="time">Time</Label>
-                    <Input id="time" type="time" />
-                  </div>
-                  <div>
-                    <Label htmlFor="duration">Duration</Label>
-                    <Input id="duration" placeholder="e.g., 2 hours" />
-                  </div>
-                  <div>
-                    <Label htmlFor="location">Location</Label>
-                    <Input id="location" placeholder="e.g., Chemistry Lab A" />
-                  </div>
-                  <div>
-                    <Label htmlFor="maxStudents">Max Students</Label>
-                    <Input id="maxStudents" type="number" placeholder="30" />
-                  </div>
-                  <div>
-                    <Label htmlFor="teacher">Teacher</Label>
-                    <Input id="teacher" placeholder="Teacher name" />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="notes">Notes & Instructions</Label>
-                    <Textarea
-                      id="notes"
-                      placeholder="Add any important notes, prerequisites, or instructions for students..."
-                      rows={4}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    Schedule Practical
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         )}
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Practical</DialogTitle>
+            <DialogDescription>
+              Update practical session details
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="edit-title">Practical Title *</Label>
+                <Input 
+                  id="edit-title" 
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-subject">Subject *</Label>
+                <Select 
+                  value={formData.subject}
+                  onValueChange={(value) => handleSubjectChange(value as SubjectType)}
+                >
+                  <SelectTrigger id="edit-subject">
+                    <SelectValue placeholder="Select subject" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Science">Science</SelectItem>
+                    <SelectItem value="Physics">Physics</SelectItem>
+                    <SelectItem value="Chemistry">Chemistry</SelectItem>
+                    <SelectItem value="Biology">Biology</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-grade">Grade *</Label>
+                <Select 
+                  value={formData.grade}
+                  onValueChange={handleGradeChange}
+                  disabled={!formData.subject}
+                >
+                  <SelectTrigger id="edit-grade">
+                    <SelectValue placeholder="Select grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getGradeOptions(formData.subject as SubjectType).map((grade) => (
+                      <SelectItem key={grade} value={grade}>
+                        {grade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-className">Class *</Label>
+                <Select 
+                  value={formData.className}
+                  onValueChange={handleClassChange}
+                  disabled={!formData.grade}
+                >
+                  <SelectTrigger id="edit-className">
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getClassOptions(formData.subject as SubjectType, formData.grade || '').map((className) => (
+                      <SelectItem key={className} value={className}>
+                        Class {className}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {formData.grade && formData.className && (
+                <div className="col-span-2">
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">
+                        Selected Class: {formData.fullClassName}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <Label htmlFor="edit-date">Date *</Label>
+                <Input 
+                  id="edit-date" 
+                  type="date" 
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-time">Time *</Label>
+                <Input 
+                  id="edit-time" 
+                  type="time" 
+                  value={formData.time}
+                  onChange={(e) => setFormData({...formData, time: e.target.value})}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-duration">Duration *</Label>
+                <Select 
+                  value={formData.duration}
+                  onValueChange={(value) => setFormData({...formData, duration: value})}
+                >
+                  <SelectTrigger id="edit-duration">
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="30 mins">30 minutes</SelectItem>
+                    <SelectItem value="1 hour">1 hour</SelectItem>
+                    <SelectItem value="1.5 hours">1.5 hours</SelectItem>
+                    <SelectItem value="2 hours">2 hours</SelectItem>
+                    <SelectItem value="2.5 hours">2.5 hours</SelectItem>
+                    <SelectItem value="3 hours">3 hours</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-location">Lab Location *</Label>
+                <Select 
+                  value={formData.location}
+                  onValueChange={(value) => setFormData({...formData, location: value})}
+                >
+                  <SelectTrigger id="edit-location">
+                    <SelectValue placeholder="Select lab" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getLabLocations().map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-maxStudents">Max Students *</Label>
+                <Input 
+                  id="edit-maxStudents" 
+                  type="number" 
+                  value={formData.maxStudents}
+                  onChange={(e) => setFormData({...formData, maxStudents: parseInt(e.target.value)})}
+                  required
+                  min="1"
+                  max="40"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-teacher">Teacher</Label>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                  <User className="w-4 h-4 text-gray-600" />
+                  <span className="text-sm text-gray-900">{formData.teacher}</span>
+                </div>
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="edit-studentRequirements">What Students Should Bring</Label>
+                <Textarea
+                  id="edit-studentRequirements"
+                  value={formData.studentRequirements}
+                  onChange={(e) => setFormData({...formData, studentRequirements: e.target.value})}
+                  rows={2}
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="edit-daySchedule">Day Schedule/Timeline</Label>
+                <Textarea
+                  id="edit-daySchedule"
+                  value={formData.daySchedule}
+                  onChange={(e) => setFormData({...formData, daySchedule: e.target.value})}
+                  rows={3}
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="edit-notes">Notes & Instructions</Label>
+                <Textarea
+                  id="edit-notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                  rows={4}
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="edit-attachments">Add More Attachments</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="edit-attachments"
+                      type="file"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="flex-1"
+                    />
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  {attachmentFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {attachmentFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm truncate">{file.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeAttachment(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="edit-status">Status</Label>
+                <Select 
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({...formData, status: value as any})}
+                >
+                  <SelectTrigger id="edit-status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {isCheckingConflict && (
+              <div className="col-span-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-yellow-600" />
+                  <span className="text-sm font-medium text-yellow-900">
+                    Checking for schedule conflicts...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={isCheckingConflict}
+              >
+                {isCheckingConflict ? 'Checking...' : 'Update Practical'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Practical</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{selectedPractical?.title}" for {selectedPractical?.fullClassName}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Calendar and Practicals List */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}
         <Card className="lg:col-span-2">
@@ -336,19 +1190,16 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-1">
-              {/* Day headers */}
               {dayNames.map((day) => (
                 <div key={day} className="text-center p-2 text-sm text-gray-600">
                   {day}
                 </div>
               ))}
 
-              {/* Empty cells for days before month starts */}
               {Array.from({ length: startingDayOfWeek }).map((_, index) => (
                 <div key={`empty-${index}`} className="p-2" />
               ))}
 
-              {/* Calendar days */}
               {Array.from({ length: daysInMonth }).map((_, index) => {
                 const day = index + 1;
                 const dateString = formatDate(
@@ -356,7 +1207,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                   currentDate.getMonth(),
                   day
                 );
-                const practicals = getPracticalsForDate(dateString);
+                const datePracticals = getPracticalsForDate(dateString);
                 const isToday = dateString === '2025-11-12';
                 const isSelected = dateString === selectedDate;
 
@@ -370,18 +1221,19 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                   >
                     <div className="text-sm text-gray-900 mb-1">{day}</div>
                     <div className="space-y-1">
-                      {practicals.slice(0, 2).map((practical) => (
+                      {datePracticals.slice(0, 2).map((practical) => (
                         <div
                           key={practical.id}
                           className={`text-xs px-1 py-0.5 rounded truncate ${getSubjectColor(
                             practical.subject
                           )}`}
                         >
-                          {practical.time} {practical.subject}
+                          <div className="font-medium">{practical.time}</div>
+                          <div>{practical.subject} - {practical.fullClassName}</div>
                         </div>
                       ))}
-                      {practicals.length > 2 && (
-                        <div className="text-xs text-gray-600">+{practicals.length - 2} more</div>
+                      {datePracticals.length > 2 && (
+                        <div className="text-xs text-gray-600">+{datePracticals.length - 2} more</div>
                       )}
                     </div>
                   </button>
@@ -398,7 +1250,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
             <CardDescription>Next scheduled sessions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {scheduledPracticals
+            {practicals
               .filter((p) => p.status === 'upcoming')
               .slice(0, 5)
               .map((practical) => (
@@ -411,7 +1263,10 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                     <Badge className={getSubjectColor(practical.subject)} variant="outline">
                       {practical.subject}
                     </Badge>
-                    <span className="text-xs text-gray-600">{practical.grade}</span>
+                    <div className="text-right">
+                      <span className="text-xs font-medium text-gray-900">{practical.fullClassName}</span>
+                      <div className="text-xs text-gray-600">{practical.grade}</div>
+                    </div>
                   </div>
                   <h4 className="text-sm text-gray-900 mb-1">{practical.title}</h4>
                   <div className="flex items-center gap-2 text-xs text-gray-600">
@@ -429,9 +1284,21 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
       {/* Selected Date Details */}
       {selectedDate && selectedDatePracticals.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-gray-900">
-            Practicals on {selectedDate}
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-gray-900">
+              Practicals on {selectedDate}
+            </h3>
+            {canSchedule && (
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add to this date
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-4">
             {selectedDatePracticals.map((practical) => (
               <Card key={practical.id}>
@@ -442,7 +1309,9 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                         <Badge className={getSubjectColor(practical.subject)}>
                           {practical.subject}
                         </Badge>
-                        <Badge variant="outline">{practical.grade}</Badge>
+                        <Badge variant="outline" className="font-medium">
+                          {practical.fullClassName}
+                        </Badge>
                         <Badge className={getStatusColor(practical.status)} variant="outline">
                           {practical.status}
                         </Badge>
@@ -450,10 +1319,28 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                       <CardTitle>{practical.title}</CardTitle>
                       <CardDescription>Teacher: {practical.teacher}</CardDescription>
                     </div>
-                    {canSchedule && practical.status === 'upcoming' && (
-                      <Button variant="outline" size="sm">
-                        Edit
-                      </Button>
+                    {canSchedule && (
+                      <div className="flex gap-2">
+                        <Select
+                          value={practical.status}
+                          onValueChange={(value) => handleStatusChange(practical.id, value as any)}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button variant="outline" size="sm" onClick={() => handleEditClick(practical)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => handleDeleteClick(practical)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </CardHeader>
@@ -489,6 +1376,47 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                     </div>
                   </div>
 
+                  {/* Class Information */}
+                  <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 className="text-indigo-900 mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Class Information
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">Grade & Class</p>
+                        <p className="text-gray-900 font-medium">{practical.fullClassName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Subject</p>
+                        <p className="text-gray-900 font-medium">{practical.subject}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Student Requirements */}
+                  {practical.studentRequirements && (
+                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <h4 className="text-yellow-900 mb-2 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        What Students Should Bring
+                      </h4>
+                      <p className="text-sm text-gray-700">{practical.studentRequirements}</p>
+                    </div>
+                  )}
+
+                  {/* Day Schedule */}
+                  {practical.daySchedule && (
+                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="text-green-900 mb-2 flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Day Schedule/Timeline
+                      </h4>
+                      <pre className="text-sm text-gray-700 whitespace-pre-wrap">{practical.daySchedule}</pre>
+                    </div>
+                  )}
+
+                  {/* Notes */}
                   {practical.notes && (
                     <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <h4 className="text-blue-900 mb-2 flex items-center gap-2">
@@ -499,19 +1427,76 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                     </div>
                   )}
 
+                  {/* Attachments */}
                   {practical.attachments && practical.attachments.length > 0 && (
-                    <div>
-                      <h4 className="text-gray-900 mb-2">Attachments</h4>
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-gray-900 font-medium">Attachments</h4>
+                        {canSchedule && (
+                          <Button variant="outline" size="sm" asChild>
+                            <label htmlFor={`upload-${practical.id}`} className="cursor-pointer flex items-center gap-2">
+                              <Upload className="w-4 h-4" />
+                              Add More
+                              <input
+                                id={`upload-${practical.id}`}
+                                type="file"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  const updated = practicals.map(p =>
+                                    p.id === practical.id
+                                      ? { 
+                                          ...p, 
+                                          attachments: [...(p.attachments || []), ...files.map(f => f.name)]
+                                        }
+                                      : p
+                                  );
+                                  setPracticals(updated);
+                                  addToast('Files added!', 'success');
+                                }}
+                              />
+                            </label>
+                          </Button>
+                        )}
+                      </div>
+
                       <div className="flex flex-wrap gap-2">
                         {practical.attachments.map((attachment, index) => (
-                          <Button key={index} variant="outline" size="sm">
-                            <FileText className="w-4 h-4 mr-2" />
-                            {attachment}
-                          </Button>
+                          <div key={index} className="flex items-center gap-1 bg-gray-100 rounded-md p-1">
+                            <Button variant="outline" size="sm" className="flex items-center gap-2">
+                              <FileText className="w-4 h-4" />
+                              <span className="truncate max-w-[150px]">{attachment}</span>
+                              <Download className="w-3 h-3" />
+                            </Button>
+
+                            {canSchedule && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updated = practicals.map(p =>
+                                    p.id === practical.id
+                                      ? { 
+                                          ...p, 
+                                          attachments: p.attachments ? p.attachments.filter((a) => a !== attachment) : []
+                                        }
+                                      : p
+                                  );
+                                  setPracticals(updated);
+                                  addToast('Attachment removed!', 'success');
+                                }}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>
                   )}
+
                 </CardContent>
               </Card>
             ))}

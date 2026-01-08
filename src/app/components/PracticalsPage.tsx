@@ -7,7 +7,24 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, BookOpen, Plus, X, Loader2, Edit, Trash2, User, BarChart3 } from 'lucide-react';
+import {
+  Search,
+  Play,
+  FileText,
+  BookOpen,
+  Plus,
+  X,
+  Loader2,
+  Edit,
+  Trash2,
+  User,
+  BarChart3,
+  Video,
+  Upload,
+  CheckCircle,
+  Download,
+  Users
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -39,6 +56,22 @@ interface PracticalsPageProps {
   userId?: number;
 }
 
+// Interface for student quiz results
+interface StudentQuizResult {
+  studentId: number;
+  studentName: string;
+  email?: string;
+  quizId: string;
+  quizTitle: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  status: AttemptStatus;
+  startedAt: Date;
+  completedAt: Date;
+  timeTaken: string; // in minutes
+}
+
 export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [practicals, setPracticals] = useState<Practical[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,6 +89,23 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [userLoaded, setUserLoaded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [subject, setSubject] = useState<string>("Chemistry");
+  const [grade, setGrade] = useState<string>("");
+  
+  // File upload states
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [labSheetFile, setLabSheetFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{
+    video: number;
+    labSheet: number;
+    thumbnail: number;
+  }>({ video: 0, labSheet: 0, thumbnail: 0 });
+  const [isUploading, setIsUploading] = useState(false);
+  
+  // Quiz results states
+  const [quizResults, setQuizResults] = useState<StudentQuizResult[]>([]);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
   
   const componentId = useId();
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
@@ -113,88 +163,296 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   }, [canUpload, currentUserId, searchQuery, selectedSubject, selectedGrade]);
 
   // Fetch practicals when dependencies change
-  // Fetch practicals when dependencies change
-useEffect(() => {
-  const loadPracticals = async () => {
-    // Skip fetching if teacherId not loaded yet
-    if (canUpload && currentUserId === null) {
-      console.warn('⏳ Waiting for teacherId...');
-      return;
-    }
+  useEffect(() => {
+    const loadPracticals = async () => {
+      // Skip fetching if teacherId not loaded yet
+      if (canUpload && currentUserId === null) {
+        console.warn('⏳ Waiting for teacherId...');
+        return;
+      }
 
-    try {
-      await fetchPracticals();
-    } catch (err) {
-      console.error('Error fetching practicals:', err);
-    }
-  };
+      try {
+        await fetchPracticals();
+      } catch (err) {
+        console.error('Error fetching practicals:', err);
+      }
+    };
 
-  loadPracticals();
-}, [searchQuery, selectedSubject, selectedGrade, refreshKey, currentUserId, canUpload]);
-
+    loadPracticals();
+  }, [searchQuery, selectedSubject, selectedGrade, refreshKey, currentUserId, canUpload]);
 
   const filteredPracticals = practicals;
 
-  const handleAddPractical = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-
-  try {
-    const form = e.currentTarget as HTMLFormElement;
-
-    const formData = {
-      title: (form.querySelector('[name="title"]') as HTMLInputElement)?.value || '',
-      description: (form.querySelector('[name="description"]') as HTMLTextAreaElement)?.value || '',
-      subject: (form.querySelector('[name="subject"]') as HTMLSelectElement)?.value || '',
-      grade: (form.querySelector('[name="grade"]') as HTMLSelectElement)?.value || '',
-      duration: (form.querySelector('[name="duration"]') as HTMLInputElement)?.value || '',
-      difficulty: (form.querySelector('[name="difficulty"]') as HTMLSelectElement)?.value || 'Intermediate',
-      videoUrl: (form.querySelector('[name="videoUrl"]') as HTMLInputElement)?.value || '',
-      labSheetUrl: (form.querySelector('[name="labSheetUrl"]') as HTMLInputElement)?.value || '',
-      thumbnail: (form.querySelector('[name="thumbnail"]') as HTMLInputElement)?.value || '',
-    };
-
-    if (!formData.title || !formData.subject || !formData.grade || !formData.duration) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    if (currentUserId === null) {
-      alert('Teacher not found. Please login again.');
-      return;
-    }
-
-    // Wrap in try/catch to catch API errors
+  // Function to fetch quiz results for a practical
+  const fetchQuizResults = async (practicalId: number) => {
+    if (!canUpload) return;
+    
+    setIsLoadingResults(true);
     try {
+      // In a real app, you would call your API here
+      // For now, we'll simulate some data
+      const mockResults: StudentQuizResult[] = [
+        {
+          studentId: 1,
+          studentName: 'John Doe',
+          email: 'john@example.com',
+          quizId: 'quiz-1',
+          quizTitle: 'Chemistry Basics Quiz',
+          score: 8,
+          totalQuestions: 10,
+          percentage: 80,
+          status: AttemptStatus.COMPLETED,
+          startedAt: new Date('2024-01-15T10:00:00'),
+          completedAt: new Date('2024-01-15T10:15:00'),
+          timeTaken: '15'
+        },
+        {
+          studentId: 2,
+          studentName: 'Jane Smith',
+          email: 'jane@example.com',
+          quizId: 'quiz-1',
+          quizTitle: 'Chemistry Basics Quiz',
+          score: 9,
+          totalQuestions: 10,
+          percentage: 90,
+          status: AttemptStatus.COMPLETED,
+          startedAt: new Date('2024-01-15T11:00:00'),
+          completedAt: new Date('2024-01-15T11:20:00'),
+          timeTaken: '20'
+        },
+        {
+          studentId: 3,
+          studentName: 'Bob Johnson',
+          email: 'bob@example.com',
+          quizId: 'quiz-2',
+          quizTitle: 'Advanced Chemistry Quiz',
+          score: 6,
+          totalQuestions: 10,
+          percentage: 60,
+          status: AttemptStatus.COMPLETED,
+          startedAt: new Date('2024-01-16T09:00:00'),
+          completedAt: new Date('2024-01-16T09:25:00'),
+          timeTaken: '25'
+        }
+      ];
+      
+      setQuizResults(mockResults);
+    } catch (err) {
+      console.error('Error fetching quiz results:', err);
+      alert('Failed to load quiz results');
+    } finally {
+      setIsLoadingResults(false);
+    }
+  };
+
+  // Function to export quiz results to Excel
+  const exportQuizResultsToExcel = (practicalTitle: string) => {
+    if (quizResults.length === 0) {
+      alert('No quiz results to export');
+      return;
+    }
+
+    try {
+      // Create CSV content
+      const headers = [
+        'Student ID',
+        'Student Name',
+        'Email',
+        'Quiz ID',
+        'Quiz Title',
+        'Score',
+        'Total Questions',
+        'Percentage (%)',
+        'Status',
+        'Started At',
+        'Completed At',
+        'Time Taken (min)'
+      ];
+
+      const csvContent = [
+        headers.join(','),
+        ...quizResults.map(result => [
+          result.studentId,
+          `"${result.studentName}"`,
+          `"${result.email || ''}"`,
+          result.quizId,
+          `"${result.quizTitle}"`,
+          result.score,
+          result.totalQuestions,
+          result.percentage,
+          result.status,
+          result.startedAt.toISOString(),
+          result.completedAt.toISOString(),
+          result.timeTaken
+        ].join(','))
+      ].join('\n');
+
+      // Create a blob and download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${practicalTitle.replace(/[^a-z0-9]/gi, '_')}_quiz_results_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`Quiz results exported successfully! ${quizResults.length} records downloaded.`);
+    } catch (err) {
+      console.error('Error exporting quiz results:', err);
+      alert('Failed to export quiz results');
+    }
+  };
+
+  // Simple upload function
+  const uploadFile = async (file: File, type: 'video' | 'labSheet' | 'thumbnail'): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      // For now, we'll create a fake URL for demonstration
+      // In production, you would upload to your server here
+      setTimeout(() => {
+        const fakeUrl = `https://example.com/uploads/${type}/${Date.now()}_${file.name}`;
+        resolve(fakeUrl);
+      }, 1000);
+    });
+  };
+
+  const handleAddPractical = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const form = e.currentTarget;
+      const formData = new FormData(form);
+      
+      // Basic validation
+      if (!formData.get('title') || !formData.get('subject') || 
+          !formData.get('grade') || !formData.get('duration')) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      if (currentUserId === null) {
+        alert('Teacher not found. Please login again.');
+        return;
+      }
+
+      let videoUrl = formData.get('videoUrl') as string || '';
+      let labSheetUrl = formData.get('labSheetUrl') as string || '';
+      let thumbnailUrl = formData.get('thumbnail') as string || '';
+
+      // Upload files if selected
+      setIsUploading(true);
+      
+      // Upload video file if selected
+      if (videoFile) {
+        setUploadProgress(prev => ({ ...prev, video: 0 }));
+        try {
+          // Simulate upload progress
+          const interval = setInterval(() => {
+            setUploadProgress(prev => {
+              const newProgress = prev.video + 10;
+              if (newProgress >= 100) {
+                clearInterval(interval);
+                return { ...prev, video: 100 };
+              }
+              return { ...prev, video: newProgress };
+            });
+          }, 200);
+          
+          videoUrl = await uploadFile(videoFile, 'video');
+          clearInterval(interval);
+          setUploadProgress(prev => ({ ...prev, video: 100 }));
+        } catch (err) {
+          console.error('Failed to upload video:', err);
+          // User can still use URL if upload fails
+        }
+      }
+
+      // Upload lab sheet if selected
+      if (labSheetFile) {
+        setUploadProgress(prev => ({ ...prev, labSheet: 0 }));
+        try {
+          const interval = setInterval(() => {
+            setUploadProgress(prev => {
+              const newProgress = prev.labSheet + 15;
+              if (newProgress >= 100) {
+                clearInterval(interval);
+                return { ...prev, labSheet: 100 };
+              }
+              return { ...prev, labSheet: newProgress };
+            });
+          }, 200);
+          
+          labSheetUrl = await uploadFile(labSheetFile, 'labSheet');
+          clearInterval(interval);
+          setUploadProgress(prev => ({ ...prev, labSheet: 100 }));
+        } catch (err) {
+          console.error('Failed to upload lab sheet:', err);
+        }
+      }
+
+      // Upload thumbnail if selected
+      if (thumbnailFile) {
+        setUploadProgress(prev => ({ ...prev, thumbnail: 0 }));
+        try {
+          const interval = setInterval(() => {
+            setUploadProgress(prev => {
+              const newProgress = prev.thumbnail + 20;
+              if (newProgress >= 100) {
+                clearInterval(interval);
+                return { ...prev, thumbnail: 100 };
+              }
+              return { ...prev, thumbnail: newProgress };
+            });
+          }, 200);
+          
+          thumbnailUrl = await uploadFile(thumbnailFile, 'thumbnail');
+          clearInterval(interval);
+          setUploadProgress(prev => ({ ...prev, thumbnail: 100 }));
+        } catch (err) {
+          console.error('Failed to upload thumbnail:', err);
+        }
+      }
+      
+      setIsUploading(false);
+
+      // Create practical with uploaded URLs or provided URLs
       await practicalService.create({
-        title: formData.title,
-        description: formData.description || undefined,
-        subject: formData.subject,
-        grade: formData.grade,
-        duration: formData.duration,
-        difficulty: difficultyFromUI(formData.difficulty),
-        videoUrl: formData.videoUrl || undefined,
-        labSheetUrl: formData.labSheetUrl || undefined,
-        thumbnail: formData.thumbnail || undefined,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || undefined,
+        subject: formData.get('subject') as string,
+        grade: formData.get('grade') as string,
+        duration: formData.get('duration') as string,
+        difficulty: difficultyFromUI(formData.get('difficulty') as string || 'Intermediate'),
+        videoUrl: videoUrl || undefined,
+        labSheetUrl: labSheetUrl || undefined,
+        thumbnail: thumbnailUrl || undefined,
         teacherId: currentUserId,
       });
 
+      // Reset form
       setRefreshKey(prev => prev + 1);
       setIsAddDialogOpen(false);
+      setVideoFile(null);
+      setLabSheetFile(null);
+      setThumbnailFile(null);
+      setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
       form.reset();
+      
       alert('Practical created successfully!');
-    } catch (apiErr: any) {
-      console.error('API error creating practical:', apiErr);
-      alert(apiErr.message || 'Failed to create practical');
+    } catch (err: any) {
+      console.error('Error creating practical:', err);
+      setError(err.message || 'Failed to create practical');
+      alert(err.message || 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
+      setIsUploading(false);
     }
-  } catch (err: any) {
-    console.error('Unexpected error in handleAddPractical:', err);
-    alert(err.message || 'Something went wrong');
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+  };
 
   // Add this function for updating practical
   const handleUpdatePractical = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -233,24 +491,23 @@ useEffect(() => {
 
   // Handle deleting practical
   const handleDeletePractical = async (id: number) => {
-  if (!confirm('Are you sure you want to delete this practical? This will also delete all associated quizzes.')) {
-    return;
-  }
+    if (!confirm('Are you sure you want to delete this practical? This will also delete all associated quizzes.')) {
+      return;
+    }
 
-  try {
-    // Call the service
-    const deletedCount = await practicalService.delete(id);
+    try {
+      // Call the service
+      const deletedCount = await practicalService.delete(id);
 
-    // Update the practicals list
-    setPracticals(prev => prev.filter(p => p.id !== id));
+      // Update the practicals list
+      setPracticals(prev => prev.filter(p => p.id !== id));
 
-    alert(`Practical deleted successfully! Quizzes removed: ${deletedCount}`);
-  } catch (err: any) {
-    console.error('Error deleting practical:', err);
-    alert(`Failed to delete practical: ${err.message}`);
-  }
-};
-
+      alert(`Practical deleted successfully! Quizzes removed: ${deletedCount}`);
+    } catch (err: any) {
+      console.error('Error deleting practical:', err);
+      alert(`Failed to delete practical: ${err.message}`);
+    }
+  };
 
   // Handle starting edit
   const handleStartEdit = (practical: Practical) => {
@@ -325,6 +582,14 @@ useEffect(() => {
     return thumbnail;
   };
 
+  // Function to reset file states when dialog closes
+  const resetFileStates = () => {
+    setVideoFile(null);
+    setLabSheetFile(null);
+    setThumbnailFile(null);
+    setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
+  };
+
   // Loading state
   if (loading && practicals.length === 0) {
     return (
@@ -375,7 +640,12 @@ useEffect(() => {
           </p>
         </div>
         {canUpload && (
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (!open) {
+              resetFileStates();
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
                 <Plus className="w-4 h-4 mr-2" />
@@ -402,7 +672,15 @@ useEffect(() => {
                   </div>
                   <div>
                     <Label htmlFor="subject">Subject *</Label>
-                    <Select name="subject" required defaultValue="Chemistry">
+                    <Select
+                      name="subject"
+                      value={subject}
+                      onValueChange={(value) => {
+                        setSubject(value);
+                        setGrade(""); // reset grade when subject changes
+                      }}
+                      required
+                    >
                       <SelectTrigger id="subject">
                         <SelectValue placeholder="Select subject" />
                       </SelectTrigger>
@@ -414,24 +692,44 @@ useEffect(() => {
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div>
                     <Label htmlFor="grade">Grade *</Label>
-                    <Select name="grade" required defaultValue="Grade 10">
+                    <Select
+                      name="grade"
+                      value={grade}
+                      onValueChange={setGrade}
+                      required
+                    >
                       <SelectTrigger id="grade">
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Grade 6">Grade 6</SelectItem>
-                        <SelectItem value="Grade 7">Grade 7</SelectItem>
-                        <SelectItem value="Grade 8">Grade 8</SelectItem>
-                        <SelectItem value="Grade 9">Grade 9</SelectItem>
-                        <SelectItem value="Grade 10">Grade 10</SelectItem>
-                        <SelectItem value="Grade 11">Grade 11</SelectItem>
-                        <SelectItem value="Grade 12">Grade 12</SelectItem>
-                        <SelectItem value="Grade 13">Grade 13</SelectItem>
+                        {/* Physics / Chemistry / Biology → Grade 12 & 13 */}
+                        {(subject === "Physics" ||
+                          subject === "Chemistry" ||
+                          subject === "Biology") && (
+                          <>
+                            <SelectItem value="Grade 12">Grade 12</SelectItem>
+                            <SelectItem value="Grade 13">Grade 13</SelectItem>
+                          </>
+                        )}
+
+                        {/* Science → Grade 6 to 11 */}
+                        {subject === "Science" && (
+                          <>
+                            <SelectItem value="Grade 6">Grade 6</SelectItem>
+                            <SelectItem value="Grade 7">Grade 7</SelectItem>
+                            <SelectItem value="Grade 8">Grade 8</SelectItem>
+                            <SelectItem value="Grade 9">Grade 9</SelectItem>
+                            <SelectItem value="Grade 10">Grade 10</SelectItem>
+                            <SelectItem value="Grade 11">Grade 11</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div>
                     <Label htmlFor="difficulty">Difficulty Level</Label>
                     <Select name="difficulty" defaultValue="Intermediate">
@@ -464,29 +762,250 @@ useEffect(() => {
                       rows={3}
                     />
                   </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="videoUrl">Video URL (optional)</Label>
-                    <Input 
-                      id="videoUrl" 
-                      name="videoUrl"
-                      placeholder="https://example.com/video.mp4" 
-                    />
+                </div>
+
+                {/* File Upload Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-gray-900">Upload Files or Provide URLs</h4>
+                  
+                  {/* Video Upload */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="video">Practical Video</Label>
+                      <span className="text-xs text-gray-500">Optional</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* File Upload Option */}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                        onClick={() => document.getElementById('video-file-input')?.click()}>
+                        <Input 
+                          id="video-file-input" 
+                          type="file" 
+                          accept="video/*" 
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setVideoFile(file);
+                          }}
+                        />
+                        <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        {videoFile ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
+                                {videoFile.name}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                              {uploadProgress.video > 0 && ` • Uploading: ${uploadProgress.video}%`}
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="mt-1 h-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setVideoFile(null);
+                              }}
+                            >
+                              <X className="w-3 h-3 mr-1" /> Remove File
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-600 mb-1">Click to upload video</p>
+                            <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* OR Separator */}
+                      <div className="flex items-center my-2">
+                        <div className="flex-1 border-t border-gray-300"></div>
+                        <span className="px-3 text-xs text-gray-500">OR</span>
+                        <div className="flex-1 border-t border-gray-300"></div>
+                      </div>
+                      
+                      {/* URL Option */}
+                      <div>
+                        <Label htmlFor="videoUrl">Video URL</Label>
+                        <Input 
+                          id="videoUrl" 
+                          name="videoUrl"
+                          placeholder="https://example.com/video.mp4" 
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Provide a direct link to the video file
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="labSheetUrl">Lab Sheet URL (optional)</Label>
-                    <Input 
-                      id="labSheetUrl" 
-                      name="labSheetUrl"
-                      placeholder="https://example.com/lab-sheet.pdf" 
-                    />
+
+                  {/* Lab Sheet Upload */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
+                      <span className="text-xs text-gray-500">Optional</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* File Upload Option */}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                        onClick={() => document.getElementById('labsheet-file-input')?.click()}>
+                        <Input 
+                          id="labsheet-file-input" 
+                          type="file" 
+                          accept=".pdf" 
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setLabSheetFile(file);
+                          }}
+                        />
+                        <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        {labSheetFile ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
+                                {labSheetFile.name}
+                              </p>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              {(labSheetFile.size / 1024).toFixed(2)} KB
+                              {uploadProgress.labSheet > 0 && ` • Uploading: ${uploadProgress.labSheet}%`}
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="mt-1 h-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLabSheetFile(null);
+                              }}
+                            >
+                              <X className="w-3 h-3 mr-1" /> Remove File
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-600 mb-1">Click to upload PDF</p>
+                            <p className="text-xs text-gray-500">PDF up to 10MB</p>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* OR Separator */}
+                      <div className="flex items-center my-2">
+                        <div className="flex-1 border-t border-gray-300"></div>
+                        <span className="px-3 text-xs text-gray-500">OR</span>
+                        <div className="flex-1 border-t border-gray-300"></div>
+                      </div>
+                      
+                      {/* URL Option */}
+                      <div>
+                        <Label htmlFor="labSheetUrl">Lab Sheet URL</Label>
+                        <Input 
+                          id="labSheetUrl" 
+                          name="labSheetUrl"
+                          placeholder="https://example.com/lab-sheet.pdf" 
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Provide a direct link to the PDF file
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="thumbnail">Thumbnail URL (optional)</Label>
-                    <Input 
-                      id="thumbnail" 
-                      name="thumbnail"
-                      placeholder="https://example.com/thumbnail.jpg" 
-                    />
+
+                  {/* Thumbnail Upload */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                      <span className="text-xs text-gray-500">Optional</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {/* File Upload Option */}
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                        onClick={() => document.getElementById('thumbnail-file-input')?.click()}>
+                        <Input 
+                          id="thumbnail-file-input" 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setThumbnailFile(file);
+                          }}
+                        />
+                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        {thumbnailFile ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-center gap-3">
+                              <img 
+                                src={URL.createObjectURL(thumbnailFile)} 
+                                alt="Preview" 
+                                className="w-16 h-16 object-cover rounded border"
+                              />
+                              <div className="text-left">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500" />
+                                  <p className="text-sm text-gray-700 font-medium truncate max-w-[200px]">
+                                    {thumbnailFile.name}
+                                  </p>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {(thumbnailFile.size / 1024).toFixed(2)} KB
+                                  {uploadProgress.thumbnail > 0 && ` • Uploading: ${uploadProgress.thumbnail}%`}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-6"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setThumbnailFile(null);
+                              }}
+                            >
+                              <X className="w-3 h-3 mr-1" /> Remove File
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-600 mb-1">Click to upload image</p>
+                            <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* OR Separator */}
+                      <div className="flex items-center my-2">
+                        <div className="flex-1 border-t border-gray-300"></div>
+                        <span className="px-3 text-xs text-gray-500">OR</span>
+                        <div className="flex-1 border-t border-gray-300"></div>
+                      </div>
+                      
+                      {/* URL Option */}
+                      <div>
+                        <Label htmlFor="thumbnail">Thumbnail URL</Label>
+                        <Input 
+                          id="thumbnail" 
+                          name="thumbnail"
+                          placeholder="https://example.com/thumbnail.jpg" 
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Provide a direct link to the image
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -494,20 +1013,23 @@ useEffect(() => {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsAddDialogOpen(false)}
-                    disabled={isSubmitting}
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      resetFileStates();
+                    }}
+                    disabled={isSubmitting || isUploading}
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
                     className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploading}
                   >
-                    {isSubmitting ? (
+                    {(isSubmitting || isUploading) ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Creating...
+                        {isUploading ? 'Uploading...' : 'Creating...'}
                       </>
                     ) : (
                       <>
@@ -728,17 +1250,152 @@ useEffect(() => {
       {selectedPractical && (
         <Dialog 
           open={!!selectedPractical} 
-          onOpenChange={(open) => !open && setSelectedPractical(null)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedPractical(null);
+              setQuizResults([]);
+            }
+          }}
         >
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedPractical.title} - Quizzes</DialogTitle>
               <DialogDescription>
                 {userRole === 'student' 
                   ? 'Take quizzes to test your knowledge' 
                   : 'Manage quizzes for this practical'}
-            </DialogDescription>
+              </DialogDescription>
             </DialogHeader>
+            
+            {/* Quiz Results Section for Teachers */}
+            {canUpload && selectedPractical.quizzes && selectedPractical.quizzes.length > 0 && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Quiz Results</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => fetchQuizResults(selectedPractical.id)}
+                      disabled={isLoadingResults}
+                    >
+                      {isLoadingResults ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Load Results
+                        </>
+                      )}
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => exportQuizResultsToExcel(selectedPractical.title)}
+                      disabled={quizResults.length === 0}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Export Excel
+                    </Button>
+                  </div>
+                </div>
+
+                {quizResults.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Total Students</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {new Set(quizResults.map(r => r.studentId)).size}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Average Score</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {(quizResults.reduce((sum, r) => sum + r.percentage, 0) / quizResults.length).toFixed(1)}%
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Total Attempts</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {quizResults.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left border">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 border">Student</th>
+                            <th className="px-4 py-2 border">Quiz</th>
+                            <th className="px-4 py-2 border">Score</th>
+                            <th className="px-4 py-2 border">Percentage</th>
+                            <th className="px-4 py-2 border">Time Taken</th>
+                            <th className="px-4 py-2 border">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {quizResults.map((result, index) => (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 border">
+                                <div>
+                                  <p className="font-medium">{result.studentName}</p>
+                                  <p className="text-xs text-gray-500">{result.email}</p>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 border">{result.quizTitle}</td>
+                              <td className="px-4 py-2 border">
+                                {result.score}/{result.totalQuestions}
+                              </td>
+                              <td className="px-4 py-2 border">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  result.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                                  result.percentage >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {result.percentage}%
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 border">{result.timeTaken} min</td>
+                              <td className="px-4 py-2 border">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  result.status === AttemptStatus.COMPLETED ? 'bg-green-100 text-green-800' :
+                                  result.status === AttemptStatus.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {result.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="text-xs text-gray-500 mt-2">
+                      Showing {quizResults.length} quiz attempts. Click "Export Excel" to download complete results.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600">No quiz results loaded yet.</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Click "Load Results" to fetch student quiz attempts.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quiz Manager */}
             <QuizManager
               key={`quiz-manager-${selectedPractical.id}`}
               practicalId={selectedPractical.id.toString()}

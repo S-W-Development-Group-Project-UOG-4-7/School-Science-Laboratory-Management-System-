@@ -7,6 +7,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum ScheduleStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+enum QuizAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
 
 enum Role {
   STUDENT
@@ -87,9 +97,9 @@ model Practical {
   updatedAt   DateTime        @updatedAt
 
   // Relations
-  teacherId Int
-  teacher   Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  quizzes   Quiz[]
+  teacherId       Int
+  teacher         Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  quizzes         Quiz[]
   studentProgress StudentProgress[]
 
   // Indexes for better query performance
@@ -107,15 +117,15 @@ model Quiz {
   practicalId  Int
   totalMarks   Int        @default(100)
   passingMarks Int        @default(60)
-  timeLimit    Int?       // in minutes
+  timeLimit    Int? // in minutes
   status       QuizStatus @default(DRAFT)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   // Relations
-  practical    Practical    @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+  practical    Practical     @relation(fields: [practicalId], references: [id], onDelete: Cascade)
   teacherId    Int
-  teacher      Teacher      @relation(fields: [teacherId], references: [id])
+  teacher      Teacher       @relation(fields: [teacherId], references: [id])
   questions    Question[]
   quizAttempts QuizAttempt[]
 
@@ -132,9 +142,9 @@ model Question {
   quizId         Int
   question       String       @db.Text
   type           QuestionType @default(MULTIPLE_CHOICE)
-  options        String[]     // Array of strings
+  options        String[] // Array of strings
   correctAnswer  String?      @db.VarChar(255)
-  correctAnswers Json?        // For MSQ (Multiple Select Questions)
+  correctAnswers Json? // For MSQ (Multiple Select Questions)
   marks          Int          @default(1)
   explanation    String?      @db.Text
   order          Int          @default(0)
@@ -150,59 +160,82 @@ model Question {
 }
 
 model QuizAttempt {
-  id           Int      @id @default(autoincrement())
-  quizId       Int
-  studentId    Int      // Reference to User with STUDENT role
-  answers      Json     // Store student's answers
-  totalMarks   Int
+  id            Int               @id @default(autoincrement())
+  quizId        Int
+  studentId     Int
+  answers       Json
+  totalMarks    Int
   obtainedMarks Int
-  percentage   Float
-  passed       Boolean
-  startedAt    DateTime
-  completedAt  DateTime
-  status       String   @db.VarChar(20) // 'in_progress', 'completed', 'abandoned'
+  percentage    Float
+  passed        Boolean
+  status        QuizAttemptStatus
 
-  // Relations
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
   quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  student User @relation(fields: [studentId], references: [id])
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  // Indexes
   @@index([quizId])
   @@index([studentId])
-  @@index([completedAt])
   @@map("quiz_attempts")
 }
 
 model Schedule {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(255)
-  date        DateTime
-  description String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int                  @id @default(autoincrement())
+  title        String
+  date         DateTime
+  time         String
+  duration     String
+  grade        String
+  classSection String
+  subject      String
+  location     String
+  notes        String?
+  maxStudents  Int
+  status       ScheduleStatus
+  teacherId    Int
+  teacher      Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attachments  ScheduleAttachment[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
-  // Relations
-  teacherId Int
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  // NEW FIELDS for frontend compatibility
+  studentRequirements String?
+  daySchedule         String?
 
-  // Indexes
-  @@index([teacherId])
-  @@index([date])
+  @@index([grade, classSection])
+  @@index([date, time])
   @@map("schedules")
 }
 
+model ScheduleAttachment {
+  id         Int      @id @default(autoincrement())
+  scheduleId Int
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  fileName   String
+  fileUrl    String
+  fileType   String?
+  fileSize   Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([scheduleId])
+  @@map("schedule_attachments")
+}
+
 model FileUpload {
-  id          Int      @id @default(autoincrement())
-  filename    String   @db.VarChar(255)
-  originalName String  @db.VarChar(255)
-  mimeType    String   @db.VarChar(100)
-  size        Int      // in bytes
-  path        String   @db.VarChar(500)
-  url         String   @db.VarChar(500)
-  uploadedBy  Int      // User ID
-  entityType  String   @db.VarChar(50) // 'practical_video', 'lab_sheet', 'thumbnail', 'quiz_attachment'
-  entityId    Int?     // ID of the related entity
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  filename     String   @db.VarChar(255)
+  originalName String   @db.VarChar(255)
+  mimeType     String   @db.VarChar(100)
+  size         Int // in bytes
+  path         String   @db.VarChar(500)
+  url          String   @db.VarChar(500)
+  uploadedBy   Int // User ID
+  entityType   String   @db.VarChar(50) // 'practical_video', 'lab_sheet', 'thumbnail', 'quiz_attachment'
+  entityId     Int? // ID of the related entity
+  createdAt    DateTime @default(now())
 
   // Relations
   uploader User? @relation(fields: [uploadedBy], references: [id])
@@ -214,23 +247,22 @@ model FileUpload {
 }
 
 model StudentProgress {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   studentId   Int
   practicalId Int
-  watched     Boolean  @default(false)
-  completed   Boolean  @default(false)
-  watchTime   Int?     // in seconds
+  watched     Boolean   @default(false)
+  completed   Boolean   @default(false)
+  watchTime   Int? // in seconds
   lastWatched DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  student   User     @relation(fields: [studentId], references: [id])
+  student   User      @relation(fields: [studentId], references: [id])
   practical Practical @relation(fields: [practicalId], references: [id])
 
   // Unique constraint
   @@unique([studentId, practicalId])
-  
   // Indexes
   @@index([studentId])
   @@index([practicalId])

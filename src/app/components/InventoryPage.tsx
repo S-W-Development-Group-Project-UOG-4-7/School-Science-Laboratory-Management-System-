@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit } from 'lucide-react';
+import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit, Trash2, X, Save } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -14,9 +14,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from './ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import type { UserRole } from '@/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 
 interface InventoryPageProps {
   userRole: UserRole;
@@ -35,9 +48,11 @@ interface InventoryItem {
   handlingProcedure: string;
   safetyNotes: string;
   lastUpdated: string;
+  addedBy: UserRole;
 }
 
-const inventoryItems: InventoryItem[] = [
+// Initial data with addedBy field
+const initialInventoryItems: InventoryItem[] = [
   {
     id: '1',
     name: 'Beakers (250ml)',
@@ -51,6 +66,7 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Handle with care. Check for cracks before use. Clean thoroughly after each use with appropriate cleaning solution.',
     safetyNotes: 'Wear safety gloves when handling. Dispose of broken glassware in designated sharps container.',
     lastUpdated: '2025-11-10',
+    addedBy: 'lab-assistant',
   },
   {
     id: '2',
@@ -65,6 +81,7 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Always carry with both hands - one on the arm and one supporting the base. Clean lenses with lens paper only. Never use regular cloth or tissue.',
     safetyNotes: 'Ensure electrical safety before plugging in. Keep away from water sources. Report any damaged cables immediately.',
     lastUpdated: '2025-11-08',
+    addedBy: 'teacher',
   },
   {
     id: '3',
@@ -79,6 +96,7 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Inspect for chips or cracks before use. Use test tube holders for hot materials. Clean with appropriate brushes and detergent.',
     safetyNotes: 'Never heat a closed test tube. Point opening away from yourself and others when heating. Dispose of broken glass properly.',
     lastUpdated: '2025-11-11',
+    addedBy: 'lab-assistant',
   },
   {
     id: '4',
@@ -93,6 +111,7 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Ensure proper fit before use. Clean with mild soap and water after each use. Check for scratches or damage before issuing.',
     safetyNotes: 'Mandatory for all laboratory work. Must be worn at all times in the lab. Replace if scratched or damaged.',
     lastUpdated: '2025-11-09',
+    addedBy: 'lab-assistant',
   },
   {
     id: '5',
@@ -107,6 +126,7 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Check gas connections before use. Light with striker, never matches. Adjust air valve for proper flame type. Turn off gas when not actively heating.',
     safetyNotes: 'Never leave unattended when lit. Ensure proper ventilation. Keep flammable materials at safe distance. Allow to cool before storing.',
     lastUpdated: '2025-11-07',
+    addedBy: 'lab-assistant',
   },
   {
     id: '6',
@@ -121,19 +141,52 @@ const inventoryItems: InventoryItem[] = [
     handlingProcedure: 'Clean thoroughly before use. Fill to calibration mark at eye level. Use for preparation of standard solutions only.',
     safetyNotes: 'Do not heat. Handle stopper separately from flask when in use. Clean immediately after use to prevent contamination.',
     lastUpdated: '2025-11-10',
+    addedBy: 'teacher',
   },
 ];
+
+// Form for adding/editing items
+const emptyInventoryItem: Omit<InventoryItem, 'id' | 'lastUpdated' | 'addedBy'> = {
+  name: '',
+  category: 'Glassware',
+  stockLevel: 0,
+  minStockLevel: 0,
+  unit: 'pieces',
+  location: '',
+  photo: '',
+  storageInstructions: '',
+  handlingProcedure: '',
+  safetyNotes: '',
+};
 
 export function InventoryPage({ userRole }: InventoryPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>(initialInventoryItems);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
+  const [formData, setFormData] = useState<Omit<InventoryItem, 'id' | 'lastUpdated' | 'addedBy'>>(emptyInventoryItem);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredItems = inventoryItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Filter items based on user role
+  const getFilteredItems = () => {
+    let filtered = inventoryItems;
+    
+    // Teachers can only see items added by lab assistants
+    
+    
+    // Apply search and category filters
+    return filtered.filter((item) => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  };
+
+  const filteredItems = getFilteredItems();
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -142,7 +195,106 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
 
-  const canEdit = userRole === 'teacher' || userRole === 'lab-assistant';
+  // Check permissions
+  const canEdit = userRole === 'lab-assistant'; // Only lab assistants can edit
+  const canDelete = userRole === 'lab-assistant'; // Only lab assistants can delete
+  const canAdd = userRole === 'lab-assistant'; // Only lab assistants can add
+
+  // Handle form input changes
+  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData(emptyInventoryItem);
+  };
+
+  // Open add dialog
+  const handleAddClick = () => {
+    resetForm();
+    setIsAddDialogOpen(true);
+  };
+
+  // Open edit dialog
+  const handleEditClick = (item: InventoryItem) => {
+    const { id, lastUpdated, addedBy, ...itemData } = item;
+    setFormData(itemData);
+    setIsEditDialogOpen(true);
+  };
+
+  // Handle add item
+  const handleAddItem = () => {
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const newItem: InventoryItem = {
+        id: Date.now().toString(),
+        ...formData,
+        lastUpdated: new Date().toISOString().split('T')[0],
+        addedBy: 'lab-assistant' as UserRole,
+      };
+      
+      setInventoryItems(prev => [...prev, newItem]);
+      setIsSubmitting(false);
+      setIsAddDialogOpen(false);
+      resetForm();
+    }, 500);
+  };
+
+  // Handle update item
+  const handleUpdateItem = () => {
+    if (!selectedItem) return;
+    
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      const updatedItems = inventoryItems.map(item => {
+        if (item.id === selectedItem.id) {
+          return {
+            ...item,
+            ...formData,
+            lastUpdated: new Date().toISOString().split('T')[0],
+          };
+        }
+        return item;
+      });
+      
+      setInventoryItems(updatedItems);
+      setIsSubmitting(false);
+      setIsEditDialogOpen(false);
+      resetForm();
+      setSelectedItem(null);
+    }, 500);
+  };
+
+  // Handle delete item
+  const handleDeleteClick = (item: InventoryItem) => {
+    setItemToDelete(item);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!itemToDelete) return;
+    
+    // Simulate API call
+    setTimeout(() => {
+      setInventoryItems(prev => prev.filter(item => item.id !== itemToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }, 500);
+  };
+
+  // Statistics calculations
+  const totalItems = inventoryItems.length;
+  const lowStockItems = inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length;
+  const labAssistantItems = inventoryItems.filter(item => item.addedBy === 'lab-assistant').length;
+  const teacherItems = inventoryItems.filter(item => item.addedBy === 'teacher').length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -151,11 +303,16 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
         <div>
           <h2 className="text-gray-900 mb-2">Laboratory Inventory</h2>
           <p className="text-gray-600">
-            Manage and track all laboratory equipment, glassware, and materials
+            {userRole === 'teacher' 
+              ? 'Viewing items added by lab assistants' 
+              : 'Manage and track all laboratory equipment, glassware, and materials'}
           </p>
         </div>
-        {canEdit && (
-          <Button className="bg-blue-600 hover:bg-blue-700">
+        {canAdd && (
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleAddClick}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Item
           </Button>
@@ -197,13 +354,13 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Total Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-900">{inventoryItems.length}</p>
+            <p className="text-gray-900">{totalItems}</p>
             <p className="text-sm text-gray-600">Unique item types</p>
           </CardContent>
         </Card>
@@ -212,8 +369,17 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             <CardTitle className="text-lg">Low Stock Alerts</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-red-600">{inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length}</p>
+            <p className="text-red-600">{lowStockItems}</p>
             <p className="text-sm text-gray-600">Items need restocking</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Lab Assistant Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-blue-600">{labAssistantItems}</p>
+            <p className="text-sm text-gray-600">Added by lab assistants</p>
           </CardContent>
         </Card>
         <Card>
@@ -222,10 +388,24 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
           </CardHeader>
           <CardContent>
             <p className="text-gray-900">Today</p>
-            <p className="text-sm text-gray-600">2025-11-12</p>
+            <p className="text-sm text-gray-600">{new Date().toISOString().split('T')[0]}</p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Role-based notice for teachers */}
+      {userRole === 'teacher' && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Info className="w-5 h-5 text-blue-600" />
+              <p className="text-sm text-blue-700">
+                You are viewing only items added by lab assistants. You cannot add, edit, or delete items.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Inventory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -244,7 +424,12 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               </div>
               <CardHeader>
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <Badge variant="outline">{item.category}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{item.category}</Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Added by: {item.addedBy}
+                    </Badge>
+                  </div>
                   <Badge className={status.color}>
                     <StatusIcon className="w-3 h-3 mr-1" />
                     {status.label}
@@ -314,9 +499,24 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                             </p>
                           </div>
                           <div>
+                            <p className="text-sm text-gray-600">Added By</p>
+                            <p className="text-gray-900">{item.addedBy}</p>
+                          </div>
+                          <div>
                             <p className="text-sm text-gray-600">Last Updated</p>
                             <p className="text-gray-900">{item.lastUpdated}</p>
                           </div>
+                          <div>
+                            <p className="text-sm text-gray-600">Unit</p>
+                            <p className="text-gray-900">{item.unit}</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-gray-900 mb-2">Storage Instructions</h4>
+                          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                            {item.storageInstructions}
+                          </p>
                         </div>
 
                         <div className="space-y-3">
@@ -334,10 +534,27 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                     </DialogContent>
                   </Dialog>
 
-                  {canEdit && (
-                    <Button size="sm" variant="outline">
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                  {(canEdit || canDelete) && (
+                    <div className="flex gap-2">
+                      {canEdit && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditClick(item)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDeleteClick(item)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </CardContent>
@@ -352,10 +569,383 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
           <CardContent className="text-center">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-gray-900 mb-2">No items found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search query</p>
+            <p className="text-gray-600">
+              {userRole === 'teacher' 
+                ? 'No items have been added by lab assistants yet.' 
+                : 'Try adjusting your filters or search query'}
+            </p>
           </CardContent>
         </Card>
       )}
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Inventory Item</DialogTitle>
+            <DialogDescription>
+              Fill in the details for the new inventory item
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Item Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Enter item name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => handleInputChange('category', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Glassware">Glassware</SelectItem>
+                    <SelectItem value="Equipment">Equipment</SelectItem>
+                    <SelectItem value="Chemicals">Chemicals</SelectItem>
+                    <SelectItem value="Safety">Safety Equipment</SelectItem>
+                    <SelectItem value="Instruments">Instruments</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stockLevel">Current Stock Level *</Label>
+                <Input
+                  id="stockLevel"
+                  type="number"
+                  min="0"
+                  value={formData.stockLevel}
+                  onChange={(e) => handleInputChange('stockLevel', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="minStockLevel">Minimum Stock Level *</Label>
+                <Input
+                  id="minStockLevel"
+                  type="number"
+                  min="0"
+                  value={formData.minStockLevel}
+                  onChange={(e) => handleInputChange('minStockLevel', parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="unit">Unit *</Label>
+                <Select 
+                  value={formData.unit} 
+                  onValueChange={(value) => handleInputChange('unit', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pieces">Pieces</SelectItem>
+                    <SelectItem value="units">Units</SelectItem>
+                    <SelectItem value="boxes">Boxes</SelectItem>
+                    <SelectItem value="pairs">Pairs</SelectItem>
+                    <SelectItem value="liters">Liters</SelectItem>
+                    <SelectItem value="grams">Grams</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="location">Storage Location *</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  placeholder="e.g., Cabinet A2 - Shelf 3"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="photo">Photo URL</Label>
+              <Input
+                id="photo"
+                value={formData.photo}
+                onChange={(e) => handleInputChange('photo', e.target.value)}
+                placeholder="Enter image URL"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="storageInstructions">Storage Instructions</Label>
+              <Textarea
+                id="storageInstructions"
+                value={formData.storageInstructions}
+                onChange={(e) => handleInputChange('storageInstructions', e.target.value)}
+                placeholder="Enter storage instructions"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="handlingProcedure">Handling Procedure</Label>
+              <Textarea
+                id="handlingProcedure"
+                value={formData.handlingProcedure}
+                onChange={(e) => handleInputChange('handlingProcedure', e.target.value)}
+                placeholder="Enter handling procedure"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="safetyNotes">Safety Notes</Label>
+              <Textarea
+                id="safetyNotes"
+                value={formData.safetyNotes}
+                onChange={(e) => handleInputChange('safetyNotes', e.target.value)}
+                placeholder="Enter safety notes"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false);
+                resetForm();
+              }}
+              disabled={isSubmitting}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddItem}
+              disabled={isSubmitting || !formData.name || !formData.location}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Add Item
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Inventory Item</DialogTitle>
+            <DialogDescription>
+              Update the details for this inventory item
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Item Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category *</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => handleInputChange('category', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Glassware">Glassware</SelectItem>
+                    <SelectItem value="Equipment">Equipment</SelectItem>
+                    <SelectItem value="Chemicals">Chemicals</SelectItem>
+                    <SelectItem value="Safety">Safety Equipment</SelectItem>
+                    <SelectItem value="Instruments">Instruments</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-stockLevel">Current Stock Level *</Label>
+                <Input
+                  id="edit-stockLevel"
+                  type="number"
+                  min="0"
+                  value={formData.stockLevel}
+                  onChange={(e) => handleInputChange('stockLevel', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-minStockLevel">Minimum Stock Level *</Label>
+                <Input
+                  id="edit-minStockLevel"
+                  type="number"
+                  min="0"
+                  value={formData.minStockLevel}
+                  onChange={(e) => handleInputChange('minStockLevel', parseInt(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-unit">Unit *</Label>
+                <Select 
+                  value={formData.unit} 
+                  onValueChange={(value) => handleInputChange('unit', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pieces">Pieces</SelectItem>
+                    <SelectItem value="units">Units</SelectItem>
+                    <SelectItem value="boxes">Boxes</SelectItem>
+                    <SelectItem value="pairs">Pairs</SelectItem>
+                    <SelectItem value="liters">Liters</SelectItem>
+                    <SelectItem value="grams">Grams</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-location">Storage Location *</Label>
+                <Input
+                  id="edit-location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-photo">Photo URL</Label>
+              <Input
+                id="edit-photo"
+                value={formData.photo}
+                onChange={(e) => handleInputChange('photo', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-storageInstructions">Storage Instructions</Label>
+              <Textarea
+                id="edit-storageInstructions"
+                value={formData.storageInstructions}
+                onChange={(e) => handleInputChange('storageInstructions', e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-handlingProcedure">Handling Procedure</Label>
+              <Textarea
+                id="edit-handlingProcedure"
+                value={formData.handlingProcedure}
+                onChange={(e) => handleInputChange('handlingProcedure', e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-safetyNotes">Safety Notes</Label>
+              <Textarea
+                id="edit-safetyNotes"
+                value={formData.safetyNotes}
+                onChange={(e) => handleInputChange('safetyNotes', e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                resetForm();
+                setSelectedItem(null);
+              }}
+              disabled={isSubmitting}
+            >
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateItem}
+              disabled={isSubmitting || !formData.name || !formData.location}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Update Item
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete "
+              {itemToDelete?.name}" from the inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
