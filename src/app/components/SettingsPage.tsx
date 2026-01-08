@@ -15,104 +15,134 @@ import {
   Lock, 
   Bell, 
   Shield, 
+  Mail, 
+  Smartphone,
   Camera,
   Save,
   Eye,
   EyeOff,
-  Check,
-  Smartphone,
-  Key,
-  RefreshCw,
-  AlertCircle
+  Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User as UserType } from '@/src/app/lib/types';
-import { TwoFactorSetupPage } from './TwoFactorSetupPage';
+
+interface UserType {
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface SettingsPageProps {
   user: UserType;
-  onUserUpdate?: (user: UserType) => void;
 }
 
-export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
+export function SettingsPage({ user }: SettingsPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   // Account settings state
   const [fullName, setFullName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState('+94 71 234 5678');
+  const [profileImage, setProfileImage] = useState<string>('');
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   
   // Security settings state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(user.twoFactorEnabled || false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [practicalReminders, setPracticalReminders] = useState(true);
   const [inventoryAlerts, setInventoryAlerts] = useState(true);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
+  // Ref for file input
+  let fileInputRef: HTMLInputElement | null = null;
 
-  // 2FA Handler Functions
-  const handleDisable2FA = async () => {
+  const handleSave = async () => {
     try {
-      const response = await fetch('/api/auth/totp/disable', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
-      });
-
-      if (response.ok) {
-        setTwoFactorEnabled(false);
-        // Update parent component if callback provided
-        if (onUserUpdate) {
-          onUserUpdate({ ...user, twoFactorEnabled: false });
+      // First, upload the image if a new one was selected
+      let imageUrl = profileImage;
+      
+      if (profileImageFile) {
+        setUploading(true);
+        
+        const formData = new FormData();
+        formData.append('profileImage', profileImageFile);
+        formData.append('userId', user.email); // Using email as userId
+        
+        const uploadResponse = await fetch('/api/users/profile/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || 'Failed to upload image');
         }
-        alert('2FA has been disabled successfully');
-      } else {
-        const data = await response.json();
-        alert(data.error || 'Failed to disable 2FA');
+        
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.imageUrl;
+        setUploading(false);
       }
+      
+      // Then update the profile with all information
+      const response = await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.email,
+          fullName,
+          email,
+          phone,
+          profileImageUrl: imageUrl
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update profile');
+      }
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Error disabling 2FA:', error);
-      alert('An error occurred while disabling 2FA');
+      console.error('Error saving profile:', error);
+      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setUploading(false);
     }
   };
 
-  const handleReset2FA = async () => {
-    try {
-      // Disable first
-      await handleDisable2FA();
-      // Then show setup
-      setShow2FASetup(true);
-    } catch (error) {
-      console.error('Error resetting 2FA:', error);
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        return;
+      }
+
+      // Store the actual file for uploading later
+      setProfileImageFile(file);
+
+      // Read and preview the image
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handle2FASetupComplete = () => {
-    setShow2FASetup(false);
-    setTwoFactorEnabled(true);
-    // Update parent component if callback provided
-    if (onUserUpdate) {
-      onUserUpdate({ ...user, twoFactorEnabled: true });
-    }
-    alert('Two-factor authentication has been enabled successfully!');
+  const triggerFileInput = () => {
+    fileInputRef?.click();
   };
-
-  // Show 2FA setup page if user clicked enable
-  if (show2FASetup) {
-    return (
-      <TwoFactorSetupPage
-        user={user}
-        onComplete={handle2FASetupComplete}
-        onCancel={() => setShow2FASetup(false)}
-      />
-    );
-  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -156,14 +186,23 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
               <CardContent className="space-y-6">
                 {/* Profile Picture */}
                 <div className="flex items-center gap-6">
+                  <input
+                    ref={(ref) => { fileInputRef = ref; }}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
                   <div className="relative group">
                     <Avatar className="w-24 h-24 border-4 border-emerald-100">
-                      <AvatarImage src="" />
+                      <AvatarImage src={profileImage} />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-white">
                         {user.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <motion.button
+                      onClick={triggerFileInput}
+                      type="button"
                       className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -172,9 +211,9 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                     </motion.button>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900 mb-1">Profile Picture</p>
+                    <p className="font-medium text-gray-900 mb-1">Profile Picture</p>
                     <p className="text-sm text-gray-600 mb-3">JPG, PNG or GIF. Max size 2MB</p>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={triggerFileInput} type="button">
                       <Camera className="w-4 h-4 mr-2" />
                       Upload Photo
                     </Button>
@@ -229,9 +268,15 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       onClick={handleSave}
-                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+                      disabled={uploading}
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50"
                     >
-                      {saved ? (
+                      {uploading ? (
+                        <>
+                          <span className="animate-spin mr-2">⏳</span>
+                          Uploading...
+                        </>
+                      ) : saved ? (
                         <>
                           <Check className="w-4 h-4 mr-2" />
                           Saved!
@@ -307,17 +352,17 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Two-Factor Authentication (TOTP) */}
+            {/* Two-Factor Authentication */}
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="w-5 h-5" />
-                      Two-Factor Authentication (TOTP)
+                      Two-Factor Authentication
                     </CardTitle>
                     <CardDescription className="mt-2">
-                      Use Google Authenticator or similar app for extra security
+                      Add an extra layer of security to your account
                     </CardDescription>
                   </div>
                   <Badge className={twoFactorEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
@@ -326,94 +371,33 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {!twoFactorEnabled ? (
-                  // Not Enabled - Show Enable Button
-                  <div className="p-6 bg-blue-50 rounded-lg border border-blue-200 text-center space-y-4">
-                    <div className="flex justify-center">
-                      <div className="p-3 bg-blue-600 rounded-full">
-                        <Smartphone className="w-8 h-8 text-white" />
-                      </div>
+                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-600 rounded-lg">
+                      <Smartphone className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-gray-900 font-medium mb-2">Secure Your Account</h4>
-                      <p className="text-sm text-gray-600 mb-4">
-                        Add an extra layer of security with Google Authenticator. 
-                        It's free, works offline, and takes only 1 minute to setup.
-                      </p>
-                      <Button
-                        onClick={() => setShow2FASetup(true)}
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                      >
-                        <Shield className="w-4 h-4 mr-2" />
-                        Enable 2FA
-                      </Button>
+                      <p className="font-medium text-gray-900">SMS Authentication</p>
+                      <p className="text-sm text-gray-600">Receive codes via SMS</p>
                     </div>
                   </div>
-                ) : (
-                  // Enabled - Show Management Options
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-600 rounded-lg">
-                          <Check className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-gray-900 font-medium">2FA Active</p>
-                          <p className="text-sm text-gray-600">Your account is protected</p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={twoFactorEnabled}
-                        onCheckedChange={(checked) => {
-                          if (!checked) {
-                            // Show confirmation dialog
-                            if (confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) {
-                              handleDisable2FA();
-                            }
-                          }
-                        }}
-                      />
+                  <Switch
+                    checked={twoFactorEnabled}
+                    onCheckedChange={setTwoFactorEnabled}
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gray-600 rounded-lg">
+                      <Mail className="w-5 h-5 text-white" />
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          alert('Backup codes feature coming soon. Contact admin for recovery codes.');
-                        }}
-                        className="justify-start"
-                      >
-                        <Key className="w-4 h-4 mr-2" />
-                        View Backup Codes
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          // Reset 2FA
-                          if (confirm('Reset 2FA? You will need to scan a new QR code.')) {
-                            handleReset2FA();
-                          }
-                        }}
-                        className="justify-start"
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Reset 2FA
-                      </Button>
-                    </div>
-
-                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <div className="flex gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-                        <div className="text-sm">
-                          <p className="text-yellow-900 font-medium mb-1">Keep Your Backup Codes Safe</p>
-                          <p className="text-yellow-700">
-                            Save your backup codes in a secure location. You'll need them if you lose your phone.
-                          </p>
-                        </div>
-                      </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Email Authentication</p>
+                      <p className="text-sm text-gray-600">Receive codes via email</p>
                     </div>
                   </div>
-                )}
+                  <Switch checked={false} />
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -441,7 +425,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-900">Email Notifications</p>
+                        <p className="font-medium text-gray-900">Email Notifications</p>
                         <p className="text-sm text-gray-600">Receive updates via email</p>
                       </div>
                       <Switch
@@ -452,7 +436,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                     <Separator />
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-900">SMS Notifications</p>
+                        <p className="font-medium text-gray-900">SMS Notifications</p>
                         <p className="text-sm text-gray-600">Receive updates via SMS</p>
                       </div>
                       <Switch
@@ -470,7 +454,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-900">Practical Reminders</p>
+                        <p className="font-medium text-gray-900">Practical Reminders</p>
                         <p className="text-sm text-gray-600">Get notified before scheduled practicals</p>
                       </div>
                       <Switch
@@ -481,7 +465,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
                     <Separator />
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-900">Inventory Alerts</p>
+                        <p className="font-medium text-gray-900">Inventory Alerts</p>
                         <p className="text-sm text-gray-600">Low stock and reorder notifications</p>
                       </div>
                       <Switch
@@ -519,4 +503,15 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
       </Tabs>
     </div>
   );
+}
+
+// Demo wrapper
+export default function SettingsDemo() {
+  const demoUser = {
+    name: 'Dr. Sarah Johnson',
+    email: 'sarah.johnson@medlab.com',
+    role: 'laboratory technician'
+  };
+
+  return <SettingsPage user={demoUser} />;
 }
