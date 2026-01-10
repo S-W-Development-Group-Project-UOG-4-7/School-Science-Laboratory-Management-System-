@@ -44,8 +44,8 @@ const practicals: Practical[] = [
     title: 'Acid-Base Titration',
     grade: 'Grade 11',
     subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video1',
+    labSheetUrl: 'https://example.com/lab1.pdf',
     duration: '45 min',
     difficulty: 'Intermediate',
     description: 'Learn the proper technique for conducting acid-base titrations using standard solutions.',
@@ -56,8 +56,8 @@ const practicals: Practical[] = [
     title: 'Microscope Usage and Cell Observation',
     grade: 'Grade 9',
     subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video2',
+    labSheetUrl: 'https://example.com/lab2.pdf',
     duration: '30 min',
     difficulty: 'Beginner',
     description: 'Introduction to compound microscope operation and observing plant and animal cells.',
@@ -68,8 +68,8 @@ const practicals: Practical[] = [
     title: "Newton's Laws of Motion Experiments",
     grade: 'Grade 10',
     subject: 'Physics',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video3',
+    labSheetUrl: 'https://example.com/lab3.pdf',
     duration: '60 min',
     difficulty: 'Intermediate',
     description: 'Practical demonstrations of Newton\'s three laws of motion with calculations.',
@@ -80,8 +80,8 @@ const practicals: Practical[] = [
     title: 'Qualitative Analysis of Salts',
     grade: 'Grade 12',
     subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video4',
+    labSheetUrl: 'https://example.com/lab4.pdf',
     duration: '90 min',
     difficulty: 'Advanced',
     description: 'Systematic identification of cations and anions in unknown salt mixtures.',
@@ -92,8 +92,8 @@ const practicals: Practical[] = [
     title: 'Photosynthesis Experiment',
     grade: 'Grade 10',
     subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video5',
+    labSheetUrl: 'https://example.com/lab5.pdf',
     duration: '45 min',
     difficulty: 'Beginner',
     description: 'Investigating the factors affecting the rate of photosynthesis in aquatic plants.',
@@ -104,8 +104,8 @@ const practicals: Practical[] = [
     title: 'Simple Harmonic Motion - Pendulum',
     grade: 'Grade 11',
     subject: 'Physics',
-    videoUrl: '#',
-    labSheetUrl: '#',
+    videoUrl: 'https://example.com/video6',
+    labSheetUrl: 'https://example.com/lab6.pdf',
     duration: '40 min',
     difficulty: 'Intermediate',
     description: 'Study the relationship between length and time period of a simple pendulum.',
@@ -118,6 +118,17 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newPractical, setNewPractical] = useState({
+    title: '',
+    subject: '',
+    grade: '',
+    difficulty: '',
+    duration: '',
+    description: '',
+    video: null as File | null,
+    labsheet: null as File | null,
+    thumbnail: null as File | null,
+  });
 
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
@@ -155,6 +166,55 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     }
   };
 
+  const handleWatchVideo = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const handleViewLabSheet = (url: string) => {
+    window.open(url, '_blank');
+  };
+
+  const handleDownloadLabSheet = (url: string, title: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title.replace(/\s+/g, '_')}_Lab_Sheet.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleThumbnailClick = (videoUrl: string) => {
+    window.open(videoUrl, '_blank');
+  };
+
+  const handleAddPractical = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real application, you would upload the files and save the practical
+    console.log('Adding new practical:', newPractical);
+    setIsAddDialogOpen(false);
+    // Reset form
+    setNewPractical({
+      title: '',
+      subject: '',
+      grade: '',
+      difficulty: '',
+      duration: '',
+      description: '',
+      video: null,
+      labsheet: null,
+      thumbnail: null,
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: keyof typeof newPractical) => {
+    if (e.target.files && e.target.files[0]) {
+      setNewPractical({
+        ...newPractical,
+        [field]: e.target.files[0]
+      });
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -182,26 +242,35 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                   Add Practical
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
                 <DialogHeader>
                   <DialogTitle>Add New Practical</DialogTitle>
                   <DialogDescription>
                     Upload a new practical video and lab sheet for students
                   </DialogDescription>
                 </DialogHeader>
-                <form className="space-y-4">
+                <form className="space-y-4" onSubmit={handleAddPractical}>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <Label htmlFor="title">Practical Title</Label>
-                      <Input id="title" placeholder="e.g., Acid-Base Titration" />
+                      <Input 
+                        id="title" 
+                        placeholder="e.g., Acid-Base Titration" 
+                        value={newPractical.title}
+                        onChange={(e) => setNewPractical({...newPractical, title: e.target.value})}
+                        required
+                      />
                     </div>
                     <div>
                       <Label htmlFor="subject">Subject</Label>
-                      <Select>
-                        <SelectTrigger id="subject">
+                      <Select 
+                        value={newPractical.subject} 
+                        onValueChange={(value) => setNewPractical({...newPractical, subject: value})}
+                      >
+                        <SelectTrigger id="subject" className="bg-white">
                           <SelectValue placeholder="Select subject" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
                           <SelectItem value="Physics">Physics</SelectItem>
                           <SelectItem value="Chemistry">Chemistry</SelectItem>
                           <SelectItem value="Biology">Biology</SelectItem>
@@ -210,26 +279,31 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
                     <div>
                       <Label htmlFor="grade">Grade</Label>
-                      <Select>
-                        <SelectTrigger id="grade">
+                      <Select 
+                        value={newPractical.grade} 
+                        onValueChange={(value) => setNewPractical({...newPractical, grade: value})}
+                      >
+                        <SelectTrigger id="grade" className="bg-white">
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="9">Grade 9</SelectItem>
-                          <SelectItem value="10">Grade 10</SelectItem>
-                          <SelectItem value="11">Grade 11</SelectItem>
-                          <SelectItem value="12">Grade 12</SelectItem>
-                          <SelectItem value="13">Grade 13</SelectItem>
+                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                          <SelectItem value="Grade 9">Grade 9</SelectItem>
+                          <SelectItem value="Grade 10">Grade 10</SelectItem>
+                          <SelectItem value="Grade 11">Grade 11</SelectItem>
+                          <SelectItem value="Grade 12">Grade 12</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="difficulty">Difficulty Level</Label>
-                      <Select>
-                        <SelectTrigger id="difficulty">
+                      <Select 
+                        value={newPractical.difficulty} 
+                        onValueChange={(value) => setNewPractical({...newPractical, difficulty: value})}
+                      >
+                        <SelectTrigger id="difficulty" className="bg-white">
                           <SelectValue placeholder="Select difficulty" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
                           <SelectItem value="Beginner">Beginner</SelectItem>
                           <SelectItem value="Intermediate">Intermediate</SelectItem>
                           <SelectItem value="Advanced">Advanced</SelectItem>
@@ -238,7 +312,13 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
                     <div>
                       <Label htmlFor="duration">Duration</Label>
-                      <Input id="duration" placeholder="e.g., 45 min" />
+                      <Input 
+                        id="duration" 
+                        placeholder="e.g., 45 min" 
+                        value={newPractical.duration}
+                        onChange={(e) => setNewPractical({...newPractical, duration: e.target.value})}
+                        required
+                      />
                     </div>
                     <div className="col-span-2">
                       <Label htmlFor="description">Description</Label>
@@ -246,6 +326,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                         id="description"
                         placeholder="Describe the practical and learning objectives..."
                         rows={3}
+                        value={newPractical.description}
+                        onChange={(e) => setNewPractical({...newPractical, description: e.target.value})}
+                        required
                       />
                     </div>
                   </div>
@@ -255,31 +338,61 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     
                     <div className="space-y-2">
                       <Label htmlFor="video">Practical Video</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer"
+                           onClick={() => document.getElementById('video')?.click()}>
                         <VideoIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload video or drag and drop</p>
                         <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
-                        <Input id="video" type="file" accept="video/*" className="hidden" />
+                        <Input 
+                          id="video" 
+                          type="file" 
+                          accept="video/*" 
+                          className="hidden" 
+                          onChange={(e) => handleFileChange(e, 'video')}
+                        />
+                        {newPractical.video && (
+                          <p className="text-sm text-emerald-600 mt-2">{newPractical.video.name}</p>
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer"
+                           onClick={() => document.getElementById('labsheet')?.click()}>
                         <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload PDF or drag and drop</p>
                         <p className="text-xs text-gray-500">PDF up to 10MB</p>
-                        <Input id="labsheet" type="file" accept=".pdf" className="hidden" />
+                        <Input 
+                          id="labsheet" 
+                          type="file" 
+                          accept=".pdf" 
+                          className="hidden" 
+                          onChange={(e) => handleFileChange(e, 'labsheet')}
+                        />
+                        {newPractical.labsheet && (
+                          <p className="text-sm text-emerald-600 mt-2">{newPractical.labsheet.name}</p>
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="thumbnail">Thumbnail Image</Label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer"
+                           onClick={() => document.getElementById('thumbnail')?.click()}>
                         <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-1">Click to upload image or drag and drop</p>
                         <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
-                        <Input id="thumbnail" type="file" accept="image/*" className="hidden" />
+                        <Input 
+                          id="thumbnail" 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleFileChange(e, 'thumbnail')}
+                        />
+                        {newPractical.thumbnail && (
+                          <p className="text-sm text-emerald-600 mt-2">{newPractical.thumbnail.name}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -316,16 +429,16 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     placeholder="Search practicals..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 transition-all hover:border-blue-400 focus:border-blue-500"
+                    className="pl-10 transition-all hover:border-blue-400 focus:border-blue-500 bg-white"
                   />
                 </div>
               </div>
               <div>
                 <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                  <SelectTrigger className="hover:border-blue-400 transition-colors">
-                    <SelectValue placeholder="Subject" />
+                  <SelectTrigger className="hover:border-blue-400 transition-colors bg-white">
+                    <SelectValue placeholder="All Subjects" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
                     <SelectItem value="all">All Subjects</SelectItem>
                     <SelectItem value="Physics">Physics</SelectItem>
                     <SelectItem value="Chemistry">Chemistry</SelectItem>
@@ -335,16 +448,15 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
               </div>
               <div>
                 <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                  <SelectTrigger className="hover:border-blue-400 transition-colors">
-                    <SelectValue placeholder="Grade" />
+                  <SelectTrigger className="hover:border-blue-400 transition-colors bg-white">
+                    <SelectValue placeholder="All Grades" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200 shadow-lg">
                     <SelectItem value="all">All Grades</SelectItem>
                     <SelectItem value="Grade 9">Grade 9</SelectItem>
                     <SelectItem value="Grade 10">Grade 10</SelectItem>
                     <SelectItem value="Grade 11">Grade 11</SelectItem>
                     <SelectItem value="Grade 12">Grade 12</SelectItem>
-                    <SelectItem value="Grade 13">Grade 13</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -356,7 +468,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-gray-600">
-          Showing <span className="text-blue-700">{filteredPracticals.length}</span> practical{filteredPracticals.length !== 1 ? 's' : ''}
+          Showing <span className="text-blue-700 font-semibold">{filteredPracticals.length}</span> practical{filteredPracticals.length !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -372,7 +484,10 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
             <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200 hover:border-blue-300 group">
               <div className="flex flex-col sm:flex-row">
                 {/* Thumbnail */}
-                <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden">
+                <div 
+                  className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0 relative overflow-hidden cursor-pointer"
+                  onClick={() => handleThumbnailClick(practical.videoUrl)}
+                >
                   <ImageWithFallback
                     src={practical.thumbnail}
                     alt={practical.title}
@@ -390,7 +505,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                       <Badge className={getSubjectColor(practical.subject)}>
                         {practical.subject}
                       </Badge>
-                      <Badge variant="outline">{practical.grade}</Badge>
+                      <Badge variant="outline" className="bg-gray-50">{practical.grade}</Badge>
                     </div>
                     <CardTitle className="text-lg">{practical.title}</CardTitle>
                     <CardDescription>{practical.description}</CardDescription>
@@ -407,15 +522,29 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800">
+                      <Button 
+                        size="sm" 
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                        onClick={() => handleWatchVideo(practical.videoUrl)}
+                      >
                         <Play className="w-4 h-4 mr-2" />
                         Watch Video
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="hover:bg-blue-50 hover:border-blue-300"
+                        onClick={() => handleViewLabSheet(practical.labSheetUrl)}
+                      >
                         <FileText className="w-4 h-4 mr-2" />
                         Lab Sheet
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="hover:bg-blue-50 hover:border-blue-300"
+                        onClick={() => handleDownloadLabSheet(practical.labSheetUrl, practical.title)}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Download
                       </Button>
