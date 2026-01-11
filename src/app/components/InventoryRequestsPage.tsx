@@ -170,24 +170,41 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
   }, []);
 
   const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch equipment requests with user role filter
-      const response = await fetch(`/api/equipment-requests?userRole=${userRole}&userId=${userId}`);
-      const data = await response.json();
-      setRequests(data.requests || []);
+  if (!userRole || !userId) return; // 🔒 prevent early crash
 
-      // Fetch lab assistants
-      const assistantsResponse = await fetch('/api/lab-assistants');
-      const assistantsData = await assistantsResponse.json();
-      setLabAssistants(assistantsData.assistants || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    const response = await fetch(
+      `/api/equipment-requests?userRole=${userRole}&userId=${userId}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Equipment request fetch failed: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+    setRequests(Array.isArray(data.requests) ? data.requests : []);
+
+    const assistantsResponse = await fetch('/api/lab-assistants');
+
+    if (!assistantsResponse.ok) {
+      throw new Error(`Lab assistants fetch failed: ${assistantsResponse.status}`);
+    }
+
+    const assistantsData = await assistantsResponse.json();
+    setLabAssistants(
+      Array.isArray(assistantsData.assistants)
+        ? assistantsData.assistants
+        : []
+    );
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    toast.error('Failed to load data');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Get grades based on subject
   const getGradeOptions = (subject: string) => {
