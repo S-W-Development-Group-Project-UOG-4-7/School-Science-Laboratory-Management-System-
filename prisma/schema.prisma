@@ -7,6 +7,22 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum EquipmentCategory {
+  GLASSWARE
+  INSTRUMENTS
+  CHEMICALS
+  SAFETY
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  PREPARED
+  COMPLETED
+  REJECTED
+}
+
 enum ScheduleStatus {
   UPCOMING
   COMPLETED
@@ -58,6 +74,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Relations
+  labAssistant    LabAssistant?
   teacher         Teacher?
   quizAttempts    QuizAttempt[]
   fileUploads     FileUpload[]
@@ -78,6 +95,8 @@ model Teacher {
   practicals Practical[]
   schedules  Schedule[]
   quizzes    Quiz[]
+
+  equipmentRequests EquipmentRequest[]
 
   @@map("teachers")
 }
@@ -268,3 +287,64 @@ model StudentProgress {
   @@index([practicalId])
   @@map("student_progress")
 }
+
+model LabAssistant {
+  id                Int                @id @default(autoincrement())
+  userId            Int                @unique
+  email             String?            @db.VarChar(255)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  equipmentRequests EquipmentRequest[]
+  @@map("lab_assistants")
+}
+
+model EquipmentRequest {
+  id              Int           @id @default(autoincrement())
+  teacherId       Int
+  labAssistantId  Int
+
+  className       String        @db.VarChar(50)
+  grade           String        @db.VarChar(20)
+  subject         String        @db.VarChar(100)
+  practicalDate   DateTime
+  practicalTime   String        @db.VarChar(100)
+
+  additionalNotes String?       @db.Text
+  status          RequestStatus @default(PENDING)
+  responseNote    String?       @db.Text
+  responseDate    DateTime?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // ✅ RELATIONS — MUST BE INSIDE MODEL
+  teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  labAssistant LabAssistant @relation(fields: [labAssistantId], references: [id])
+
+  equipmentItems EquipmentItem[]
+
+  @@index([teacherId])
+  @@index([labAssistantId])
+  @@index([status])
+  @@index([practicalDate])
+  @@map("equipment_requests")
+}
+
+model EquipmentItem {
+  id                 Int               @id @default(autoincrement())
+  equipmentRequestId Int
+
+  name               String            @db.VarChar(255)
+  quantity           Int
+  category           EquipmentCategory
+
+  createdAt          DateTime          @default(now())
+
+  // Relation
+  equipmentRequest   EquipmentRequest  @relation(fields: [equipmentRequestId], references: [id], onDelete: Cascade)
+
+  @@index([equipmentRequestId])
+  @@map("equipment_items")
+}
+

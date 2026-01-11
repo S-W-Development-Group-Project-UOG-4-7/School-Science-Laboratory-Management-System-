@@ -1,10 +1,9 @@
-// app/(dashboard)/schedule/page.tsx or your component location
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -12,19 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+} from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, Users, FileText, AlertCircle, Trash2, Edit, Download, Upload, X, CheckCircle, XCircle, User } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
-import { scheduleApi, transformToApiFormat } from '@/api/schedules';
 
 interface SchedulePageProps {
   userRole: UserRole;
   currentTeacher?: string;
-  teacherId?: number;
 }
 
 interface ScheduledPractical {
@@ -33,9 +30,9 @@ interface ScheduledPractical {
   date: string;
   time: string;
   duration: string;
-  grade: string;
-  className: string;
-  fullClassName: string;
+  grade: string; // e.g., "Grade 11"
+  className: string; // e.g., "A", "B", "C"
+  fullClassName: string; // e.g., "Grade 11 - A"
   subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
   teacher: string;
   location: string;
@@ -47,20 +44,15 @@ interface ScheduledPractical {
   status: 'upcoming' | 'completed' | 'cancelled';
 }
 
-type SubjectType = 'Physics' | 'Chemistry' | 'Biology' | 'Science';
-type ToastType = 'success' | 'error' | 'info';
-
-interface Toast {
-  id: string;
-  message: string;
-  type: ToastType;
-}
-
+// Define types for grade configuration
 interface GradeConfig {
   grades: string[];
   classSections: string[];
 }
 
+type SubjectType = 'Physics' | 'Chemistry' | 'Biology' | 'Science';
+
+// Grade and class configuration
 const GRADE_CONFIG: Record<SubjectType, GradeConfig> = {
   'Science': {
     grades: ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11'],
@@ -80,19 +72,120 @@ const GRADE_CONFIG: Record<SubjectType, GradeConfig> = {
   }
 };
 
+// Initial data with class information
+const initialPracticals: ScheduledPractical[] = [
+  {
+    id: '1',
+    title: 'Acid-Base Titration',
+    date: '2025-11-13',
+    time: '09:00',
+    duration: '2 hours',
+    grade: 'Grade 13',
+    className: 'A',
+    fullClassName: 'Grade 13 - A',
+    subject: 'Chemistry',
+    teacher: 'Mrs. Perera',
+    location: 'Chemistry Lab A',
+    notes: 'Students must bring their lab coats and safety goggles. Pre-read Chapter 8 on acid-base reactions. Lab sheets will be provided.',
+    studentRequirements: 'Lab coat, safety goggles, calculator, notebook, pen',
+    daySchedule: '09:00-09:15: Safety briefing\n09:15-10:00: Demonstration\n10:00-11:00: Hands-on practical\n11:00-11:30: Data analysis and cleanup',
+    attachments: ['titration_procedure.pdf', 'safety_guidelines.pdf'],
+    maxStudents: 25,
+    status: 'upcoming',
+  },
+  {
+    id: '2',
+    title: 'Microscope Practical',
+    date: '2025-11-14',
+    time: '10:30',
+    duration: '1.5 hours',
+    grade: 'Grade 13',
+    className: 'B',
+    fullClassName: 'Grade 13 - B',
+    subject: 'Biology',
+    teacher: 'Mr. Silva',
+    location: 'Biology Lab',
+    notes: 'Introduction to compound microscope usage. Students will observe prepared slides of plant and animal cells.',
+    studentRequirements: 'Lab coat, notebook, pencil, prepared slides (if assigned)',
+    daySchedule: '10:30-10:45: Introduction to microscopes\n10:45-11:30: Slide observation\n11:30-12:00: Drawing and labeling observations',
+    attachments: ['microscope_guide.pdf'],
+    maxStudents: 30,
+    status: 'upcoming',
+  },
+  {
+    id: '3',
+    title: 'Simple Pendulum Experiment',
+    date: '2025-11-15',
+    time: '14:00',
+    duration: '1 hour',
+    grade: 'Grade 12',
+    className: 'C',
+    fullClassName: 'Grade 12 - C',
+    subject: 'Physics',
+    teacher: 'Mr. Fernando',
+    location: 'Physics Lab',
+    notes: 'Study of simple harmonic motion. Bring calculators for data analysis. Work in pairs.',
+    studentRequirements: 'Calculator, ruler, stopwatch, notebook',
+    daySchedule: '14:00-14:15: Introduction\n14:15-14:45: Setup and measurements\n14:45-15:00: Data analysis',
+    attachments: ['pendulum_theory.pdf', 'data_sheet.xlsx'],
+    maxStudents: 20,
+    status: 'upcoming',
+  },
+  {
+    id: '4',
+    title: 'Basic Circuits',
+    date: '2025-11-16',
+    time: '09:00',
+    duration: '1.5 hours',
+    grade: 'Grade 9',
+    className: 'A',
+    fullClassName: 'Grade 9 - A',
+    subject: 'Science',
+    teacher: 'Ms. Jayasuriya',
+    location: 'Science Lab',
+    notes: 'Introduction to basic electrical circuits.',
+    studentRequirements: 'Notebook, pencil, ruler',
+    daySchedule: '09:00-09:30: Theory\n09:30-10:30: Practical session',
+    attachments: ['circuit_basics.pdf'],
+    maxStudents: 25,
+    status: 'upcoming',
+  },
+  {
+    id: '5',
+    title: 'Chemical Reactions',
+    date: '2025-11-16',
+    time: '11:00',
+    duration: '1.5 hours',
+    grade: 'Grade 11',
+    className: 'B',
+    fullClassName: 'Grade 11 - B',
+    subject: 'Science',
+    teacher: 'Mr. Wijesinghe',
+    location: 'Chemistry Lab B',
+    notes: 'Demonstration of various chemical reactions.',
+    studentRequirements: 'Lab coat, safety goggles, notebook',
+    maxStudents: 25,
+    status: 'upcoming',
+  },
+];
+
+type ToastType = 'success' | 'error' | 'info';
+
+interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
 const currentTeacherName = "John Doe";
 
-export default function SchedulePage({ 
-  userRole, 
-  currentTeacher = currentTeacherName,
-  teacherId = 1
-}: SchedulePageProps) {
+export function SchedulePage({ userRole, currentTeacher = currentTeacherName }: SchedulePageProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [practicals, setPracticals] = useState<ScheduledPractical[]>([]);
+  const [practicals, setPracticals] = useState<ScheduledPractical[]>(initialPracticals);
   const [selectedPractical, setSelectedPractical] = useState<ScheduledPractical | null>(null);
   const [formData, setFormData] = useState<Partial<ScheduledPractical>>({
     title: '',
@@ -114,15 +207,10 @@ export default function SchedulePage({
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isCheckingConflict, setIsCheckingConflict] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
-  // Fetch schedules
-  useEffect(() => {
-    fetchSchedules();
-  }, []);
-
+  // Update formData when currentTeacher changes
   useEffect(() => {
     if (currentTeacher) {
       setFormData(prev => ({
@@ -132,19 +220,7 @@ export default function SchedulePage({
     }
   }, [currentTeacher]);
 
-  const fetchSchedules = async () => {
-    try {
-      setIsLoading(true);
-      const schedules = await scheduleApi.getSchedules({ teacherId });
-      setPracticals(schedules);
-    } catch (error: any) {
-      addToast(error.message || 'Failed to load schedules', 'error');
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Add toast notification
   const addToast = (message: string, type: ToastType = 'info') => {
     const id = Date.now().toString();
     const newToast = { id, message, type };
@@ -155,15 +231,18 @@ export default function SchedulePage({
     }, 3000);
   };
 
+  // Get grade options based on subject
   const getGradeOptions = (subject: SubjectType): string[] => {
     return GRADE_CONFIG[subject]?.grades || [];
   };
 
+  // Get class options based on grade and subject
   const getClassOptions = (subject: SubjectType, grade: string): string[] => {
     if (!grade) return GRADE_CONFIG[subject]?.classSections || [];
     return GRADE_CONFIG[subject]?.classSections || [];
   };
 
+  // Update full class name when grade or class changes
   useEffect(() => {
     if (formData.grade && formData.className) {
       setFormData(prev => ({
@@ -173,10 +252,12 @@ export default function SchedulePage({
     }
   }, [formData.grade, formData.className]);
 
+  // Handle subject change
   const handleSubjectChange = (subject: SubjectType) => {
     const validGrades = getGradeOptions(subject);
     const currentGrade = formData.grade;
     
+    // If current grade is not valid for new subject, reset grade and class
     if (currentGrade && !validGrades.includes(currentGrade)) {
       const firstClass = GRADE_CONFIG[subject]?.classSections[0] || 'A';
       setFormData({
@@ -197,6 +278,7 @@ export default function SchedulePage({
     }
   };
 
+  // Handle grade change
   const handleGradeChange = (grade: string) => {
     const subject = formData.subject as SubjectType;
     const firstClass = GRADE_CONFIG[subject]?.classSections[0] || 'A';
@@ -208,6 +290,7 @@ export default function SchedulePage({
     });
   };
 
+  // Handle class change
   const handleClassChange = (className: string) => {
     setFormData({
       ...formData,
@@ -216,30 +299,40 @@ export default function SchedulePage({
     });
   };
 
+  // Check for scheduling conflicts
   const checkScheduleConflict = async (newPractical: Partial<ScheduledPractical>, isEdit: boolean = false) => {
     setIsCheckingConflict(true);
     
-    try {
-      const { date, time, location, fullClassName } = newPractical;
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const { date, time, location, fullClassName } = newPractical;
+    
+    // Check for conflicts with existing schedules
+    const conflicts = practicals.filter(p => {
+      if (isEdit && p.id === selectedPractical?.id) return false;
       
-      const conflicts = practicals.filter(p => {
-        if (isEdit && p.id === selectedPractical?.id) return false;
-        
-        if (p.date === date && p.time === time) {
-          if (p.location === location) return true;
-          if (p.fullClassName === fullClassName) return true;
-          if (p.teacher === newPractical.teacher) return true;
+      // Check if same date and time
+      if (p.date === date && p.time === time) {
+        // Check if same location OR same class (grade + class)
+        if (p.location === location) {
+          return true; // Same location conflict
         }
-        return false;
-      });
-      
-      return conflicts.length > 0;
-    } catch (error) {
-      console.error('Error checking conflicts:', error);
+        
+        if (p.fullClassName === fullClassName) {
+          return true; // Same class conflict
+        }
+        
+        // Check if teacher is same (they can't be in two places at once)
+        if (p.teacher === newPractical.teacher) {
+          return true; // Same teacher conflict
+        }
+      }
       return false;
-    } finally {
-      setIsCheckingConflict(false);
-    }
+    });
+    
+    setIsCheckingConflict(false);
+    return conflicts.length > 0;
   };
 
   // Calendar functions
@@ -314,23 +407,37 @@ export default function SchedulePage({
       return;
     }
 
-    try {
-      const hasConflict = await checkScheduleConflict(formData);
-      if (hasConflict) {
-        addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
-        return;
-      }
-
-      const apiData = transformToApiFormat(formData, teacherId);
-      const newSchedule = await scheduleApi.createSchedule(apiData);
-      
-      setPracticals(prev => [...prev, newSchedule]);
-      resetForm();
-      setIsAddDialogOpen(false);
-      addToast('Practical scheduled successfully!', 'success');
-    } catch (error: any) {
-      addToast(error.message || 'Failed to schedule practical', 'error');
+    // Check for scheduling conflicts
+    const hasConflict = await checkScheduleConflict(formData);
+    if (hasConflict) {
+      addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
+      return;
     }
+
+    const newPractical: ScheduledPractical = {
+      id: Date.now().toString(),
+      title: formData.title!,
+      date: formData.date!,
+      time: formData.time!,
+      duration: formData.duration!,
+      grade: formData.grade!,
+      className: formData.className!,
+      fullClassName: formData.fullClassName!,
+      subject: formData.subject as SubjectType,
+      teacher: formData.teacher || currentTeacher,
+      location: formData.location!,
+      notes: formData.notes!,
+      studentRequirements: formData.studentRequirements!,
+      daySchedule: formData.daySchedule!,
+      maxStudents: formData.maxStudents!,
+      status: formData.status!,
+      attachments: attachmentFiles.map(file => file.name)
+    };
+
+    setPracticals([...practicals, newPractical]);
+    resetForm();
+    setIsAddDialogOpen(false);
+    addToast('Practical scheduled successfully!', 'success');
   };
 
   const handleUpdate = async () => {
@@ -339,40 +446,39 @@ export default function SchedulePage({
       return;
     }
 
-    try {
-      const hasConflict = await checkScheduleConflict(formData, true);
-      if (hasConflict) {
-        addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
-        return;
-      }
-
-      const apiData = transformToApiFormat(formData, teacherId);
-      const updatedSchedule = await scheduleApi.updateSchedule(selectedPractical.id, apiData);
-      
-      setPracticals(prev => prev.map(p => 
-        p.id === selectedPractical.id ? updatedSchedule : p
-      ));
-      resetForm();
-      setIsEditDialogOpen(false);
-      addToast('Practical updated successfully!', 'success');
-    } catch (error: any) {
-      addToast(error.message || 'Failed to update practical', 'error');
+    // Check for scheduling conflicts (excluding current practical)
+    const hasConflict = await checkScheduleConflict(formData, true);
+    if (hasConflict) {
+      addToast('Schedule conflict detected! This time slot is already booked for the same location or class. Please choose a different time.', 'error');
+      return;
     }
+
+    const updatedPracticals = practicals.map(p => 
+      p.id === selectedPractical.id 
+        ? { 
+            ...p, 
+            ...formData,
+            subject: formData.subject as SubjectType,
+            fullClassName: formData.fullClassName!,
+            attachments: [...(p.attachments || []), ...attachmentFiles.map(f => f.name)]
+          } 
+        : p
+    );
+
+    setPracticals(updatedPracticals);
+    resetForm();
+    setIsEditDialogOpen(false);
+    addToast('Practical updated successfully!', 'success');
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!selectedPractical) return;
 
-    try {
-      await scheduleApi.deleteSchedule(selectedPractical.id);
-      
-      setPracticals(prev => prev.filter(p => p.id !== selectedPractical.id));
-      setIsDeleteDialogOpen(false);
-      setSelectedPractical(null);
-      addToast('Practical deleted successfully!', 'success');
-    } catch (error: any) {
-      addToast(error.message || 'Failed to delete practical', 'error');
-    }
+    const updatedPracticals = practicals.filter(p => p.id !== selectedPractical.id);
+    setPracticals(updatedPracticals);
+    setIsDeleteDialogOpen(false);
+    setSelectedPractical(null);
+    addToast('Practical deleted successfully!', 'success');
   };
 
   const handleEditClick = (practical: ScheduledPractical) => {
@@ -449,26 +555,17 @@ export default function SchedulePage({
     addToast('Attachment removed!', 'success');
   };
 
-  const handleStatusChange = async (practicalId: string, newStatus: 'upcoming' | 'completed' | 'cancelled') => {
-    try {
-      const practical = practicals.find(p => p.id === practicalId);
-      if (!practical) return;
-
-      const apiData = transformToApiFormat({ ...practical, status: newStatus }, teacherId);
-      await scheduleApi.updateSchedule(practicalId, apiData);
-      
-      const updatedPracticals = practicals.map(p => 
-        p.id === practicalId ? { ...p, status: newStatus } : p
-      );
-      setPracticals(updatedPracticals);
-      addToast(`Status changed to ${newStatus}`, 'success');
-    } catch (error: any) {
-      addToast(error.message || 'Failed to update status', 'error');
-    }
+  const handleStatusChange = (practicalId: string, newStatus: 'upcoming' | 'completed' | 'cancelled') => {
+    const updatedPracticals = practicals.map(p => 
+      p.id === practicalId ? { ...p, status: newStatus } : p
+    );
+    setPracticals(updatedPracticals);
+    addToast(`Status changed to ${newStatus}`, 'success');
   };
 
   const selectedDatePracticals = selectedDate ? getPracticalsForDate(selectedDate) : [];
 
+  // Get available lab locations
   const getLabLocations = () => {
     const labs = [
       'Chemistry Lab A',
@@ -479,6 +576,7 @@ export default function SchedulePage({
       'Main Lab'
     ];
     
+    // Filter based on subject if needed
     const subject = formData.subject;
     if (subject === 'Chemistry') {
       return labs.filter(lab => lab.includes('Chemistry') || lab === 'Main Lab');
@@ -489,23 +587,6 @@ export default function SchedulePage({
     }
     return labs;
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-gray-900 mb-2">Schedule & Calendar</h2>
-            <p className="text-gray-600">Loading schedules...</p>
-          </div>
-        </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -1190,16 +1271,19 @@ export default function SchedulePage({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-1">
+              {/* Day headers */}
               {dayNames.map((day) => (
                 <div key={day} className="text-center p-2 text-sm text-gray-600">
                   {day}
                 </div>
               ))}
 
+              {/* Empty cells for days before month starts */}
               {Array.from({ length: startingDayOfWeek }).map((_, index) => (
                 <div key={`empty-${index}`} className="p-2" />
               ))}
 
+              {/* Calendar days */}
               {Array.from({ length: daysInMonth }).map((_, index) => {
                 const day = index + 1;
                 const dateString = formatDate(
