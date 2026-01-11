@@ -33,9 +33,10 @@ import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
 import { StudentNotesPage } from "./student/StudentNotesPage";
-import { StudentReportsPage } from "./student/StudentReportsPage";
+
 import { StudentQuizzesPage } from "./student/StudentQuizzesPage";
 import { StudentQuizAttemptsPage } from "./student/StudentQuizAttemptsPage";
+import { ViewInventoriesPage } from "./student/ViewInventoriesPage";
 import type { User } from "@/lib/types";
 
 interface DashboardProps {
@@ -52,9 +53,10 @@ type Page =
   | "requests"
   | "users"
   | "notes"
-  | "reports"
   | "quizzes"
-  | "quiz-attempts";
+  | "quiz-attempts"
+  | "view-inventory" // New page for students
+  ;
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] = useState<Page>("home");
@@ -81,12 +83,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         icon: FileText,
         roles: ['student'],
       },
-      {
-        id: "reports" as Page,
-        label: "Submit Reports",
-        icon: FileText,
-        roles: ['student'],
-      },
+
       {
         id: "quizzes" as Page,
         label: "Available Quizzes",
@@ -97,6 +94,12 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         id: "quiz-attempts" as Page,
         label: "Quiz Scores",
         icon: FileText,
+        roles: ['student'],
+      },
+      {
+        id: "view-inventory" as Page,
+        label: "View Inventories",
+        icon: Package,
         roles: ['student'],
       },
       // Other pages
@@ -203,11 +206,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     e.stopPropagation();
                     setCurrentPage(item.id);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    currentPage === item.id
-                      ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === item.id
+                    ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -323,7 +325,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             transition={{ duration: 0.3 }}
           >
             {currentPage === "home" && (
-              <HomePage 
+              <HomePage
                 userName={user.name}
                 userRole={user.role}
                 userId={parseInt(user.id)}
@@ -340,7 +342,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <SchedulePage userRole={user.role} />
             )}
             {currentPage === "requests" && (
-              <InventoryRequestsPage 
+              <InventoryRequestsPage
                 userRole={user.role}
                 userId={user.id}
                 userName={user.name}
@@ -353,18 +355,19 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <SettingsPage user={user} />
             )}
             {/* Student-specific pages */}
-            
+
             {currentPage === "notes" && user.role === "student" && (
               <StudentNotesPage studentId={parseInt(user.id)} />
             )}
-            {currentPage === "reports" && user.role === "student" && (
-              <StudentReportsPage studentId={parseInt(user.id)} />
-            )}
+
             {currentPage === "quizzes" && user.role === "student" && (
               <StudentQuizzesPage studentId={parseInt(user.id)} />
             )}
             {currentPage === "quiz-attempts" && user.role === "student" && (
               <StudentQuizAttemptsPage studentId={parseInt(user.id)} />
+            )}
+            {currentPage === "view-inventory" && user.role === "student" && (
+              <ViewInventoriesPage />
             )}
           </motion.div>
         </AnimatePresence>

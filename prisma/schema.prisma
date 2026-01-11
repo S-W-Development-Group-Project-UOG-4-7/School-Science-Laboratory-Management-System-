@@ -39,10 +39,11 @@ model User {
 
   // Relations
 
-  reportSubmissions ReportSubmission[]
+
   quizAttempts      QuizAttempt[]
   sessions          Session[]
   attendances       Attendance[]
+  labSheetDownloads LabSheetDownload[]
 }
 
 model Practical {
@@ -50,16 +51,22 @@ model Practical {
   title     String   @db.VarChar(200)
   subject   String   @db.VarChar(100)
   lab       String   @db.VarChar(100)
-  dateTime  DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  dateTime    DateTime
+  grade       String   @default("Grade 10") @db.VarChar(50)
+  teacherName String?  @db.VarChar(100)
+  description String?  @db.Text
+  duration    String?  @db.VarChar(50)
+  maxStudents Int      @default(30)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
 
   notes             Note[]
-  reportSubmissions ReportSubmission[]
+
   quizzes           Quiz[]
   attendances       Attendance[]
+  labSheetDownloads LabSheetDownload[]
 }
 
 enum AttendanceStatus {
@@ -102,24 +109,7 @@ model Note {
   @@index([practicalId])
 }
 
-model ReportSubmission {
-  id          Int      @id @default(autoincrement())
-  studentId   Int
-  practicalId Int
-  fileUrl     String   @db.Text
-  grade       Float?
-  feedback    String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, practicalId])
-  @@index([studentId])
-  @@index([practicalId])
-}
 
 model Quiz {
   id          Int      @id @default(autoincrement())
@@ -187,4 +177,32 @@ model Session {
 
   @@index([userId])
   @@index([loginTime])
+}
+
+model LabSheetDownload {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  practicalId Int
+  filename    String   @db.VarChar(255)
+  downloadedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student  User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([practicalId])
+  @@index([downloadedAt])
+}
+
+model Inventory {
+  id                Int      @id @default(autoincrement())
+  instrumentName    String   @db.VarChar(200)
+  description       String?  @db.Text
+  quantity          Int      @default(0)
+  safetyPrecautions String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

@@ -16,19 +16,6 @@ enum UserRole {
   ADMIN
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-}
-
-enum MaterialRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  FULFILLED
-}
-
 enum CorrectAnswer {
   A
   B
@@ -36,19 +23,27 @@ enum CorrectAnswer {
   D
 }
 
+enum UserStatus {
+  ONLINE
+  OFFLINE
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String?  @db.VarChar(100)
-  email     String   @unique @db.VarChar(100)
-  role      UserRole @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int        @id @default(autoincrement())
+  name      String?    @db.VarChar(100)
+  email     String     @unique @db.VarChar(100)
+  role      UserRole   @default(STUDENT)
+  status    UserStatus @default(OFFLINE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   // Relations
-  materialRequests  MaterialRequest[]
-  attendances       Attendance[]
+
   reportSubmissions ReportSubmission[]
   quizAttempts      QuizAttempt[]
+  sessions          Session[]
+  attendances       Attendance[]
+  labSheetDownloads LabSheetDownload[]
 }
 
 model Practical {
@@ -61,11 +56,18 @@ model Practical {
   updatedAt DateTime @updatedAt
 
   // Relations
-  attendances       Attendance[]
-  materialRequests  MaterialRequest[]
+
   notes             Note[]
   reportSubmissions ReportSubmission[]
   quizzes           Quiz[]
+  attendances       Attendance[]
+  labSheetDownloads LabSheetDownload[]
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
 }
 
 model Attendance {
@@ -81,24 +83,6 @@ model Attendance {
   practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, practicalId])
-  @@index([studentId])
-  @@index([practicalId])
-}
-
-model MaterialRequest {
-  id          Int                   @id @default(autoincrement())
-  studentId   Int
-  practicalId Int
-  itemName    String                @db.VarChar(200)
-  quantity    Int                   @default(1)
-  status      MaterialRequestStatus @default(PENDING)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-
-  // Relations
-  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
-
   @@index([studentId])
   @@index([practicalId])
 }
@@ -188,4 +172,37 @@ model QuizAttempt {
   @@unique([quizId, studentId])
   @@index([quizId])
   @@index([studentId])
+}
+
+model Session {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  loginTime  DateTime  @default(now())
+  logoutTime DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([loginTime])
+}
+
+model LabSheetDownload {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  practicalId  Int
+  filename     String   @db.VarChar(255)
+  downloadedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  practical Practical @relation(fields: [practicalId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([practicalId])
+  @@index([downloadedAt])
 }

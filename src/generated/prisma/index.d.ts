@@ -29,20 +29,10 @@ export type Practical = $Result.DefaultSelection<Prisma.$PracticalPayload>
  */
 export type Attendance = $Result.DefaultSelection<Prisma.$AttendancePayload>
 /**
- * Model MaterialRequest
- * 
- */
-export type MaterialRequest = $Result.DefaultSelection<Prisma.$MaterialRequestPayload>
-/**
  * Model Note
  * 
  */
 export type Note = $Result.DefaultSelection<Prisma.$NotePayload>
-/**
- * Model ReportSubmission
- * 
- */
-export type ReportSubmission = $Result.DefaultSelection<Prisma.$ReportSubmissionPayload>
 /**
  * Model Quiz
  * 
@@ -63,6 +53,16 @@ export type QuizAttempt = $Result.DefaultSelection<Prisma.$QuizAttemptPayload>
  * 
  */
 export type Session = $Result.DefaultSelection<Prisma.$SessionPayload>
+/**
+ * Model LabSheetDownload
+ * 
+ */
+export type LabSheetDownload = $Result.DefaultSelection<Prisma.$LabSheetDownloadPayload>
+/**
+ * Model Inventory
+ * 
+ */
+export type Inventory = $Result.DefaultSelection<Prisma.$InventoryPayload>
 
 /**
  * Enums
@@ -96,16 +96,6 @@ export const AttendanceStatus: {
 export type AttendanceStatus = (typeof AttendanceStatus)[keyof typeof AttendanceStatus]
 
 
-export const MaterialRequestStatus: {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  FULFILLED: 'FULFILLED'
-};
-
-export type MaterialRequestStatus = (typeof MaterialRequestStatus)[keyof typeof MaterialRequestStatus]
-
-
 export const CorrectAnswer: {
   A: 'A',
   B: 'B',
@@ -128,10 +118,6 @@ export const UserStatus: typeof $Enums.UserStatus
 export type AttendanceStatus = $Enums.AttendanceStatus
 
 export const AttendanceStatus: typeof $Enums.AttendanceStatus
-
-export type MaterialRequestStatus = $Enums.MaterialRequestStatus
-
-export const MaterialRequestStatus: typeof $Enums.MaterialRequestStatus
 
 export type CorrectAnswer = $Enums.CorrectAnswer
 
@@ -291,16 +277,6 @@ export class PrismaClient<
   get attendance(): Prisma.AttendanceDelegate<ExtArgs>;
 
   /**
-   * `prisma.materialRequest`: Exposes CRUD operations for the **MaterialRequest** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more MaterialRequests
-    * const materialRequests = await prisma.materialRequest.findMany()
-    * ```
-    */
-  get materialRequest(): Prisma.MaterialRequestDelegate<ExtArgs>;
-
-  /**
    * `prisma.note`: Exposes CRUD operations for the **Note** model.
     * Example usage:
     * ```ts
@@ -309,16 +285,6 @@ export class PrismaClient<
     * ```
     */
   get note(): Prisma.NoteDelegate<ExtArgs>;
-
-  /**
-   * `prisma.reportSubmission`: Exposes CRUD operations for the **ReportSubmission** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more ReportSubmissions
-    * const reportSubmissions = await prisma.reportSubmission.findMany()
-    * ```
-    */
-  get reportSubmission(): Prisma.ReportSubmissionDelegate<ExtArgs>;
 
   /**
    * `prisma.quiz`: Exposes CRUD operations for the **Quiz** model.
@@ -359,6 +325,26 @@ export class PrismaClient<
     * ```
     */
   get session(): Prisma.SessionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.labSheetDownload`: Exposes CRUD operations for the **LabSheetDownload** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more LabSheetDownloads
+    * const labSheetDownloads = await prisma.labSheetDownload.findMany()
+    * ```
+    */
+  get labSheetDownload(): Prisma.LabSheetDownloadDelegate<ExtArgs>;
+
+  /**
+   * `prisma.inventory`: Exposes CRUD operations for the **Inventory** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Inventories
+    * const inventories = await prisma.inventory.findMany()
+    * ```
+    */
+  get inventory(): Prisma.InventoryDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -803,13 +789,13 @@ export namespace Prisma {
     User: 'User',
     Practical: 'Practical',
     Attendance: 'Attendance',
-    MaterialRequest: 'MaterialRequest',
     Note: 'Note',
-    ReportSubmission: 'ReportSubmission',
     Quiz: 'Quiz',
     QuizQuestion: 'QuizQuestion',
     QuizAttempt: 'QuizAttempt',
-    Session: 'Session'
+    Session: 'Session',
+    LabSheetDownload: 'LabSheetDownload',
+    Inventory: 'Inventory'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -825,7 +811,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "practical" | "attendance" | "materialRequest" | "note" | "reportSubmission" | "quiz" | "quizQuestion" | "quizAttempt" | "session"
+      modelProps: "user" | "practical" | "attendance" | "note" | "quiz" | "quizQuestion" | "quizAttempt" | "session" | "labSheetDownload" | "inventory"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1039,76 +1025,6 @@ export namespace Prisma {
           }
         }
       }
-      MaterialRequest: {
-        payload: Prisma.$MaterialRequestPayload<ExtArgs>
-        fields: Prisma.MaterialRequestFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.MaterialRequestFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.MaterialRequestFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          findFirst: {
-            args: Prisma.MaterialRequestFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.MaterialRequestFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          findMany: {
-            args: Prisma.MaterialRequestFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>[]
-          }
-          create: {
-            args: Prisma.MaterialRequestCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          createMany: {
-            args: Prisma.MaterialRequestCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.MaterialRequestCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>[]
-          }
-          delete: {
-            args: Prisma.MaterialRequestDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          update: {
-            args: Prisma.MaterialRequestUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          deleteMany: {
-            args: Prisma.MaterialRequestDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.MaterialRequestUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.MaterialRequestUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MaterialRequestPayload>
-          }
-          aggregate: {
-            args: Prisma.MaterialRequestAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateMaterialRequest>
-          }
-          groupBy: {
-            args: Prisma.MaterialRequestGroupByArgs<ExtArgs>
-            result: $Utils.Optional<MaterialRequestGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.MaterialRequestCountArgs<ExtArgs>
-            result: $Utils.Optional<MaterialRequestCountAggregateOutputType> | number
-          }
-        }
-      }
       Note: {
         payload: Prisma.$NotePayload<ExtArgs>
         fields: Prisma.NoteFieldRefs
@@ -1176,76 +1092,6 @@ export namespace Prisma {
           count: {
             args: Prisma.NoteCountArgs<ExtArgs>
             result: $Utils.Optional<NoteCountAggregateOutputType> | number
-          }
-        }
-      }
-      ReportSubmission: {
-        payload: Prisma.$ReportSubmissionPayload<ExtArgs>
-        fields: Prisma.ReportSubmissionFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.ReportSubmissionFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.ReportSubmissionFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          findFirst: {
-            args: Prisma.ReportSubmissionFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.ReportSubmissionFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          findMany: {
-            args: Prisma.ReportSubmissionFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>[]
-          }
-          create: {
-            args: Prisma.ReportSubmissionCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          createMany: {
-            args: Prisma.ReportSubmissionCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.ReportSubmissionCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>[]
-          }
-          delete: {
-            args: Prisma.ReportSubmissionDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          update: {
-            args: Prisma.ReportSubmissionUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          deleteMany: {
-            args: Prisma.ReportSubmissionDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.ReportSubmissionUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.ReportSubmissionUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ReportSubmissionPayload>
-          }
-          aggregate: {
-            args: Prisma.ReportSubmissionAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateReportSubmission>
-          }
-          groupBy: {
-            args: Prisma.ReportSubmissionGroupByArgs<ExtArgs>
-            result: $Utils.Optional<ReportSubmissionGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.ReportSubmissionCountArgs<ExtArgs>
-            result: $Utils.Optional<ReportSubmissionCountAggregateOutputType> | number
           }
         }
       }
@@ -1529,6 +1375,146 @@ export namespace Prisma {
           }
         }
       }
+      LabSheetDownload: {
+        payload: Prisma.$LabSheetDownloadPayload<ExtArgs>
+        fields: Prisma.LabSheetDownloadFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.LabSheetDownloadFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.LabSheetDownloadFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          findFirst: {
+            args: Prisma.LabSheetDownloadFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.LabSheetDownloadFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          findMany: {
+            args: Prisma.LabSheetDownloadFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>[]
+          }
+          create: {
+            args: Prisma.LabSheetDownloadCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          createMany: {
+            args: Prisma.LabSheetDownloadCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.LabSheetDownloadCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>[]
+          }
+          delete: {
+            args: Prisma.LabSheetDownloadDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          update: {
+            args: Prisma.LabSheetDownloadUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          deleteMany: {
+            args: Prisma.LabSheetDownloadDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.LabSheetDownloadUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.LabSheetDownloadUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$LabSheetDownloadPayload>
+          }
+          aggregate: {
+            args: Prisma.LabSheetDownloadAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateLabSheetDownload>
+          }
+          groupBy: {
+            args: Prisma.LabSheetDownloadGroupByArgs<ExtArgs>
+            result: $Utils.Optional<LabSheetDownloadGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.LabSheetDownloadCountArgs<ExtArgs>
+            result: $Utils.Optional<LabSheetDownloadCountAggregateOutputType> | number
+          }
+        }
+      }
+      Inventory: {
+        payload: Prisma.$InventoryPayload<ExtArgs>
+        fields: Prisma.InventoryFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.InventoryFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.InventoryFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          findFirst: {
+            args: Prisma.InventoryFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.InventoryFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          findMany: {
+            args: Prisma.InventoryFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>[]
+          }
+          create: {
+            args: Prisma.InventoryCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          createMany: {
+            args: Prisma.InventoryCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.InventoryCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>[]
+          }
+          delete: {
+            args: Prisma.InventoryDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          update: {
+            args: Prisma.InventoryUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          deleteMany: {
+            args: Prisma.InventoryDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.InventoryUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.InventoryUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$InventoryPayload>
+          }
+          aggregate: {
+            args: Prisma.InventoryAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateInventory>
+          }
+          groupBy: {
+            args: Prisma.InventoryGroupByArgs<ExtArgs>
+            result: $Utils.Optional<InventoryGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.InventoryCountArgs<ExtArgs>
+            result: $Utils.Optional<InventoryCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1690,19 +1676,17 @@ export namespace Prisma {
    */
 
   export type UserCountOutputType = {
-    materialRequests: number
-    reportSubmissions: number
     quizAttempts: number
     sessions: number
     attendances: number
+    labSheetDownloads: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    materialRequests?: boolean | UserCountOutputTypeCountMaterialRequestsArgs
-    reportSubmissions?: boolean | UserCountOutputTypeCountReportSubmissionsArgs
     quizAttempts?: boolean | UserCountOutputTypeCountQuizAttemptsArgs
     sessions?: boolean | UserCountOutputTypeCountSessionsArgs
     attendances?: boolean | UserCountOutputTypeCountAttendancesArgs
+    labSheetDownloads?: boolean | UserCountOutputTypeCountLabSheetDownloadsArgs
   }
 
   // Custom InputTypes
@@ -1714,20 +1698,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the UserCountOutputType
      */
     select?: UserCountOutputTypeSelect<ExtArgs> | null
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountMaterialRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: MaterialRequestWhereInput
-  }
-
-  /**
-   * UserCountOutputType without action
-   */
-  export type UserCountOutputTypeCountReportSubmissionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ReportSubmissionWhereInput
   }
 
   /**
@@ -1751,25 +1721,30 @@ export namespace Prisma {
     where?: AttendanceWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountLabSheetDownloadsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LabSheetDownloadWhereInput
+  }
+
 
   /**
    * Count Type PracticalCountOutputType
    */
 
   export type PracticalCountOutputType = {
-    materialRequests: number
     notes: number
-    reportSubmissions: number
     quizzes: number
     attendances: number
+    labSheetDownloads: number
   }
 
   export type PracticalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    materialRequests?: boolean | PracticalCountOutputTypeCountMaterialRequestsArgs
     notes?: boolean | PracticalCountOutputTypeCountNotesArgs
-    reportSubmissions?: boolean | PracticalCountOutputTypeCountReportSubmissionsArgs
     quizzes?: boolean | PracticalCountOutputTypeCountQuizzesArgs
     attendances?: boolean | PracticalCountOutputTypeCountAttendancesArgs
+    labSheetDownloads?: boolean | PracticalCountOutputTypeCountLabSheetDownloadsArgs
   }
 
   // Custom InputTypes
@@ -1786,22 +1761,8 @@ export namespace Prisma {
   /**
    * PracticalCountOutputType without action
    */
-  export type PracticalCountOutputTypeCountMaterialRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: MaterialRequestWhereInput
-  }
-
-  /**
-   * PracticalCountOutputType without action
-   */
   export type PracticalCountOutputTypeCountNotesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: NoteWhereInput
-  }
-
-  /**
-   * PracticalCountOutputType without action
-   */
-  export type PracticalCountOutputTypeCountReportSubmissionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ReportSubmissionWhereInput
   }
 
   /**
@@ -1816,6 +1777,13 @@ export namespace Prisma {
    */
   export type PracticalCountOutputTypeCountAttendancesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AttendanceWhereInput
+  }
+
+  /**
+   * PracticalCountOutputType without action
+   */
+  export type PracticalCountOutputTypeCountLabSheetDownloadsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LabSheetDownloadWhereInput
   }
 
 
@@ -2077,11 +2045,10 @@ export namespace Prisma {
     status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    materialRequests?: boolean | User$materialRequestsArgs<ExtArgs>
-    reportSubmissions?: boolean | User$reportSubmissionsArgs<ExtArgs>
     quizAttempts?: boolean | User$quizAttemptsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     attendances?: boolean | User$attendancesArgs<ExtArgs>
+    labSheetDownloads?: boolean | User$labSheetDownloadsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -2106,11 +2073,10 @@ export namespace Prisma {
   }
 
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    materialRequests?: boolean | User$materialRequestsArgs<ExtArgs>
-    reportSubmissions?: boolean | User$reportSubmissionsArgs<ExtArgs>
     quizAttempts?: boolean | User$quizAttemptsArgs<ExtArgs>
     sessions?: boolean | User$sessionsArgs<ExtArgs>
     attendances?: boolean | User$attendancesArgs<ExtArgs>
+    labSheetDownloads?: boolean | User$labSheetDownloadsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -2118,11 +2084,10 @@ export namespace Prisma {
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
     objects: {
-      materialRequests: Prisma.$MaterialRequestPayload<ExtArgs>[]
-      reportSubmissions: Prisma.$ReportSubmissionPayload<ExtArgs>[]
       quizAttempts: Prisma.$QuizAttemptPayload<ExtArgs>[]
       sessions: Prisma.$SessionPayload<ExtArgs>[]
       attendances: Prisma.$AttendancePayload<ExtArgs>[]
+      labSheetDownloads: Prisma.$LabSheetDownloadPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -2496,11 +2461,10 @@ export namespace Prisma {
    */
   export interface Prisma__UserClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    materialRequests<T extends User$materialRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$materialRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findMany"> | Null>
-    reportSubmissions<T extends User$reportSubmissionsArgs<ExtArgs> = {}>(args?: Subset<T, User$reportSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findMany"> | Null>
     quizAttempts<T extends User$quizAttemptsArgs<ExtArgs> = {}>(args?: Subset<T, User$quizAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QuizAttemptPayload<ExtArgs>, T, "findMany"> | Null>
     sessions<T extends User$sessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SessionPayload<ExtArgs>, T, "findMany"> | Null>
     attendances<T extends User$attendancesArgs<ExtArgs> = {}>(args?: Subset<T, User$attendancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AttendancePayload<ExtArgs>, T, "findMany"> | Null>
+    labSheetDownloads<T extends User$labSheetDownloadsArgs<ExtArgs> = {}>(args?: Subset<T, User$labSheetDownloadsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2851,46 +2815,6 @@ export namespace Prisma {
   }
 
   /**
-   * User.materialRequests
-   */
-  export type User$materialRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    where?: MaterialRequestWhereInput
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    cursor?: MaterialRequestWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: MaterialRequestScalarFieldEnum | MaterialRequestScalarFieldEnum[]
-  }
-
-  /**
-   * User.reportSubmissions
-   */
-  export type User$reportSubmissionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    where?: ReportSubmissionWhereInput
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    cursor?: ReportSubmissionWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: ReportSubmissionScalarFieldEnum | ReportSubmissionScalarFieldEnum[]
-  }
-
-  /**
    * User.quizAttempts
    */
   export type User$quizAttemptsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2951,6 +2875,26 @@ export namespace Prisma {
   }
 
   /**
+   * User.labSheetDownloads
+   */
+  export type User$labSheetDownloadsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    where?: LabSheetDownloadWhereInput
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    cursor?: LabSheetDownloadWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LabSheetDownloadScalarFieldEnum | LabSheetDownloadScalarFieldEnum[]
+  }
+
+  /**
    * User without action
    */
   export type UserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -2979,10 +2923,12 @@ export namespace Prisma {
 
   export type PracticalAvgAggregateOutputType = {
     id: number | null
+    maxStudents: number | null
   }
 
   export type PracticalSumAggregateOutputType = {
     id: number | null
+    maxStudents: number | null
   }
 
   export type PracticalMinAggregateOutputType = {
@@ -2991,6 +2937,11 @@ export namespace Prisma {
     subject: string | null
     lab: string | null
     dateTime: Date | null
+    grade: string | null
+    teacherName: string | null
+    description: string | null
+    duration: string | null
+    maxStudents: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3001,6 +2952,11 @@ export namespace Prisma {
     subject: string | null
     lab: string | null
     dateTime: Date | null
+    grade: string | null
+    teacherName: string | null
+    description: string | null
+    duration: string | null
+    maxStudents: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3011,6 +2967,11 @@ export namespace Prisma {
     subject: number
     lab: number
     dateTime: number
+    grade: number
+    teacherName: number
+    description: number
+    duration: number
+    maxStudents: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -3019,10 +2980,12 @@ export namespace Prisma {
 
   export type PracticalAvgAggregateInputType = {
     id?: true
+    maxStudents?: true
   }
 
   export type PracticalSumAggregateInputType = {
     id?: true
+    maxStudents?: true
   }
 
   export type PracticalMinAggregateInputType = {
@@ -3031,6 +2994,11 @@ export namespace Prisma {
     subject?: true
     lab?: true
     dateTime?: true
+    grade?: true
+    teacherName?: true
+    description?: true
+    duration?: true
+    maxStudents?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3041,6 +3009,11 @@ export namespace Prisma {
     subject?: true
     lab?: true
     dateTime?: true
+    grade?: true
+    teacherName?: true
+    description?: true
+    duration?: true
+    maxStudents?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3051,6 +3024,11 @@ export namespace Prisma {
     subject?: true
     lab?: true
     dateTime?: true
+    grade?: true
+    teacherName?: true
+    description?: true
+    duration?: true
+    maxStudents?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -3148,6 +3126,11 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date
+    grade: string
+    teacherName: string | null
+    description: string | null
+    duration: string | null
+    maxStudents: number
     createdAt: Date
     updatedAt: Date
     _count: PracticalCountAggregateOutputType | null
@@ -3177,13 +3160,17 @@ export namespace Prisma {
     subject?: boolean
     lab?: boolean
     dateTime?: boolean
+    grade?: boolean
+    teacherName?: boolean
+    description?: boolean
+    duration?: boolean
+    maxStudents?: boolean
     createdAt?: boolean
     updatedAt?: boolean
-    materialRequests?: boolean | Practical$materialRequestsArgs<ExtArgs>
     notes?: boolean | Practical$notesArgs<ExtArgs>
-    reportSubmissions?: boolean | Practical$reportSubmissionsArgs<ExtArgs>
     quizzes?: boolean | Practical$quizzesArgs<ExtArgs>
     attendances?: boolean | Practical$attendancesArgs<ExtArgs>
+    labSheetDownloads?: boolean | Practical$labSheetDownloadsArgs<ExtArgs>
     _count?: boolean | PracticalCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["practical"]>
 
@@ -3193,6 +3180,11 @@ export namespace Prisma {
     subject?: boolean
     lab?: boolean
     dateTime?: boolean
+    grade?: boolean
+    teacherName?: boolean
+    description?: boolean
+    duration?: boolean
+    maxStudents?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["practical"]>
@@ -3203,16 +3195,20 @@ export namespace Prisma {
     subject?: boolean
     lab?: boolean
     dateTime?: boolean
+    grade?: boolean
+    teacherName?: boolean
+    description?: boolean
+    duration?: boolean
+    maxStudents?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
   export type PracticalInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    materialRequests?: boolean | Practical$materialRequestsArgs<ExtArgs>
     notes?: boolean | Practical$notesArgs<ExtArgs>
-    reportSubmissions?: boolean | Practical$reportSubmissionsArgs<ExtArgs>
     quizzes?: boolean | Practical$quizzesArgs<ExtArgs>
     attendances?: boolean | Practical$attendancesArgs<ExtArgs>
+    labSheetDownloads?: boolean | Practical$labSheetDownloadsArgs<ExtArgs>
     _count?: boolean | PracticalCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type PracticalIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -3220,11 +3216,10 @@ export namespace Prisma {
   export type $PracticalPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Practical"
     objects: {
-      materialRequests: Prisma.$MaterialRequestPayload<ExtArgs>[]
       notes: Prisma.$NotePayload<ExtArgs>[]
-      reportSubmissions: Prisma.$ReportSubmissionPayload<ExtArgs>[]
       quizzes: Prisma.$QuizPayload<ExtArgs>[]
       attendances: Prisma.$AttendancePayload<ExtArgs>[]
+      labSheetDownloads: Prisma.$LabSheetDownloadPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -3232,6 +3227,11 @@ export namespace Prisma {
       subject: string
       lab: string
       dateTime: Date
+      grade: string
+      teacherName: string | null
+      description: string | null
+      duration: string | null
+      maxStudents: number
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["practical"]>
@@ -3598,11 +3598,10 @@ export namespace Prisma {
    */
   export interface Prisma__PracticalClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
-    materialRequests<T extends Practical$materialRequestsArgs<ExtArgs> = {}>(args?: Subset<T, Practical$materialRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findMany"> | Null>
     notes<T extends Practical$notesArgs<ExtArgs> = {}>(args?: Subset<T, Practical$notesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NotePayload<ExtArgs>, T, "findMany"> | Null>
-    reportSubmissions<T extends Practical$reportSubmissionsArgs<ExtArgs> = {}>(args?: Subset<T, Practical$reportSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findMany"> | Null>
     quizzes<T extends Practical$quizzesArgs<ExtArgs> = {}>(args?: Subset<T, Practical$quizzesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$QuizPayload<ExtArgs>, T, "findMany"> | Null>
     attendances<T extends Practical$attendancesArgs<ExtArgs> = {}>(args?: Subset<T, Practical$attendancesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AttendancePayload<ExtArgs>, T, "findMany"> | Null>
+    labSheetDownloads<T extends Practical$labSheetDownloadsArgs<ExtArgs> = {}>(args?: Subset<T, Practical$labSheetDownloadsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3637,6 +3636,11 @@ export namespace Prisma {
     readonly subject: FieldRef<"Practical", 'String'>
     readonly lab: FieldRef<"Practical", 'String'>
     readonly dateTime: FieldRef<"Practical", 'DateTime'>
+    readonly grade: FieldRef<"Practical", 'String'>
+    readonly teacherName: FieldRef<"Practical", 'String'>
+    readonly description: FieldRef<"Practical", 'String'>
+    readonly duration: FieldRef<"Practical", 'String'>
+    readonly maxStudents: FieldRef<"Practical", 'Int'>
     readonly createdAt: FieldRef<"Practical", 'DateTime'>
     readonly updatedAt: FieldRef<"Practical", 'DateTime'>
   }
@@ -3953,26 +3957,6 @@ export namespace Prisma {
   }
 
   /**
-   * Practical.materialRequests
-   */
-  export type Practical$materialRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    where?: MaterialRequestWhereInput
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    cursor?: MaterialRequestWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: MaterialRequestScalarFieldEnum | MaterialRequestScalarFieldEnum[]
-  }
-
-  /**
    * Practical.notes
    */
   export type Practical$notesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3990,26 +3974,6 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: NoteScalarFieldEnum | NoteScalarFieldEnum[]
-  }
-
-  /**
-   * Practical.reportSubmissions
-   */
-  export type Practical$reportSubmissionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    where?: ReportSubmissionWhereInput
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    cursor?: ReportSubmissionWhereUniqueInput
-    take?: number
-    skip?: number
-    distinct?: ReportSubmissionScalarFieldEnum | ReportSubmissionScalarFieldEnum[]
   }
 
   /**
@@ -4050,6 +4014,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: AttendanceScalarFieldEnum | AttendanceScalarFieldEnum[]
+  }
+
+  /**
+   * Practical.labSheetDownloads
+   */
+  export type Practical$labSheetDownloadsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    where?: LabSheetDownloadWhereInput
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    cursor?: LabSheetDownloadWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: LabSheetDownloadScalarFieldEnum | LabSheetDownloadScalarFieldEnum[]
   }
 
   /**
@@ -5061,1027 +5045,6 @@ export namespace Prisma {
 
 
   /**
-   * Model MaterialRequest
-   */
-
-  export type AggregateMaterialRequest = {
-    _count: MaterialRequestCountAggregateOutputType | null
-    _avg: MaterialRequestAvgAggregateOutputType | null
-    _sum: MaterialRequestSumAggregateOutputType | null
-    _min: MaterialRequestMinAggregateOutputType | null
-    _max: MaterialRequestMaxAggregateOutputType | null
-  }
-
-  export type MaterialRequestAvgAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    quantity: number | null
-  }
-
-  export type MaterialRequestSumAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    quantity: number | null
-  }
-
-  export type MaterialRequestMinAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    itemName: string | null
-    quantity: number | null
-    status: $Enums.MaterialRequestStatus | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type MaterialRequestMaxAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    itemName: string | null
-    quantity: number | null
-    status: $Enums.MaterialRequestStatus | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type MaterialRequestCountAggregateOutputType = {
-    id: number
-    studentId: number
-    practicalId: number
-    itemName: number
-    quantity: number
-    status: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type MaterialRequestAvgAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    quantity?: true
-  }
-
-  export type MaterialRequestSumAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    quantity?: true
-  }
-
-  export type MaterialRequestMinAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    itemName?: true
-    quantity?: true
-    status?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type MaterialRequestMaxAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    itemName?: true
-    quantity?: true
-    status?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type MaterialRequestCountAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    itemName?: true
-    quantity?: true
-    status?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type MaterialRequestAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which MaterialRequest to aggregate.
-     */
-    where?: MaterialRequestWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MaterialRequests to fetch.
-     */
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: MaterialRequestWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MaterialRequests from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MaterialRequests.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned MaterialRequests
-    **/
-    _count?: true | MaterialRequestCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: MaterialRequestAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: MaterialRequestSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: MaterialRequestMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: MaterialRequestMaxAggregateInputType
-  }
-
-  export type GetMaterialRequestAggregateType<T extends MaterialRequestAggregateArgs> = {
-        [P in keyof T & keyof AggregateMaterialRequest]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateMaterialRequest[P]>
-      : GetScalarType<T[P], AggregateMaterialRequest[P]>
-  }
-
-
-
-
-  export type MaterialRequestGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: MaterialRequestWhereInput
-    orderBy?: MaterialRequestOrderByWithAggregationInput | MaterialRequestOrderByWithAggregationInput[]
-    by: MaterialRequestScalarFieldEnum[] | MaterialRequestScalarFieldEnum
-    having?: MaterialRequestScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: MaterialRequestCountAggregateInputType | true
-    _avg?: MaterialRequestAvgAggregateInputType
-    _sum?: MaterialRequestSumAggregateInputType
-    _min?: MaterialRequestMinAggregateInputType
-    _max?: MaterialRequestMaxAggregateInputType
-  }
-
-  export type MaterialRequestGroupByOutputType = {
-    id: number
-    studentId: number
-    practicalId: number
-    itemName: string
-    quantity: number
-    status: $Enums.MaterialRequestStatus
-    createdAt: Date
-    updatedAt: Date
-    _count: MaterialRequestCountAggregateOutputType | null
-    _avg: MaterialRequestAvgAggregateOutputType | null
-    _sum: MaterialRequestSumAggregateOutputType | null
-    _min: MaterialRequestMinAggregateOutputType | null
-    _max: MaterialRequestMaxAggregateOutputType | null
-  }
-
-  type GetMaterialRequestGroupByPayload<T extends MaterialRequestGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<MaterialRequestGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof MaterialRequestGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], MaterialRequestGroupByOutputType[P]>
-            : GetScalarType<T[P], MaterialRequestGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type MaterialRequestSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    itemName?: boolean
-    quantity?: boolean
-    status?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["materialRequest"]>
-
-  export type MaterialRequestSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    itemName?: boolean
-    quantity?: boolean
-    status?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["materialRequest"]>
-
-  export type MaterialRequestSelectScalar = {
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    itemName?: boolean
-    quantity?: boolean
-    status?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type MaterialRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }
-  export type MaterialRequestIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }
-
-  export type $MaterialRequestPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "MaterialRequest"
-    objects: {
-      student: Prisma.$UserPayload<ExtArgs>
-      practical: Prisma.$PracticalPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      studentId: number
-      practicalId: number
-      itemName: string
-      quantity: number
-      status: $Enums.MaterialRequestStatus
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["materialRequest"]>
-    composites: {}
-  }
-
-  type MaterialRequestGetPayload<S extends boolean | null | undefined | MaterialRequestDefaultArgs> = $Result.GetResult<Prisma.$MaterialRequestPayload, S>
-
-  type MaterialRequestCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<MaterialRequestFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: MaterialRequestCountAggregateInputType | true
-    }
-
-  export interface MaterialRequestDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MaterialRequest'], meta: { name: 'MaterialRequest' } }
-    /**
-     * Find zero or one MaterialRequest that matches the filter.
-     * @param {MaterialRequestFindUniqueArgs} args - Arguments to find a MaterialRequest
-     * @example
-     * // Get one MaterialRequest
-     * const materialRequest = await prisma.materialRequest.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends MaterialRequestFindUniqueArgs>(args: SelectSubset<T, MaterialRequestFindUniqueArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one MaterialRequest that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {MaterialRequestFindUniqueOrThrowArgs} args - Arguments to find a MaterialRequest
-     * @example
-     * // Get one MaterialRequest
-     * const materialRequest = await prisma.materialRequest.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends MaterialRequestFindUniqueOrThrowArgs>(args: SelectSubset<T, MaterialRequestFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first MaterialRequest that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestFindFirstArgs} args - Arguments to find a MaterialRequest
-     * @example
-     * // Get one MaterialRequest
-     * const materialRequest = await prisma.materialRequest.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends MaterialRequestFindFirstArgs>(args?: SelectSubset<T, MaterialRequestFindFirstArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first MaterialRequest that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestFindFirstOrThrowArgs} args - Arguments to find a MaterialRequest
-     * @example
-     * // Get one MaterialRequest
-     * const materialRequest = await prisma.materialRequest.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends MaterialRequestFindFirstOrThrowArgs>(args?: SelectSubset<T, MaterialRequestFindFirstOrThrowArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more MaterialRequests that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all MaterialRequests
-     * const materialRequests = await prisma.materialRequest.findMany()
-     * 
-     * // Get first 10 MaterialRequests
-     * const materialRequests = await prisma.materialRequest.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const materialRequestWithIdOnly = await prisma.materialRequest.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends MaterialRequestFindManyArgs>(args?: SelectSubset<T, MaterialRequestFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a MaterialRequest.
-     * @param {MaterialRequestCreateArgs} args - Arguments to create a MaterialRequest.
-     * @example
-     * // Create one MaterialRequest
-     * const MaterialRequest = await prisma.materialRequest.create({
-     *   data: {
-     *     // ... data to create a MaterialRequest
-     *   }
-     * })
-     * 
-     */
-    create<T extends MaterialRequestCreateArgs>(args: SelectSubset<T, MaterialRequestCreateArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many MaterialRequests.
-     * @param {MaterialRequestCreateManyArgs} args - Arguments to create many MaterialRequests.
-     * @example
-     * // Create many MaterialRequests
-     * const materialRequest = await prisma.materialRequest.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends MaterialRequestCreateManyArgs>(args?: SelectSubset<T, MaterialRequestCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many MaterialRequests and returns the data saved in the database.
-     * @param {MaterialRequestCreateManyAndReturnArgs} args - Arguments to create many MaterialRequests.
-     * @example
-     * // Create many MaterialRequests
-     * const materialRequest = await prisma.materialRequest.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many MaterialRequests and only return the `id`
-     * const materialRequestWithIdOnly = await prisma.materialRequest.createManyAndReturn({ 
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends MaterialRequestCreateManyAndReturnArgs>(args?: SelectSubset<T, MaterialRequestCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a MaterialRequest.
-     * @param {MaterialRequestDeleteArgs} args - Arguments to delete one MaterialRequest.
-     * @example
-     * // Delete one MaterialRequest
-     * const MaterialRequest = await prisma.materialRequest.delete({
-     *   where: {
-     *     // ... filter to delete one MaterialRequest
-     *   }
-     * })
-     * 
-     */
-    delete<T extends MaterialRequestDeleteArgs>(args: SelectSubset<T, MaterialRequestDeleteArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one MaterialRequest.
-     * @param {MaterialRequestUpdateArgs} args - Arguments to update one MaterialRequest.
-     * @example
-     * // Update one MaterialRequest
-     * const materialRequest = await prisma.materialRequest.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends MaterialRequestUpdateArgs>(args: SelectSubset<T, MaterialRequestUpdateArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more MaterialRequests.
-     * @param {MaterialRequestDeleteManyArgs} args - Arguments to filter MaterialRequests to delete.
-     * @example
-     * // Delete a few MaterialRequests
-     * const { count } = await prisma.materialRequest.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends MaterialRequestDeleteManyArgs>(args?: SelectSubset<T, MaterialRequestDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more MaterialRequests.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many MaterialRequests
-     * const materialRequest = await prisma.materialRequest.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends MaterialRequestUpdateManyArgs>(args: SelectSubset<T, MaterialRequestUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one MaterialRequest.
-     * @param {MaterialRequestUpsertArgs} args - Arguments to update or create a MaterialRequest.
-     * @example
-     * // Update or create a MaterialRequest
-     * const materialRequest = await prisma.materialRequest.upsert({
-     *   create: {
-     *     // ... data to create a MaterialRequest
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the MaterialRequest we want to update
-     *   }
-     * })
-     */
-    upsert<T extends MaterialRequestUpsertArgs>(args: SelectSubset<T, MaterialRequestUpsertArgs<ExtArgs>>): Prisma__MaterialRequestClient<$Result.GetResult<Prisma.$MaterialRequestPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of MaterialRequests.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestCountArgs} args - Arguments to filter MaterialRequests to count.
-     * @example
-     * // Count the number of MaterialRequests
-     * const count = await prisma.materialRequest.count({
-     *   where: {
-     *     // ... the filter for the MaterialRequests we want to count
-     *   }
-     * })
-    **/
-    count<T extends MaterialRequestCountArgs>(
-      args?: Subset<T, MaterialRequestCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], MaterialRequestCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a MaterialRequest.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends MaterialRequestAggregateArgs>(args: Subset<T, MaterialRequestAggregateArgs>): Prisma.PrismaPromise<GetMaterialRequestAggregateType<T>>
-
-    /**
-     * Group by MaterialRequest.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MaterialRequestGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends MaterialRequestGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: MaterialRequestGroupByArgs['orderBy'] }
-        : { orderBy?: MaterialRequestGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, MaterialRequestGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMaterialRequestGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the MaterialRequest model
-   */
-  readonly fields: MaterialRequestFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for MaterialRequest.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__MaterialRequestClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    student<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    practical<T extends PracticalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PracticalDefaultArgs<ExtArgs>>): Prisma__PracticalClient<$Result.GetResult<Prisma.$PracticalPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the MaterialRequest model
-   */ 
-  interface MaterialRequestFieldRefs {
-    readonly id: FieldRef<"MaterialRequest", 'Int'>
-    readonly studentId: FieldRef<"MaterialRequest", 'Int'>
-    readonly practicalId: FieldRef<"MaterialRequest", 'Int'>
-    readonly itemName: FieldRef<"MaterialRequest", 'String'>
-    readonly quantity: FieldRef<"MaterialRequest", 'Int'>
-    readonly status: FieldRef<"MaterialRequest", 'MaterialRequestStatus'>
-    readonly createdAt: FieldRef<"MaterialRequest", 'DateTime'>
-    readonly updatedAt: FieldRef<"MaterialRequest", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * MaterialRequest findUnique
-   */
-  export type MaterialRequestFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter, which MaterialRequest to fetch.
-     */
-    where: MaterialRequestWhereUniqueInput
-  }
-
-  /**
-   * MaterialRequest findUniqueOrThrow
-   */
-  export type MaterialRequestFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter, which MaterialRequest to fetch.
-     */
-    where: MaterialRequestWhereUniqueInput
-  }
-
-  /**
-   * MaterialRequest findFirst
-   */
-  export type MaterialRequestFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter, which MaterialRequest to fetch.
-     */
-    where?: MaterialRequestWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MaterialRequests to fetch.
-     */
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for MaterialRequests.
-     */
-    cursor?: MaterialRequestWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MaterialRequests from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MaterialRequests.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of MaterialRequests.
-     */
-    distinct?: MaterialRequestScalarFieldEnum | MaterialRequestScalarFieldEnum[]
-  }
-
-  /**
-   * MaterialRequest findFirstOrThrow
-   */
-  export type MaterialRequestFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter, which MaterialRequest to fetch.
-     */
-    where?: MaterialRequestWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MaterialRequests to fetch.
-     */
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for MaterialRequests.
-     */
-    cursor?: MaterialRequestWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MaterialRequests from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MaterialRequests.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of MaterialRequests.
-     */
-    distinct?: MaterialRequestScalarFieldEnum | MaterialRequestScalarFieldEnum[]
-  }
-
-  /**
-   * MaterialRequest findMany
-   */
-  export type MaterialRequestFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter, which MaterialRequests to fetch.
-     */
-    where?: MaterialRequestWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MaterialRequests to fetch.
-     */
-    orderBy?: MaterialRequestOrderByWithRelationInput | MaterialRequestOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing MaterialRequests.
-     */
-    cursor?: MaterialRequestWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MaterialRequests from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MaterialRequests.
-     */
-    skip?: number
-    distinct?: MaterialRequestScalarFieldEnum | MaterialRequestScalarFieldEnum[]
-  }
-
-  /**
-   * MaterialRequest create
-   */
-  export type MaterialRequestCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * The data needed to create a MaterialRequest.
-     */
-    data: XOR<MaterialRequestCreateInput, MaterialRequestUncheckedCreateInput>
-  }
-
-  /**
-   * MaterialRequest createMany
-   */
-  export type MaterialRequestCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many MaterialRequests.
-     */
-    data: MaterialRequestCreateManyInput | MaterialRequestCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * MaterialRequest createManyAndReturn
-   */
-  export type MaterialRequestCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many MaterialRequests.
-     */
-    data: MaterialRequestCreateManyInput | MaterialRequestCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * MaterialRequest update
-   */
-  export type MaterialRequestUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * The data needed to update a MaterialRequest.
-     */
-    data: XOR<MaterialRequestUpdateInput, MaterialRequestUncheckedUpdateInput>
-    /**
-     * Choose, which MaterialRequest to update.
-     */
-    where: MaterialRequestWhereUniqueInput
-  }
-
-  /**
-   * MaterialRequest updateMany
-   */
-  export type MaterialRequestUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update MaterialRequests.
-     */
-    data: XOR<MaterialRequestUpdateManyMutationInput, MaterialRequestUncheckedUpdateManyInput>
-    /**
-     * Filter which MaterialRequests to update
-     */
-    where?: MaterialRequestWhereInput
-  }
-
-  /**
-   * MaterialRequest upsert
-   */
-  export type MaterialRequestUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * The filter to search for the MaterialRequest to update in case it exists.
-     */
-    where: MaterialRequestWhereUniqueInput
-    /**
-     * In case the MaterialRequest found by the `where` argument doesn't exist, create a new MaterialRequest with this data.
-     */
-    create: XOR<MaterialRequestCreateInput, MaterialRequestUncheckedCreateInput>
-    /**
-     * In case the MaterialRequest was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<MaterialRequestUpdateInput, MaterialRequestUncheckedUpdateInput>
-  }
-
-  /**
-   * MaterialRequest delete
-   */
-  export type MaterialRequestDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-    /**
-     * Filter which MaterialRequest to delete.
-     */
-    where: MaterialRequestWhereUniqueInput
-  }
-
-  /**
-   * MaterialRequest deleteMany
-   */
-  export type MaterialRequestDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which MaterialRequests to delete
-     */
-    where?: MaterialRequestWhereInput
-  }
-
-  /**
-   * MaterialRequest without action
-   */
-  export type MaterialRequestDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MaterialRequest
-     */
-    select?: MaterialRequestSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MaterialRequestInclude<ExtArgs> | null
-  }
-
-
-  /**
    * Model Note
    */
 
@@ -7073,1027 +6036,6 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: NoteInclude<ExtArgs> | null
-  }
-
-
-  /**
-   * Model ReportSubmission
-   */
-
-  export type AggregateReportSubmission = {
-    _count: ReportSubmissionCountAggregateOutputType | null
-    _avg: ReportSubmissionAvgAggregateOutputType | null
-    _sum: ReportSubmissionSumAggregateOutputType | null
-    _min: ReportSubmissionMinAggregateOutputType | null
-    _max: ReportSubmissionMaxAggregateOutputType | null
-  }
-
-  export type ReportSubmissionAvgAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    grade: number | null
-  }
-
-  export type ReportSubmissionSumAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    grade: number | null
-  }
-
-  export type ReportSubmissionMinAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    fileUrl: string | null
-    grade: number | null
-    feedback: string | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type ReportSubmissionMaxAggregateOutputType = {
-    id: number | null
-    studentId: number | null
-    practicalId: number | null
-    fileUrl: string | null
-    grade: number | null
-    feedback: string | null
-    createdAt: Date | null
-    updatedAt: Date | null
-  }
-
-  export type ReportSubmissionCountAggregateOutputType = {
-    id: number
-    studentId: number
-    practicalId: number
-    fileUrl: number
-    grade: number
-    feedback: number
-    createdAt: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type ReportSubmissionAvgAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    grade?: true
-  }
-
-  export type ReportSubmissionSumAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    grade?: true
-  }
-
-  export type ReportSubmissionMinAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    fileUrl?: true
-    grade?: true
-    feedback?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type ReportSubmissionMaxAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    fileUrl?: true
-    grade?: true
-    feedback?: true
-    createdAt?: true
-    updatedAt?: true
-  }
-
-  export type ReportSubmissionCountAggregateInputType = {
-    id?: true
-    studentId?: true
-    practicalId?: true
-    fileUrl?: true
-    grade?: true
-    feedback?: true
-    createdAt?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type ReportSubmissionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which ReportSubmission to aggregate.
-     */
-    where?: ReportSubmissionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ReportSubmissions to fetch.
-     */
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: ReportSubmissionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ReportSubmissions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ReportSubmissions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned ReportSubmissions
-    **/
-    _count?: true | ReportSubmissionCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: ReportSubmissionAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: ReportSubmissionSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: ReportSubmissionMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: ReportSubmissionMaxAggregateInputType
-  }
-
-  export type GetReportSubmissionAggregateType<T extends ReportSubmissionAggregateArgs> = {
-        [P in keyof T & keyof AggregateReportSubmission]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateReportSubmission[P]>
-      : GetScalarType<T[P], AggregateReportSubmission[P]>
-  }
-
-
-
-
-  export type ReportSubmissionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: ReportSubmissionWhereInput
-    orderBy?: ReportSubmissionOrderByWithAggregationInput | ReportSubmissionOrderByWithAggregationInput[]
-    by: ReportSubmissionScalarFieldEnum[] | ReportSubmissionScalarFieldEnum
-    having?: ReportSubmissionScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: ReportSubmissionCountAggregateInputType | true
-    _avg?: ReportSubmissionAvgAggregateInputType
-    _sum?: ReportSubmissionSumAggregateInputType
-    _min?: ReportSubmissionMinAggregateInputType
-    _max?: ReportSubmissionMaxAggregateInputType
-  }
-
-  export type ReportSubmissionGroupByOutputType = {
-    id: number
-    studentId: number
-    practicalId: number
-    fileUrl: string
-    grade: number | null
-    feedback: string | null
-    createdAt: Date
-    updatedAt: Date
-    _count: ReportSubmissionCountAggregateOutputType | null
-    _avg: ReportSubmissionAvgAggregateOutputType | null
-    _sum: ReportSubmissionSumAggregateOutputType | null
-    _min: ReportSubmissionMinAggregateOutputType | null
-    _max: ReportSubmissionMaxAggregateOutputType | null
-  }
-
-  type GetReportSubmissionGroupByPayload<T extends ReportSubmissionGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<ReportSubmissionGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof ReportSubmissionGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], ReportSubmissionGroupByOutputType[P]>
-            : GetScalarType<T[P], ReportSubmissionGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type ReportSubmissionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    fileUrl?: boolean
-    grade?: boolean
-    feedback?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["reportSubmission"]>
-
-  export type ReportSubmissionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    fileUrl?: boolean
-    grade?: boolean
-    feedback?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["reportSubmission"]>
-
-  export type ReportSubmissionSelectScalar = {
-    id?: boolean
-    studentId?: boolean
-    practicalId?: boolean
-    fileUrl?: boolean
-    grade?: boolean
-    feedback?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }
-
-  export type ReportSubmissionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }
-  export type ReportSubmissionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    student?: boolean | UserDefaultArgs<ExtArgs>
-    practical?: boolean | PracticalDefaultArgs<ExtArgs>
-  }
-
-  export type $ReportSubmissionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "ReportSubmission"
-    objects: {
-      student: Prisma.$UserPayload<ExtArgs>
-      practical: Prisma.$PracticalPayload<ExtArgs>
-    }
-    scalars: $Extensions.GetPayloadResult<{
-      id: number
-      studentId: number
-      practicalId: number
-      fileUrl: string
-      grade: number | null
-      feedback: string | null
-      createdAt: Date
-      updatedAt: Date
-    }, ExtArgs["result"]["reportSubmission"]>
-    composites: {}
-  }
-
-  type ReportSubmissionGetPayload<S extends boolean | null | undefined | ReportSubmissionDefaultArgs> = $Result.GetResult<Prisma.$ReportSubmissionPayload, S>
-
-  type ReportSubmissionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<ReportSubmissionFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: ReportSubmissionCountAggregateInputType | true
-    }
-
-  export interface ReportSubmissionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ReportSubmission'], meta: { name: 'ReportSubmission' } }
-    /**
-     * Find zero or one ReportSubmission that matches the filter.
-     * @param {ReportSubmissionFindUniqueArgs} args - Arguments to find a ReportSubmission
-     * @example
-     * // Get one ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends ReportSubmissionFindUniqueArgs>(args: SelectSubset<T, ReportSubmissionFindUniqueArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one ReportSubmission that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {ReportSubmissionFindUniqueOrThrowArgs} args - Arguments to find a ReportSubmission
-     * @example
-     * // Get one ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends ReportSubmissionFindUniqueOrThrowArgs>(args: SelectSubset<T, ReportSubmissionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first ReportSubmission that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionFindFirstArgs} args - Arguments to find a ReportSubmission
-     * @example
-     * // Get one ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends ReportSubmissionFindFirstArgs>(args?: SelectSubset<T, ReportSubmissionFindFirstArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first ReportSubmission that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionFindFirstOrThrowArgs} args - Arguments to find a ReportSubmission
-     * @example
-     * // Get one ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends ReportSubmissionFindFirstOrThrowArgs>(args?: SelectSubset<T, ReportSubmissionFindFirstOrThrowArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more ReportSubmissions that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all ReportSubmissions
-     * const reportSubmissions = await prisma.reportSubmission.findMany()
-     * 
-     * // Get first 10 ReportSubmissions
-     * const reportSubmissions = await prisma.reportSubmission.findMany({ take: 10 })
-     * 
-     * // Only select the `id`
-     * const reportSubmissionWithIdOnly = await prisma.reportSubmission.findMany({ select: { id: true } })
-     * 
-     */
-    findMany<T extends ReportSubmissionFindManyArgs>(args?: SelectSubset<T, ReportSubmissionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a ReportSubmission.
-     * @param {ReportSubmissionCreateArgs} args - Arguments to create a ReportSubmission.
-     * @example
-     * // Create one ReportSubmission
-     * const ReportSubmission = await prisma.reportSubmission.create({
-     *   data: {
-     *     // ... data to create a ReportSubmission
-     *   }
-     * })
-     * 
-     */
-    create<T extends ReportSubmissionCreateArgs>(args: SelectSubset<T, ReportSubmissionCreateArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many ReportSubmissions.
-     * @param {ReportSubmissionCreateManyArgs} args - Arguments to create many ReportSubmissions.
-     * @example
-     * // Create many ReportSubmissions
-     * const reportSubmission = await prisma.reportSubmission.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends ReportSubmissionCreateManyArgs>(args?: SelectSubset<T, ReportSubmissionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many ReportSubmissions and returns the data saved in the database.
-     * @param {ReportSubmissionCreateManyAndReturnArgs} args - Arguments to create many ReportSubmissions.
-     * @example
-     * // Create many ReportSubmissions
-     * const reportSubmission = await prisma.reportSubmission.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many ReportSubmissions and only return the `id`
-     * const reportSubmissionWithIdOnly = await prisma.reportSubmission.createManyAndReturn({ 
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends ReportSubmissionCreateManyAndReturnArgs>(args?: SelectSubset<T, ReportSubmissionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a ReportSubmission.
-     * @param {ReportSubmissionDeleteArgs} args - Arguments to delete one ReportSubmission.
-     * @example
-     * // Delete one ReportSubmission
-     * const ReportSubmission = await prisma.reportSubmission.delete({
-     *   where: {
-     *     // ... filter to delete one ReportSubmission
-     *   }
-     * })
-     * 
-     */
-    delete<T extends ReportSubmissionDeleteArgs>(args: SelectSubset<T, ReportSubmissionDeleteArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one ReportSubmission.
-     * @param {ReportSubmissionUpdateArgs} args - Arguments to update one ReportSubmission.
-     * @example
-     * // Update one ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends ReportSubmissionUpdateArgs>(args: SelectSubset<T, ReportSubmissionUpdateArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more ReportSubmissions.
-     * @param {ReportSubmissionDeleteManyArgs} args - Arguments to filter ReportSubmissions to delete.
-     * @example
-     * // Delete a few ReportSubmissions
-     * const { count } = await prisma.reportSubmission.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends ReportSubmissionDeleteManyArgs>(args?: SelectSubset<T, ReportSubmissionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more ReportSubmissions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many ReportSubmissions
-     * const reportSubmission = await prisma.reportSubmission.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends ReportSubmissionUpdateManyArgs>(args: SelectSubset<T, ReportSubmissionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one ReportSubmission.
-     * @param {ReportSubmissionUpsertArgs} args - Arguments to update or create a ReportSubmission.
-     * @example
-     * // Update or create a ReportSubmission
-     * const reportSubmission = await prisma.reportSubmission.upsert({
-     *   create: {
-     *     // ... data to create a ReportSubmission
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the ReportSubmission we want to update
-     *   }
-     * })
-     */
-    upsert<T extends ReportSubmissionUpsertArgs>(args: SelectSubset<T, ReportSubmissionUpsertArgs<ExtArgs>>): Prisma__ReportSubmissionClient<$Result.GetResult<Prisma.$ReportSubmissionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of ReportSubmissions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionCountArgs} args - Arguments to filter ReportSubmissions to count.
-     * @example
-     * // Count the number of ReportSubmissions
-     * const count = await prisma.reportSubmission.count({
-     *   where: {
-     *     // ... the filter for the ReportSubmissions we want to count
-     *   }
-     * })
-    **/
-    count<T extends ReportSubmissionCountArgs>(
-      args?: Subset<T, ReportSubmissionCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], ReportSubmissionCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a ReportSubmission.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends ReportSubmissionAggregateArgs>(args: Subset<T, ReportSubmissionAggregateArgs>): Prisma.PrismaPromise<GetReportSubmissionAggregateType<T>>
-
-    /**
-     * Group by ReportSubmission.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {ReportSubmissionGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends ReportSubmissionGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: ReportSubmissionGroupByArgs['orderBy'] }
-        : { orderBy?: ReportSubmissionGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, ReportSubmissionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetReportSubmissionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the ReportSubmission model
-   */
-  readonly fields: ReportSubmissionFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for ReportSubmission.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__ReportSubmissionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    student<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    practical<T extends PracticalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PracticalDefaultArgs<ExtArgs>>): Prisma__PracticalClient<$Result.GetResult<Prisma.$PracticalPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the ReportSubmission model
-   */ 
-  interface ReportSubmissionFieldRefs {
-    readonly id: FieldRef<"ReportSubmission", 'Int'>
-    readonly studentId: FieldRef<"ReportSubmission", 'Int'>
-    readonly practicalId: FieldRef<"ReportSubmission", 'Int'>
-    readonly fileUrl: FieldRef<"ReportSubmission", 'String'>
-    readonly grade: FieldRef<"ReportSubmission", 'Float'>
-    readonly feedback: FieldRef<"ReportSubmission", 'String'>
-    readonly createdAt: FieldRef<"ReportSubmission", 'DateTime'>
-    readonly updatedAt: FieldRef<"ReportSubmission", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * ReportSubmission findUnique
-   */
-  export type ReportSubmissionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter, which ReportSubmission to fetch.
-     */
-    where: ReportSubmissionWhereUniqueInput
-  }
-
-  /**
-   * ReportSubmission findUniqueOrThrow
-   */
-  export type ReportSubmissionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter, which ReportSubmission to fetch.
-     */
-    where: ReportSubmissionWhereUniqueInput
-  }
-
-  /**
-   * ReportSubmission findFirst
-   */
-  export type ReportSubmissionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter, which ReportSubmission to fetch.
-     */
-    where?: ReportSubmissionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ReportSubmissions to fetch.
-     */
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for ReportSubmissions.
-     */
-    cursor?: ReportSubmissionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ReportSubmissions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ReportSubmissions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of ReportSubmissions.
-     */
-    distinct?: ReportSubmissionScalarFieldEnum | ReportSubmissionScalarFieldEnum[]
-  }
-
-  /**
-   * ReportSubmission findFirstOrThrow
-   */
-  export type ReportSubmissionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter, which ReportSubmission to fetch.
-     */
-    where?: ReportSubmissionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ReportSubmissions to fetch.
-     */
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for ReportSubmissions.
-     */
-    cursor?: ReportSubmissionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ReportSubmissions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ReportSubmissions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of ReportSubmissions.
-     */
-    distinct?: ReportSubmissionScalarFieldEnum | ReportSubmissionScalarFieldEnum[]
-  }
-
-  /**
-   * ReportSubmission findMany
-   */
-  export type ReportSubmissionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter, which ReportSubmissions to fetch.
-     */
-    where?: ReportSubmissionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of ReportSubmissions to fetch.
-     */
-    orderBy?: ReportSubmissionOrderByWithRelationInput | ReportSubmissionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing ReportSubmissions.
-     */
-    cursor?: ReportSubmissionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` ReportSubmissions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` ReportSubmissions.
-     */
-    skip?: number
-    distinct?: ReportSubmissionScalarFieldEnum | ReportSubmissionScalarFieldEnum[]
-  }
-
-  /**
-   * ReportSubmission create
-   */
-  export type ReportSubmissionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * The data needed to create a ReportSubmission.
-     */
-    data: XOR<ReportSubmissionCreateInput, ReportSubmissionUncheckedCreateInput>
-  }
-
-  /**
-   * ReportSubmission createMany
-   */
-  export type ReportSubmissionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many ReportSubmissions.
-     */
-    data: ReportSubmissionCreateManyInput | ReportSubmissionCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * ReportSubmission createManyAndReturn
-   */
-  export type ReportSubmissionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many ReportSubmissions.
-     */
-    data: ReportSubmissionCreateManyInput | ReportSubmissionCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionIncludeCreateManyAndReturn<ExtArgs> | null
-  }
-
-  /**
-   * ReportSubmission update
-   */
-  export type ReportSubmissionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * The data needed to update a ReportSubmission.
-     */
-    data: XOR<ReportSubmissionUpdateInput, ReportSubmissionUncheckedUpdateInput>
-    /**
-     * Choose, which ReportSubmission to update.
-     */
-    where: ReportSubmissionWhereUniqueInput
-  }
-
-  /**
-   * ReportSubmission updateMany
-   */
-  export type ReportSubmissionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update ReportSubmissions.
-     */
-    data: XOR<ReportSubmissionUpdateManyMutationInput, ReportSubmissionUncheckedUpdateManyInput>
-    /**
-     * Filter which ReportSubmissions to update
-     */
-    where?: ReportSubmissionWhereInput
-  }
-
-  /**
-   * ReportSubmission upsert
-   */
-  export type ReportSubmissionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * The filter to search for the ReportSubmission to update in case it exists.
-     */
-    where: ReportSubmissionWhereUniqueInput
-    /**
-     * In case the ReportSubmission found by the `where` argument doesn't exist, create a new ReportSubmission with this data.
-     */
-    create: XOR<ReportSubmissionCreateInput, ReportSubmissionUncheckedCreateInput>
-    /**
-     * In case the ReportSubmission was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<ReportSubmissionUpdateInput, ReportSubmissionUncheckedUpdateInput>
-  }
-
-  /**
-   * ReportSubmission delete
-   */
-  export type ReportSubmissionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
-    /**
-     * Filter which ReportSubmission to delete.
-     */
-    where: ReportSubmissionWhereUniqueInput
-  }
-
-  /**
-   * ReportSubmission deleteMany
-   */
-  export type ReportSubmissionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which ReportSubmissions to delete
-     */
-    where?: ReportSubmissionWhereInput
-  }
-
-  /**
-   * ReportSubmission without action
-   */
-  export type ReportSubmissionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the ReportSubmission
-     */
-    select?: ReportSubmissionSelect<ExtArgs> | null
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ReportSubmissionInclude<ExtArgs> | null
   }
 
 
@@ -12170,6 +10112,1951 @@ export namespace Prisma {
 
 
   /**
+   * Model LabSheetDownload
+   */
+
+  export type AggregateLabSheetDownload = {
+    _count: LabSheetDownloadCountAggregateOutputType | null
+    _avg: LabSheetDownloadAvgAggregateOutputType | null
+    _sum: LabSheetDownloadSumAggregateOutputType | null
+    _min: LabSheetDownloadMinAggregateOutputType | null
+    _max: LabSheetDownloadMaxAggregateOutputType | null
+  }
+
+  export type LabSheetDownloadAvgAggregateOutputType = {
+    id: number | null
+    studentId: number | null
+    practicalId: number | null
+  }
+
+  export type LabSheetDownloadSumAggregateOutputType = {
+    id: number | null
+    studentId: number | null
+    practicalId: number | null
+  }
+
+  export type LabSheetDownloadMinAggregateOutputType = {
+    id: number | null
+    studentId: number | null
+    practicalId: number | null
+    filename: string | null
+    downloadedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LabSheetDownloadMaxAggregateOutputType = {
+    id: number | null
+    studentId: number | null
+    practicalId: number | null
+    filename: string | null
+    downloadedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type LabSheetDownloadCountAggregateOutputType = {
+    id: number
+    studentId: number
+    practicalId: number
+    filename: number
+    downloadedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type LabSheetDownloadAvgAggregateInputType = {
+    id?: true
+    studentId?: true
+    practicalId?: true
+  }
+
+  export type LabSheetDownloadSumAggregateInputType = {
+    id?: true
+    studentId?: true
+    practicalId?: true
+  }
+
+  export type LabSheetDownloadMinAggregateInputType = {
+    id?: true
+    studentId?: true
+    practicalId?: true
+    filename?: true
+    downloadedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LabSheetDownloadMaxAggregateInputType = {
+    id?: true
+    studentId?: true
+    practicalId?: true
+    filename?: true
+    downloadedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type LabSheetDownloadCountAggregateInputType = {
+    id?: true
+    studentId?: true
+    practicalId?: true
+    filename?: true
+    downloadedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type LabSheetDownloadAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LabSheetDownload to aggregate.
+     */
+    where?: LabSheetDownloadWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LabSheetDownloads to fetch.
+     */
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: LabSheetDownloadWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LabSheetDownloads from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LabSheetDownloads.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned LabSheetDownloads
+    **/
+    _count?: true | LabSheetDownloadCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: LabSheetDownloadAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: LabSheetDownloadSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: LabSheetDownloadMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: LabSheetDownloadMaxAggregateInputType
+  }
+
+  export type GetLabSheetDownloadAggregateType<T extends LabSheetDownloadAggregateArgs> = {
+        [P in keyof T & keyof AggregateLabSheetDownload]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateLabSheetDownload[P]>
+      : GetScalarType<T[P], AggregateLabSheetDownload[P]>
+  }
+
+
+
+
+  export type LabSheetDownloadGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: LabSheetDownloadWhereInput
+    orderBy?: LabSheetDownloadOrderByWithAggregationInput | LabSheetDownloadOrderByWithAggregationInput[]
+    by: LabSheetDownloadScalarFieldEnum[] | LabSheetDownloadScalarFieldEnum
+    having?: LabSheetDownloadScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: LabSheetDownloadCountAggregateInputType | true
+    _avg?: LabSheetDownloadAvgAggregateInputType
+    _sum?: LabSheetDownloadSumAggregateInputType
+    _min?: LabSheetDownloadMinAggregateInputType
+    _max?: LabSheetDownloadMaxAggregateInputType
+  }
+
+  export type LabSheetDownloadGroupByOutputType = {
+    id: number
+    studentId: number
+    practicalId: number
+    filename: string
+    downloadedAt: Date
+    createdAt: Date
+    updatedAt: Date
+    _count: LabSheetDownloadCountAggregateOutputType | null
+    _avg: LabSheetDownloadAvgAggregateOutputType | null
+    _sum: LabSheetDownloadSumAggregateOutputType | null
+    _min: LabSheetDownloadMinAggregateOutputType | null
+    _max: LabSheetDownloadMaxAggregateOutputType | null
+  }
+
+  type GetLabSheetDownloadGroupByPayload<T extends LabSheetDownloadGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<LabSheetDownloadGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof LabSheetDownloadGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], LabSheetDownloadGroupByOutputType[P]>
+            : GetScalarType<T[P], LabSheetDownloadGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type LabSheetDownloadSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    studentId?: boolean
+    practicalId?: boolean
+    filename?: boolean
+    downloadedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    student?: boolean | UserDefaultArgs<ExtArgs>
+    practical?: boolean | PracticalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["labSheetDownload"]>
+
+  export type LabSheetDownloadSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    studentId?: boolean
+    practicalId?: boolean
+    filename?: boolean
+    downloadedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    student?: boolean | UserDefaultArgs<ExtArgs>
+    practical?: boolean | PracticalDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["labSheetDownload"]>
+
+  export type LabSheetDownloadSelectScalar = {
+    id?: boolean
+    studentId?: boolean
+    practicalId?: boolean
+    filename?: boolean
+    downloadedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type LabSheetDownloadInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    student?: boolean | UserDefaultArgs<ExtArgs>
+    practical?: boolean | PracticalDefaultArgs<ExtArgs>
+  }
+  export type LabSheetDownloadIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    student?: boolean | UserDefaultArgs<ExtArgs>
+    practical?: boolean | PracticalDefaultArgs<ExtArgs>
+  }
+
+  export type $LabSheetDownloadPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "LabSheetDownload"
+    objects: {
+      student: Prisma.$UserPayload<ExtArgs>
+      practical: Prisma.$PracticalPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      studentId: number
+      practicalId: number
+      filename: string
+      downloadedAt: Date
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["labSheetDownload"]>
+    composites: {}
+  }
+
+  type LabSheetDownloadGetPayload<S extends boolean | null | undefined | LabSheetDownloadDefaultArgs> = $Result.GetResult<Prisma.$LabSheetDownloadPayload, S>
+
+  type LabSheetDownloadCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<LabSheetDownloadFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: LabSheetDownloadCountAggregateInputType | true
+    }
+
+  export interface LabSheetDownloadDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['LabSheetDownload'], meta: { name: 'LabSheetDownload' } }
+    /**
+     * Find zero or one LabSheetDownload that matches the filter.
+     * @param {LabSheetDownloadFindUniqueArgs} args - Arguments to find a LabSheetDownload
+     * @example
+     * // Get one LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends LabSheetDownloadFindUniqueArgs>(args: SelectSubset<T, LabSheetDownloadFindUniqueArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one LabSheetDownload that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {LabSheetDownloadFindUniqueOrThrowArgs} args - Arguments to find a LabSheetDownload
+     * @example
+     * // Get one LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends LabSheetDownloadFindUniqueOrThrowArgs>(args: SelectSubset<T, LabSheetDownloadFindUniqueOrThrowArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first LabSheetDownload that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadFindFirstArgs} args - Arguments to find a LabSheetDownload
+     * @example
+     * // Get one LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends LabSheetDownloadFindFirstArgs>(args?: SelectSubset<T, LabSheetDownloadFindFirstArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first LabSheetDownload that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadFindFirstOrThrowArgs} args - Arguments to find a LabSheetDownload
+     * @example
+     * // Get one LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends LabSheetDownloadFindFirstOrThrowArgs>(args?: SelectSubset<T, LabSheetDownloadFindFirstOrThrowArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more LabSheetDownloads that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all LabSheetDownloads
+     * const labSheetDownloads = await prisma.labSheetDownload.findMany()
+     * 
+     * // Get first 10 LabSheetDownloads
+     * const labSheetDownloads = await prisma.labSheetDownload.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const labSheetDownloadWithIdOnly = await prisma.labSheetDownload.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends LabSheetDownloadFindManyArgs>(args?: SelectSubset<T, LabSheetDownloadFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a LabSheetDownload.
+     * @param {LabSheetDownloadCreateArgs} args - Arguments to create a LabSheetDownload.
+     * @example
+     * // Create one LabSheetDownload
+     * const LabSheetDownload = await prisma.labSheetDownload.create({
+     *   data: {
+     *     // ... data to create a LabSheetDownload
+     *   }
+     * })
+     * 
+     */
+    create<T extends LabSheetDownloadCreateArgs>(args: SelectSubset<T, LabSheetDownloadCreateArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many LabSheetDownloads.
+     * @param {LabSheetDownloadCreateManyArgs} args - Arguments to create many LabSheetDownloads.
+     * @example
+     * // Create many LabSheetDownloads
+     * const labSheetDownload = await prisma.labSheetDownload.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends LabSheetDownloadCreateManyArgs>(args?: SelectSubset<T, LabSheetDownloadCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many LabSheetDownloads and returns the data saved in the database.
+     * @param {LabSheetDownloadCreateManyAndReturnArgs} args - Arguments to create many LabSheetDownloads.
+     * @example
+     * // Create many LabSheetDownloads
+     * const labSheetDownload = await prisma.labSheetDownload.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many LabSheetDownloads and only return the `id`
+     * const labSheetDownloadWithIdOnly = await prisma.labSheetDownload.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends LabSheetDownloadCreateManyAndReturnArgs>(args?: SelectSubset<T, LabSheetDownloadCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a LabSheetDownload.
+     * @param {LabSheetDownloadDeleteArgs} args - Arguments to delete one LabSheetDownload.
+     * @example
+     * // Delete one LabSheetDownload
+     * const LabSheetDownload = await prisma.labSheetDownload.delete({
+     *   where: {
+     *     // ... filter to delete one LabSheetDownload
+     *   }
+     * })
+     * 
+     */
+    delete<T extends LabSheetDownloadDeleteArgs>(args: SelectSubset<T, LabSheetDownloadDeleteArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one LabSheetDownload.
+     * @param {LabSheetDownloadUpdateArgs} args - Arguments to update one LabSheetDownload.
+     * @example
+     * // Update one LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends LabSheetDownloadUpdateArgs>(args: SelectSubset<T, LabSheetDownloadUpdateArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more LabSheetDownloads.
+     * @param {LabSheetDownloadDeleteManyArgs} args - Arguments to filter LabSheetDownloads to delete.
+     * @example
+     * // Delete a few LabSheetDownloads
+     * const { count } = await prisma.labSheetDownload.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends LabSheetDownloadDeleteManyArgs>(args?: SelectSubset<T, LabSheetDownloadDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more LabSheetDownloads.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many LabSheetDownloads
+     * const labSheetDownload = await prisma.labSheetDownload.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends LabSheetDownloadUpdateManyArgs>(args: SelectSubset<T, LabSheetDownloadUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one LabSheetDownload.
+     * @param {LabSheetDownloadUpsertArgs} args - Arguments to update or create a LabSheetDownload.
+     * @example
+     * // Update or create a LabSheetDownload
+     * const labSheetDownload = await prisma.labSheetDownload.upsert({
+     *   create: {
+     *     // ... data to create a LabSheetDownload
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the LabSheetDownload we want to update
+     *   }
+     * })
+     */
+    upsert<T extends LabSheetDownloadUpsertArgs>(args: SelectSubset<T, LabSheetDownloadUpsertArgs<ExtArgs>>): Prisma__LabSheetDownloadClient<$Result.GetResult<Prisma.$LabSheetDownloadPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of LabSheetDownloads.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadCountArgs} args - Arguments to filter LabSheetDownloads to count.
+     * @example
+     * // Count the number of LabSheetDownloads
+     * const count = await prisma.labSheetDownload.count({
+     *   where: {
+     *     // ... the filter for the LabSheetDownloads we want to count
+     *   }
+     * })
+    **/
+    count<T extends LabSheetDownloadCountArgs>(
+      args?: Subset<T, LabSheetDownloadCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], LabSheetDownloadCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a LabSheetDownload.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends LabSheetDownloadAggregateArgs>(args: Subset<T, LabSheetDownloadAggregateArgs>): Prisma.PrismaPromise<GetLabSheetDownloadAggregateType<T>>
+
+    /**
+     * Group by LabSheetDownload.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {LabSheetDownloadGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends LabSheetDownloadGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: LabSheetDownloadGroupByArgs['orderBy'] }
+        : { orderBy?: LabSheetDownloadGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, LabSheetDownloadGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetLabSheetDownloadGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the LabSheetDownload model
+   */
+  readonly fields: LabSheetDownloadFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for LabSheetDownload.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__LabSheetDownloadClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    student<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    practical<T extends PracticalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PracticalDefaultArgs<ExtArgs>>): Prisma__PracticalClient<$Result.GetResult<Prisma.$PracticalPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the LabSheetDownload model
+   */ 
+  interface LabSheetDownloadFieldRefs {
+    readonly id: FieldRef<"LabSheetDownload", 'Int'>
+    readonly studentId: FieldRef<"LabSheetDownload", 'Int'>
+    readonly practicalId: FieldRef<"LabSheetDownload", 'Int'>
+    readonly filename: FieldRef<"LabSheetDownload", 'String'>
+    readonly downloadedAt: FieldRef<"LabSheetDownload", 'DateTime'>
+    readonly createdAt: FieldRef<"LabSheetDownload", 'DateTime'>
+    readonly updatedAt: FieldRef<"LabSheetDownload", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * LabSheetDownload findUnique
+   */
+  export type LabSheetDownloadFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter, which LabSheetDownload to fetch.
+     */
+    where: LabSheetDownloadWhereUniqueInput
+  }
+
+  /**
+   * LabSheetDownload findUniqueOrThrow
+   */
+  export type LabSheetDownloadFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter, which LabSheetDownload to fetch.
+     */
+    where: LabSheetDownloadWhereUniqueInput
+  }
+
+  /**
+   * LabSheetDownload findFirst
+   */
+  export type LabSheetDownloadFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter, which LabSheetDownload to fetch.
+     */
+    where?: LabSheetDownloadWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LabSheetDownloads to fetch.
+     */
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LabSheetDownloads.
+     */
+    cursor?: LabSheetDownloadWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LabSheetDownloads from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LabSheetDownloads.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LabSheetDownloads.
+     */
+    distinct?: LabSheetDownloadScalarFieldEnum | LabSheetDownloadScalarFieldEnum[]
+  }
+
+  /**
+   * LabSheetDownload findFirstOrThrow
+   */
+  export type LabSheetDownloadFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter, which LabSheetDownload to fetch.
+     */
+    where?: LabSheetDownloadWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LabSheetDownloads to fetch.
+     */
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for LabSheetDownloads.
+     */
+    cursor?: LabSheetDownloadWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LabSheetDownloads from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LabSheetDownloads.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of LabSheetDownloads.
+     */
+    distinct?: LabSheetDownloadScalarFieldEnum | LabSheetDownloadScalarFieldEnum[]
+  }
+
+  /**
+   * LabSheetDownload findMany
+   */
+  export type LabSheetDownloadFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter, which LabSheetDownloads to fetch.
+     */
+    where?: LabSheetDownloadWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of LabSheetDownloads to fetch.
+     */
+    orderBy?: LabSheetDownloadOrderByWithRelationInput | LabSheetDownloadOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing LabSheetDownloads.
+     */
+    cursor?: LabSheetDownloadWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` LabSheetDownloads from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` LabSheetDownloads.
+     */
+    skip?: number
+    distinct?: LabSheetDownloadScalarFieldEnum | LabSheetDownloadScalarFieldEnum[]
+  }
+
+  /**
+   * LabSheetDownload create
+   */
+  export type LabSheetDownloadCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * The data needed to create a LabSheetDownload.
+     */
+    data: XOR<LabSheetDownloadCreateInput, LabSheetDownloadUncheckedCreateInput>
+  }
+
+  /**
+   * LabSheetDownload createMany
+   */
+  export type LabSheetDownloadCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many LabSheetDownloads.
+     */
+    data: LabSheetDownloadCreateManyInput | LabSheetDownloadCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * LabSheetDownload createManyAndReturn
+   */
+  export type LabSheetDownloadCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many LabSheetDownloads.
+     */
+    data: LabSheetDownloadCreateManyInput | LabSheetDownloadCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * LabSheetDownload update
+   */
+  export type LabSheetDownloadUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * The data needed to update a LabSheetDownload.
+     */
+    data: XOR<LabSheetDownloadUpdateInput, LabSheetDownloadUncheckedUpdateInput>
+    /**
+     * Choose, which LabSheetDownload to update.
+     */
+    where: LabSheetDownloadWhereUniqueInput
+  }
+
+  /**
+   * LabSheetDownload updateMany
+   */
+  export type LabSheetDownloadUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update LabSheetDownloads.
+     */
+    data: XOR<LabSheetDownloadUpdateManyMutationInput, LabSheetDownloadUncheckedUpdateManyInput>
+    /**
+     * Filter which LabSheetDownloads to update
+     */
+    where?: LabSheetDownloadWhereInput
+  }
+
+  /**
+   * LabSheetDownload upsert
+   */
+  export type LabSheetDownloadUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * The filter to search for the LabSheetDownload to update in case it exists.
+     */
+    where: LabSheetDownloadWhereUniqueInput
+    /**
+     * In case the LabSheetDownload found by the `where` argument doesn't exist, create a new LabSheetDownload with this data.
+     */
+    create: XOR<LabSheetDownloadCreateInput, LabSheetDownloadUncheckedCreateInput>
+    /**
+     * In case the LabSheetDownload was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<LabSheetDownloadUpdateInput, LabSheetDownloadUncheckedUpdateInput>
+  }
+
+  /**
+   * LabSheetDownload delete
+   */
+  export type LabSheetDownloadDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+    /**
+     * Filter which LabSheetDownload to delete.
+     */
+    where: LabSheetDownloadWhereUniqueInput
+  }
+
+  /**
+   * LabSheetDownload deleteMany
+   */
+  export type LabSheetDownloadDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which LabSheetDownloads to delete
+     */
+    where?: LabSheetDownloadWhereInput
+  }
+
+  /**
+   * LabSheetDownload without action
+   */
+  export type LabSheetDownloadDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the LabSheetDownload
+     */
+    select?: LabSheetDownloadSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LabSheetDownloadInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model Inventory
+   */
+
+  export type AggregateInventory = {
+    _count: InventoryCountAggregateOutputType | null
+    _avg: InventoryAvgAggregateOutputType | null
+    _sum: InventorySumAggregateOutputType | null
+    _min: InventoryMinAggregateOutputType | null
+    _max: InventoryMaxAggregateOutputType | null
+  }
+
+  export type InventoryAvgAggregateOutputType = {
+    id: number | null
+    quantity: number | null
+  }
+
+  export type InventorySumAggregateOutputType = {
+    id: number | null
+    quantity: number | null
+  }
+
+  export type InventoryMinAggregateOutputType = {
+    id: number | null
+    instrumentName: string | null
+    description: string | null
+    quantity: number | null
+    safetyPrecautions: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type InventoryMaxAggregateOutputType = {
+    id: number | null
+    instrumentName: string | null
+    description: string | null
+    quantity: number | null
+    safetyPrecautions: string | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type InventoryCountAggregateOutputType = {
+    id: number
+    instrumentName: number
+    description: number
+    quantity: number
+    safetyPrecautions: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type InventoryAvgAggregateInputType = {
+    id?: true
+    quantity?: true
+  }
+
+  export type InventorySumAggregateInputType = {
+    id?: true
+    quantity?: true
+  }
+
+  export type InventoryMinAggregateInputType = {
+    id?: true
+    instrumentName?: true
+    description?: true
+    quantity?: true
+    safetyPrecautions?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type InventoryMaxAggregateInputType = {
+    id?: true
+    instrumentName?: true
+    description?: true
+    quantity?: true
+    safetyPrecautions?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type InventoryCountAggregateInputType = {
+    id?: true
+    instrumentName?: true
+    description?: true
+    quantity?: true
+    safetyPrecautions?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type InventoryAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Inventory to aggregate.
+     */
+    where?: InventoryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Inventories to fetch.
+     */
+    orderBy?: InventoryOrderByWithRelationInput | InventoryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: InventoryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Inventories from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Inventories.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Inventories
+    **/
+    _count?: true | InventoryCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: InventoryAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: InventorySumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: InventoryMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: InventoryMaxAggregateInputType
+  }
+
+  export type GetInventoryAggregateType<T extends InventoryAggregateArgs> = {
+        [P in keyof T & keyof AggregateInventory]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateInventory[P]>
+      : GetScalarType<T[P], AggregateInventory[P]>
+  }
+
+
+
+
+  export type InventoryGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: InventoryWhereInput
+    orderBy?: InventoryOrderByWithAggregationInput | InventoryOrderByWithAggregationInput[]
+    by: InventoryScalarFieldEnum[] | InventoryScalarFieldEnum
+    having?: InventoryScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: InventoryCountAggregateInputType | true
+    _avg?: InventoryAvgAggregateInputType
+    _sum?: InventorySumAggregateInputType
+    _min?: InventoryMinAggregateInputType
+    _max?: InventoryMaxAggregateInputType
+  }
+
+  export type InventoryGroupByOutputType = {
+    id: number
+    instrumentName: string
+    description: string | null
+    quantity: number
+    safetyPrecautions: string | null
+    createdAt: Date
+    updatedAt: Date
+    _count: InventoryCountAggregateOutputType | null
+    _avg: InventoryAvgAggregateOutputType | null
+    _sum: InventorySumAggregateOutputType | null
+    _min: InventoryMinAggregateOutputType | null
+    _max: InventoryMaxAggregateOutputType | null
+  }
+
+  type GetInventoryGroupByPayload<T extends InventoryGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<InventoryGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof InventoryGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], InventoryGroupByOutputType[P]>
+            : GetScalarType<T[P], InventoryGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type InventorySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    instrumentName?: boolean
+    description?: boolean
+    quantity?: boolean
+    safetyPrecautions?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["inventory"]>
+
+  export type InventorySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    instrumentName?: boolean
+    description?: boolean
+    quantity?: boolean
+    safetyPrecautions?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["inventory"]>
+
+  export type InventorySelectScalar = {
+    id?: boolean
+    instrumentName?: boolean
+    description?: boolean
+    quantity?: boolean
+    safetyPrecautions?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+
+  export type $InventoryPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Inventory"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: number
+      instrumentName: string
+      description: string | null
+      quantity: number
+      safetyPrecautions: string | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["inventory"]>
+    composites: {}
+  }
+
+  type InventoryGetPayload<S extends boolean | null | undefined | InventoryDefaultArgs> = $Result.GetResult<Prisma.$InventoryPayload, S>
+
+  type InventoryCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<InventoryFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: InventoryCountAggregateInputType | true
+    }
+
+  export interface InventoryDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Inventory'], meta: { name: 'Inventory' } }
+    /**
+     * Find zero or one Inventory that matches the filter.
+     * @param {InventoryFindUniqueArgs} args - Arguments to find a Inventory
+     * @example
+     * // Get one Inventory
+     * const inventory = await prisma.inventory.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends InventoryFindUniqueArgs>(args: SelectSubset<T, InventoryFindUniqueArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Inventory that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {InventoryFindUniqueOrThrowArgs} args - Arguments to find a Inventory
+     * @example
+     * // Get one Inventory
+     * const inventory = await prisma.inventory.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends InventoryFindUniqueOrThrowArgs>(args: SelectSubset<T, InventoryFindUniqueOrThrowArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Inventory that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryFindFirstArgs} args - Arguments to find a Inventory
+     * @example
+     * // Get one Inventory
+     * const inventory = await prisma.inventory.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends InventoryFindFirstArgs>(args?: SelectSubset<T, InventoryFindFirstArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Inventory that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryFindFirstOrThrowArgs} args - Arguments to find a Inventory
+     * @example
+     * // Get one Inventory
+     * const inventory = await prisma.inventory.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends InventoryFindFirstOrThrowArgs>(args?: SelectSubset<T, InventoryFindFirstOrThrowArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Inventories that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Inventories
+     * const inventories = await prisma.inventory.findMany()
+     * 
+     * // Get first 10 Inventories
+     * const inventories = await prisma.inventory.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const inventoryWithIdOnly = await prisma.inventory.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends InventoryFindManyArgs>(args?: SelectSubset<T, InventoryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Inventory.
+     * @param {InventoryCreateArgs} args - Arguments to create a Inventory.
+     * @example
+     * // Create one Inventory
+     * const Inventory = await prisma.inventory.create({
+     *   data: {
+     *     // ... data to create a Inventory
+     *   }
+     * })
+     * 
+     */
+    create<T extends InventoryCreateArgs>(args: SelectSubset<T, InventoryCreateArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Inventories.
+     * @param {InventoryCreateManyArgs} args - Arguments to create many Inventories.
+     * @example
+     * // Create many Inventories
+     * const inventory = await prisma.inventory.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends InventoryCreateManyArgs>(args?: SelectSubset<T, InventoryCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Inventories and returns the data saved in the database.
+     * @param {InventoryCreateManyAndReturnArgs} args - Arguments to create many Inventories.
+     * @example
+     * // Create many Inventories
+     * const inventory = await prisma.inventory.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Inventories and only return the `id`
+     * const inventoryWithIdOnly = await prisma.inventory.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends InventoryCreateManyAndReturnArgs>(args?: SelectSubset<T, InventoryCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a Inventory.
+     * @param {InventoryDeleteArgs} args - Arguments to delete one Inventory.
+     * @example
+     * // Delete one Inventory
+     * const Inventory = await prisma.inventory.delete({
+     *   where: {
+     *     // ... filter to delete one Inventory
+     *   }
+     * })
+     * 
+     */
+    delete<T extends InventoryDeleteArgs>(args: SelectSubset<T, InventoryDeleteArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Inventory.
+     * @param {InventoryUpdateArgs} args - Arguments to update one Inventory.
+     * @example
+     * // Update one Inventory
+     * const inventory = await prisma.inventory.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends InventoryUpdateArgs>(args: SelectSubset<T, InventoryUpdateArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Inventories.
+     * @param {InventoryDeleteManyArgs} args - Arguments to filter Inventories to delete.
+     * @example
+     * // Delete a few Inventories
+     * const { count } = await prisma.inventory.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends InventoryDeleteManyArgs>(args?: SelectSubset<T, InventoryDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Inventories.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Inventories
+     * const inventory = await prisma.inventory.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends InventoryUpdateManyArgs>(args: SelectSubset<T, InventoryUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Inventory.
+     * @param {InventoryUpsertArgs} args - Arguments to update or create a Inventory.
+     * @example
+     * // Update or create a Inventory
+     * const inventory = await prisma.inventory.upsert({
+     *   create: {
+     *     // ... data to create a Inventory
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Inventory we want to update
+     *   }
+     * })
+     */
+    upsert<T extends InventoryUpsertArgs>(args: SelectSubset<T, InventoryUpsertArgs<ExtArgs>>): Prisma__InventoryClient<$Result.GetResult<Prisma.$InventoryPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Inventories.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryCountArgs} args - Arguments to filter Inventories to count.
+     * @example
+     * // Count the number of Inventories
+     * const count = await prisma.inventory.count({
+     *   where: {
+     *     // ... the filter for the Inventories we want to count
+     *   }
+     * })
+    **/
+    count<T extends InventoryCountArgs>(
+      args?: Subset<T, InventoryCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], InventoryCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Inventory.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends InventoryAggregateArgs>(args: Subset<T, InventoryAggregateArgs>): Prisma.PrismaPromise<GetInventoryAggregateType<T>>
+
+    /**
+     * Group by Inventory.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {InventoryGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends InventoryGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: InventoryGroupByArgs['orderBy'] }
+        : { orderBy?: InventoryGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, InventoryGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetInventoryGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Inventory model
+   */
+  readonly fields: InventoryFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Inventory.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__InventoryClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Inventory model
+   */ 
+  interface InventoryFieldRefs {
+    readonly id: FieldRef<"Inventory", 'Int'>
+    readonly instrumentName: FieldRef<"Inventory", 'String'>
+    readonly description: FieldRef<"Inventory", 'String'>
+    readonly quantity: FieldRef<"Inventory", 'Int'>
+    readonly safetyPrecautions: FieldRef<"Inventory", 'String'>
+    readonly createdAt: FieldRef<"Inventory", 'DateTime'>
+    readonly updatedAt: FieldRef<"Inventory", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Inventory findUnique
+   */
+  export type InventoryFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter, which Inventory to fetch.
+     */
+    where: InventoryWhereUniqueInput
+  }
+
+  /**
+   * Inventory findUniqueOrThrow
+   */
+  export type InventoryFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter, which Inventory to fetch.
+     */
+    where: InventoryWhereUniqueInput
+  }
+
+  /**
+   * Inventory findFirst
+   */
+  export type InventoryFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter, which Inventory to fetch.
+     */
+    where?: InventoryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Inventories to fetch.
+     */
+    orderBy?: InventoryOrderByWithRelationInput | InventoryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Inventories.
+     */
+    cursor?: InventoryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Inventories from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Inventories.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Inventories.
+     */
+    distinct?: InventoryScalarFieldEnum | InventoryScalarFieldEnum[]
+  }
+
+  /**
+   * Inventory findFirstOrThrow
+   */
+  export type InventoryFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter, which Inventory to fetch.
+     */
+    where?: InventoryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Inventories to fetch.
+     */
+    orderBy?: InventoryOrderByWithRelationInput | InventoryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Inventories.
+     */
+    cursor?: InventoryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Inventories from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Inventories.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Inventories.
+     */
+    distinct?: InventoryScalarFieldEnum | InventoryScalarFieldEnum[]
+  }
+
+  /**
+   * Inventory findMany
+   */
+  export type InventoryFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter, which Inventories to fetch.
+     */
+    where?: InventoryWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Inventories to fetch.
+     */
+    orderBy?: InventoryOrderByWithRelationInput | InventoryOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Inventories.
+     */
+    cursor?: InventoryWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Inventories from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Inventories.
+     */
+    skip?: number
+    distinct?: InventoryScalarFieldEnum | InventoryScalarFieldEnum[]
+  }
+
+  /**
+   * Inventory create
+   */
+  export type InventoryCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * The data needed to create a Inventory.
+     */
+    data: XOR<InventoryCreateInput, InventoryUncheckedCreateInput>
+  }
+
+  /**
+   * Inventory createMany
+   */
+  export type InventoryCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Inventories.
+     */
+    data: InventoryCreateManyInput | InventoryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Inventory createManyAndReturn
+   */
+  export type InventoryCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many Inventories.
+     */
+    data: InventoryCreateManyInput | InventoryCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Inventory update
+   */
+  export type InventoryUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * The data needed to update a Inventory.
+     */
+    data: XOR<InventoryUpdateInput, InventoryUncheckedUpdateInput>
+    /**
+     * Choose, which Inventory to update.
+     */
+    where: InventoryWhereUniqueInput
+  }
+
+  /**
+   * Inventory updateMany
+   */
+  export type InventoryUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Inventories.
+     */
+    data: XOR<InventoryUpdateManyMutationInput, InventoryUncheckedUpdateManyInput>
+    /**
+     * Filter which Inventories to update
+     */
+    where?: InventoryWhereInput
+  }
+
+  /**
+   * Inventory upsert
+   */
+  export type InventoryUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * The filter to search for the Inventory to update in case it exists.
+     */
+    where: InventoryWhereUniqueInput
+    /**
+     * In case the Inventory found by the `where` argument doesn't exist, create a new Inventory with this data.
+     */
+    create: XOR<InventoryCreateInput, InventoryUncheckedCreateInput>
+    /**
+     * In case the Inventory was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<InventoryUpdateInput, InventoryUncheckedUpdateInput>
+  }
+
+  /**
+   * Inventory delete
+   */
+  export type InventoryDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+    /**
+     * Filter which Inventory to delete.
+     */
+    where: InventoryWhereUniqueInput
+  }
+
+  /**
+   * Inventory deleteMany
+   */
+  export type InventoryDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Inventories to delete
+     */
+    where?: InventoryWhereInput
+  }
+
+  /**
+   * Inventory without action
+   */
+  export type InventoryDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Inventory
+     */
+    select?: InventorySelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -12202,6 +12089,11 @@ export namespace Prisma {
     subject: 'subject',
     lab: 'lab',
     dateTime: 'dateTime',
+    grade: 'grade',
+    teacherName: 'teacherName',
+    description: 'description',
+    duration: 'duration',
+    maxStudents: 'maxStudents',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -12221,20 +12113,6 @@ export namespace Prisma {
   export type AttendanceScalarFieldEnum = (typeof AttendanceScalarFieldEnum)[keyof typeof AttendanceScalarFieldEnum]
 
 
-  export const MaterialRequestScalarFieldEnum: {
-    id: 'id',
-    studentId: 'studentId',
-    practicalId: 'practicalId',
-    itemName: 'itemName',
-    quantity: 'quantity',
-    status: 'status',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type MaterialRequestScalarFieldEnum = (typeof MaterialRequestScalarFieldEnum)[keyof typeof MaterialRequestScalarFieldEnum]
-
-
   export const NoteScalarFieldEnum: {
     id: 'id',
     practicalId: 'practicalId',
@@ -12246,20 +12124,6 @@ export namespace Prisma {
   };
 
   export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
-
-
-  export const ReportSubmissionScalarFieldEnum: {
-    id: 'id',
-    studentId: 'studentId',
-    practicalId: 'practicalId',
-    fileUrl: 'fileUrl',
-    grade: 'grade',
-    feedback: 'feedback',
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
-  };
-
-  export type ReportSubmissionScalarFieldEnum = (typeof ReportSubmissionScalarFieldEnum)[keyof typeof ReportSubmissionScalarFieldEnum]
 
 
   export const QuizScalarFieldEnum: {
@@ -12314,6 +12178,32 @@ export namespace Prisma {
   };
 
   export type SessionScalarFieldEnum = (typeof SessionScalarFieldEnum)[keyof typeof SessionScalarFieldEnum]
+
+
+  export const LabSheetDownloadScalarFieldEnum: {
+    id: 'id',
+    studentId: 'studentId',
+    practicalId: 'practicalId',
+    filename: 'filename',
+    downloadedAt: 'downloadedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type LabSheetDownloadScalarFieldEnum = (typeof LabSheetDownloadScalarFieldEnum)[keyof typeof LabSheetDownloadScalarFieldEnum]
+
+
+  export const InventoryScalarFieldEnum: {
+    id: 'id',
+    instrumentName: 'instrumentName',
+    description: 'description',
+    quantity: 'quantity',
+    safetyPrecautions: 'safetyPrecautions',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type InventoryScalarFieldEnum = (typeof InventoryScalarFieldEnum)[keyof typeof InventoryScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -12447,16 +12337,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'MaterialRequestStatus'
+   * Reference to a field of type 'CorrectAnswer'
    */
-  export type EnumMaterialRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MaterialRequestStatus'>
+  export type EnumCorrectAnswerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CorrectAnswer'>
     
 
 
   /**
-   * Reference to a field of type 'MaterialRequestStatus[]'
+   * Reference to a field of type 'CorrectAnswer[]'
    */
-  export type ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MaterialRequestStatus[]'>
+  export type ListEnumCorrectAnswerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CorrectAnswer[]'>
     
 
 
@@ -12471,20 +12361,6 @@ export namespace Prisma {
    * Reference to a field of type 'Float[]'
    */
   export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'CorrectAnswer'
-   */
-  export type EnumCorrectAnswerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CorrectAnswer'>
-    
-
-
-  /**
-   * Reference to a field of type 'CorrectAnswer[]'
-   */
-  export type ListEnumCorrectAnswerFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CorrectAnswer[]'>
     
 
 
@@ -12509,11 +12385,10 @@ export namespace Prisma {
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
-    materialRequests?: MaterialRequestListRelationFilter
-    reportSubmissions?: ReportSubmissionListRelationFilter
     quizAttempts?: QuizAttemptListRelationFilter
     sessions?: SessionListRelationFilter
     attendances?: AttendanceListRelationFilter
+    labSheetDownloads?: LabSheetDownloadListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -12524,11 +12399,10 @@ export namespace Prisma {
     status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    materialRequests?: MaterialRequestOrderByRelationAggregateInput
-    reportSubmissions?: ReportSubmissionOrderByRelationAggregateInput
     quizAttempts?: QuizAttemptOrderByRelationAggregateInput
     sessions?: SessionOrderByRelationAggregateInput
     attendances?: AttendanceOrderByRelationAggregateInput
+    labSheetDownloads?: LabSheetDownloadOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -12542,11 +12416,10 @@ export namespace Prisma {
     status?: EnumUserStatusFilter<"User"> | $Enums.UserStatus
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
-    materialRequests?: MaterialRequestListRelationFilter
-    reportSubmissions?: ReportSubmissionListRelationFilter
     quizAttempts?: QuizAttemptListRelationFilter
     sessions?: SessionListRelationFilter
     attendances?: AttendanceListRelationFilter
+    labSheetDownloads?: LabSheetDownloadListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -12586,13 +12459,17 @@ export namespace Prisma {
     subject?: StringFilter<"Practical"> | string
     lab?: StringFilter<"Practical"> | string
     dateTime?: DateTimeFilter<"Practical"> | Date | string
+    grade?: StringFilter<"Practical"> | string
+    teacherName?: StringNullableFilter<"Practical"> | string | null
+    description?: StringNullableFilter<"Practical"> | string | null
+    duration?: StringNullableFilter<"Practical"> | string | null
+    maxStudents?: IntFilter<"Practical"> | number
     createdAt?: DateTimeFilter<"Practical"> | Date | string
     updatedAt?: DateTimeFilter<"Practical"> | Date | string
-    materialRequests?: MaterialRequestListRelationFilter
     notes?: NoteListRelationFilter
-    reportSubmissions?: ReportSubmissionListRelationFilter
     quizzes?: QuizListRelationFilter
     attendances?: AttendanceListRelationFilter
+    labSheetDownloads?: LabSheetDownloadListRelationFilter
   }
 
   export type PracticalOrderByWithRelationInput = {
@@ -12601,13 +12478,17 @@ export namespace Prisma {
     subject?: SortOrder
     lab?: SortOrder
     dateTime?: SortOrder
+    grade?: SortOrder
+    teacherName?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    duration?: SortOrderInput | SortOrder
+    maxStudents?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
-    materialRequests?: MaterialRequestOrderByRelationAggregateInput
     notes?: NoteOrderByRelationAggregateInput
-    reportSubmissions?: ReportSubmissionOrderByRelationAggregateInput
     quizzes?: QuizOrderByRelationAggregateInput
     attendances?: AttendanceOrderByRelationAggregateInput
+    labSheetDownloads?: LabSheetDownloadOrderByRelationAggregateInput
   }
 
   export type PracticalWhereUniqueInput = Prisma.AtLeast<{
@@ -12619,13 +12500,17 @@ export namespace Prisma {
     subject?: StringFilter<"Practical"> | string
     lab?: StringFilter<"Practical"> | string
     dateTime?: DateTimeFilter<"Practical"> | Date | string
+    grade?: StringFilter<"Practical"> | string
+    teacherName?: StringNullableFilter<"Practical"> | string | null
+    description?: StringNullableFilter<"Practical"> | string | null
+    duration?: StringNullableFilter<"Practical"> | string | null
+    maxStudents?: IntFilter<"Practical"> | number
     createdAt?: DateTimeFilter<"Practical"> | Date | string
     updatedAt?: DateTimeFilter<"Practical"> | Date | string
-    materialRequests?: MaterialRequestListRelationFilter
     notes?: NoteListRelationFilter
-    reportSubmissions?: ReportSubmissionListRelationFilter
     quizzes?: QuizListRelationFilter
     attendances?: AttendanceListRelationFilter
+    labSheetDownloads?: LabSheetDownloadListRelationFilter
   }, "id">
 
   export type PracticalOrderByWithAggregationInput = {
@@ -12634,6 +12519,11 @@ export namespace Prisma {
     subject?: SortOrder
     lab?: SortOrder
     dateTime?: SortOrder
+    grade?: SortOrder
+    teacherName?: SortOrderInput | SortOrder
+    description?: SortOrderInput | SortOrder
+    duration?: SortOrderInput | SortOrder
+    maxStudents?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: PracticalCountOrderByAggregateInput
@@ -12652,6 +12542,11 @@ export namespace Prisma {
     subject?: StringWithAggregatesFilter<"Practical"> | string
     lab?: StringWithAggregatesFilter<"Practical"> | string
     dateTime?: DateTimeWithAggregatesFilter<"Practical"> | Date | string
+    grade?: StringWithAggregatesFilter<"Practical"> | string
+    teacherName?: StringNullableWithAggregatesFilter<"Practical"> | string | null
+    description?: StringNullableWithAggregatesFilter<"Practical"> | string | null
+    duration?: StringNullableWithAggregatesFilter<"Practical"> | string | null
+    maxStudents?: IntWithAggregatesFilter<"Practical"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Practical"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Practical"> | Date | string
   }
@@ -12722,81 +12617,6 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Attendance"> | Date | string
   }
 
-  export type MaterialRequestWhereInput = {
-    AND?: MaterialRequestWhereInput | MaterialRequestWhereInput[]
-    OR?: MaterialRequestWhereInput[]
-    NOT?: MaterialRequestWhereInput | MaterialRequestWhereInput[]
-    id?: IntFilter<"MaterialRequest"> | number
-    studentId?: IntFilter<"MaterialRequest"> | number
-    practicalId?: IntFilter<"MaterialRequest"> | number
-    itemName?: StringFilter<"MaterialRequest"> | string
-    quantity?: IntFilter<"MaterialRequest"> | number
-    status?: EnumMaterialRequestStatusFilter<"MaterialRequest"> | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-    updatedAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-    student?: XOR<UserRelationFilter, UserWhereInput>
-    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
-  }
-
-  export type MaterialRequestOrderByWithRelationInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    itemName?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    student?: UserOrderByWithRelationInput
-    practical?: PracticalOrderByWithRelationInput
-  }
-
-  export type MaterialRequestWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    AND?: MaterialRequestWhereInput | MaterialRequestWhereInput[]
-    OR?: MaterialRequestWhereInput[]
-    NOT?: MaterialRequestWhereInput | MaterialRequestWhereInput[]
-    studentId?: IntFilter<"MaterialRequest"> | number
-    practicalId?: IntFilter<"MaterialRequest"> | number
-    itemName?: StringFilter<"MaterialRequest"> | string
-    quantity?: IntFilter<"MaterialRequest"> | number
-    status?: EnumMaterialRequestStatusFilter<"MaterialRequest"> | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-    updatedAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-    student?: XOR<UserRelationFilter, UserWhereInput>
-    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
-  }, "id">
-
-  export type MaterialRequestOrderByWithAggregationInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    itemName?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: MaterialRequestCountOrderByAggregateInput
-    _avg?: MaterialRequestAvgOrderByAggregateInput
-    _max?: MaterialRequestMaxOrderByAggregateInput
-    _min?: MaterialRequestMinOrderByAggregateInput
-    _sum?: MaterialRequestSumOrderByAggregateInput
-  }
-
-  export type MaterialRequestScalarWhereWithAggregatesInput = {
-    AND?: MaterialRequestScalarWhereWithAggregatesInput | MaterialRequestScalarWhereWithAggregatesInput[]
-    OR?: MaterialRequestScalarWhereWithAggregatesInput[]
-    NOT?: MaterialRequestScalarWhereWithAggregatesInput | MaterialRequestScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"MaterialRequest"> | number
-    studentId?: IntWithAggregatesFilter<"MaterialRequest"> | number
-    practicalId?: IntWithAggregatesFilter<"MaterialRequest"> | number
-    itemName?: StringWithAggregatesFilter<"MaterialRequest"> | string
-    quantity?: IntWithAggregatesFilter<"MaterialRequest"> | number
-    status?: EnumMaterialRequestStatusWithAggregatesFilter<"MaterialRequest"> | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeWithAggregatesFilter<"MaterialRequest"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"MaterialRequest"> | Date | string
-  }
-
   export type NoteWhereInput = {
     AND?: NoteWhereInput | NoteWhereInput[]
     OR?: NoteWhereInput[]
@@ -12862,82 +12682,6 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"Note"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Note"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Note"> | Date | string
-  }
-
-  export type ReportSubmissionWhereInput = {
-    AND?: ReportSubmissionWhereInput | ReportSubmissionWhereInput[]
-    OR?: ReportSubmissionWhereInput[]
-    NOT?: ReportSubmissionWhereInput | ReportSubmissionWhereInput[]
-    id?: IntFilter<"ReportSubmission"> | number
-    studentId?: IntFilter<"ReportSubmission"> | number
-    practicalId?: IntFilter<"ReportSubmission"> | number
-    fileUrl?: StringFilter<"ReportSubmission"> | string
-    grade?: FloatNullableFilter<"ReportSubmission"> | number | null
-    feedback?: StringNullableFilter<"ReportSubmission"> | string | null
-    createdAt?: DateTimeFilter<"ReportSubmission"> | Date | string
-    updatedAt?: DateTimeFilter<"ReportSubmission"> | Date | string
-    student?: XOR<UserRelationFilter, UserWhereInput>
-    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
-  }
-
-  export type ReportSubmissionOrderByWithRelationInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    fileUrl?: SortOrder
-    grade?: SortOrderInput | SortOrder
-    feedback?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    student?: UserOrderByWithRelationInput
-    practical?: PracticalOrderByWithRelationInput
-  }
-
-  export type ReportSubmissionWhereUniqueInput = Prisma.AtLeast<{
-    id?: number
-    studentId_practicalId?: ReportSubmissionStudentIdPracticalIdCompoundUniqueInput
-    AND?: ReportSubmissionWhereInput | ReportSubmissionWhereInput[]
-    OR?: ReportSubmissionWhereInput[]
-    NOT?: ReportSubmissionWhereInput | ReportSubmissionWhereInput[]
-    studentId?: IntFilter<"ReportSubmission"> | number
-    practicalId?: IntFilter<"ReportSubmission"> | number
-    fileUrl?: StringFilter<"ReportSubmission"> | string
-    grade?: FloatNullableFilter<"ReportSubmission"> | number | null
-    feedback?: StringNullableFilter<"ReportSubmission"> | string | null
-    createdAt?: DateTimeFilter<"ReportSubmission"> | Date | string
-    updatedAt?: DateTimeFilter<"ReportSubmission"> | Date | string
-    student?: XOR<UserRelationFilter, UserWhereInput>
-    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
-  }, "id" | "studentId_practicalId">
-
-  export type ReportSubmissionOrderByWithAggregationInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    fileUrl?: SortOrder
-    grade?: SortOrderInput | SortOrder
-    feedback?: SortOrderInput | SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-    _count?: ReportSubmissionCountOrderByAggregateInput
-    _avg?: ReportSubmissionAvgOrderByAggregateInput
-    _max?: ReportSubmissionMaxOrderByAggregateInput
-    _min?: ReportSubmissionMinOrderByAggregateInput
-    _sum?: ReportSubmissionSumOrderByAggregateInput
-  }
-
-  export type ReportSubmissionScalarWhereWithAggregatesInput = {
-    AND?: ReportSubmissionScalarWhereWithAggregatesInput | ReportSubmissionScalarWhereWithAggregatesInput[]
-    OR?: ReportSubmissionScalarWhereWithAggregatesInput[]
-    NOT?: ReportSubmissionScalarWhereWithAggregatesInput | ReportSubmissionScalarWhereWithAggregatesInput[]
-    id?: IntWithAggregatesFilter<"ReportSubmission"> | number
-    studentId?: IntWithAggregatesFilter<"ReportSubmission"> | number
-    practicalId?: IntWithAggregatesFilter<"ReportSubmission"> | number
-    fileUrl?: StringWithAggregatesFilter<"ReportSubmission"> | string
-    grade?: FloatNullableWithAggregatesFilter<"ReportSubmission"> | number | null
-    feedback?: StringNullableWithAggregatesFilter<"ReportSubmission"> | string | null
-    createdAt?: DateTimeWithAggregatesFilter<"ReportSubmission"> | Date | string
-    updatedAt?: DateTimeWithAggregatesFilter<"ReportSubmission"> | Date | string
   }
 
   export type QuizWhereInput = {
@@ -13228,6 +12972,140 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"Session"> | Date | string
   }
 
+  export type LabSheetDownloadWhereInput = {
+    AND?: LabSheetDownloadWhereInput | LabSheetDownloadWhereInput[]
+    OR?: LabSheetDownloadWhereInput[]
+    NOT?: LabSheetDownloadWhereInput | LabSheetDownloadWhereInput[]
+    id?: IntFilter<"LabSheetDownload"> | number
+    studentId?: IntFilter<"LabSheetDownload"> | number
+    practicalId?: IntFilter<"LabSheetDownload"> | number
+    filename?: StringFilter<"LabSheetDownload"> | string
+    downloadedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    createdAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    updatedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    student?: XOR<UserRelationFilter, UserWhereInput>
+    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
+  }
+
+  export type LabSheetDownloadOrderByWithRelationInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+    filename?: SortOrder
+    downloadedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    student?: UserOrderByWithRelationInput
+    practical?: PracticalOrderByWithRelationInput
+  }
+
+  export type LabSheetDownloadWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: LabSheetDownloadWhereInput | LabSheetDownloadWhereInput[]
+    OR?: LabSheetDownloadWhereInput[]
+    NOT?: LabSheetDownloadWhereInput | LabSheetDownloadWhereInput[]
+    studentId?: IntFilter<"LabSheetDownload"> | number
+    practicalId?: IntFilter<"LabSheetDownload"> | number
+    filename?: StringFilter<"LabSheetDownload"> | string
+    downloadedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    createdAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    updatedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    student?: XOR<UserRelationFilter, UserWhereInput>
+    practical?: XOR<PracticalRelationFilter, PracticalWhereInput>
+  }, "id">
+
+  export type LabSheetDownloadOrderByWithAggregationInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+    filename?: SortOrder
+    downloadedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: LabSheetDownloadCountOrderByAggregateInput
+    _avg?: LabSheetDownloadAvgOrderByAggregateInput
+    _max?: LabSheetDownloadMaxOrderByAggregateInput
+    _min?: LabSheetDownloadMinOrderByAggregateInput
+    _sum?: LabSheetDownloadSumOrderByAggregateInput
+  }
+
+  export type LabSheetDownloadScalarWhereWithAggregatesInput = {
+    AND?: LabSheetDownloadScalarWhereWithAggregatesInput | LabSheetDownloadScalarWhereWithAggregatesInput[]
+    OR?: LabSheetDownloadScalarWhereWithAggregatesInput[]
+    NOT?: LabSheetDownloadScalarWhereWithAggregatesInput | LabSheetDownloadScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"LabSheetDownload"> | number
+    studentId?: IntWithAggregatesFilter<"LabSheetDownload"> | number
+    practicalId?: IntWithAggregatesFilter<"LabSheetDownload"> | number
+    filename?: StringWithAggregatesFilter<"LabSheetDownload"> | string
+    downloadedAt?: DateTimeWithAggregatesFilter<"LabSheetDownload"> | Date | string
+    createdAt?: DateTimeWithAggregatesFilter<"LabSheetDownload"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"LabSheetDownload"> | Date | string
+  }
+
+  export type InventoryWhereInput = {
+    AND?: InventoryWhereInput | InventoryWhereInput[]
+    OR?: InventoryWhereInput[]
+    NOT?: InventoryWhereInput | InventoryWhereInput[]
+    id?: IntFilter<"Inventory"> | number
+    instrumentName?: StringFilter<"Inventory"> | string
+    description?: StringNullableFilter<"Inventory"> | string | null
+    quantity?: IntFilter<"Inventory"> | number
+    safetyPrecautions?: StringNullableFilter<"Inventory"> | string | null
+    createdAt?: DateTimeFilter<"Inventory"> | Date | string
+    updatedAt?: DateTimeFilter<"Inventory"> | Date | string
+  }
+
+  export type InventoryOrderByWithRelationInput = {
+    id?: SortOrder
+    instrumentName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    quantity?: SortOrder
+    safetyPrecautions?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InventoryWhereUniqueInput = Prisma.AtLeast<{
+    id?: number
+    AND?: InventoryWhereInput | InventoryWhereInput[]
+    OR?: InventoryWhereInput[]
+    NOT?: InventoryWhereInput | InventoryWhereInput[]
+    instrumentName?: StringFilter<"Inventory"> | string
+    description?: StringNullableFilter<"Inventory"> | string | null
+    quantity?: IntFilter<"Inventory"> | number
+    safetyPrecautions?: StringNullableFilter<"Inventory"> | string | null
+    createdAt?: DateTimeFilter<"Inventory"> | Date | string
+    updatedAt?: DateTimeFilter<"Inventory"> | Date | string
+  }, "id">
+
+  export type InventoryOrderByWithAggregationInput = {
+    id?: SortOrder
+    instrumentName?: SortOrder
+    description?: SortOrderInput | SortOrder
+    quantity?: SortOrder
+    safetyPrecautions?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: InventoryCountOrderByAggregateInput
+    _avg?: InventoryAvgOrderByAggregateInput
+    _max?: InventoryMaxOrderByAggregateInput
+    _min?: InventoryMinOrderByAggregateInput
+    _sum?: InventorySumOrderByAggregateInput
+  }
+
+  export type InventoryScalarWhereWithAggregatesInput = {
+    AND?: InventoryScalarWhereWithAggregatesInput | InventoryScalarWhereWithAggregatesInput[]
+    OR?: InventoryScalarWhereWithAggregatesInput[]
+    NOT?: InventoryScalarWhereWithAggregatesInput | InventoryScalarWhereWithAggregatesInput[]
+    id?: IntWithAggregatesFilter<"Inventory"> | number
+    instrumentName?: StringWithAggregatesFilter<"Inventory"> | string
+    description?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
+    quantity?: IntWithAggregatesFilter<"Inventory"> | number
+    safetyPrecautions?: StringNullableWithAggregatesFilter<"Inventory"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"Inventory"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Inventory"> | Date | string
+  }
+
   export type UserCreateInput = {
     name?: string | null
     email: string
@@ -13235,11 +13113,10 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     attendances?: AttendanceCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutStudentInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -13250,11 +13127,10 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutStudentInput
   }
 
   export type UserUpdateInput = {
@@ -13264,11 +13140,10 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     attendances?: AttendanceUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutStudentNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -13279,11 +13154,10 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutStudentNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -13320,13 +13194,17 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutPracticalInput
     notes?: NoteCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutPracticalInput
     quizzes?: QuizCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalUncheckedCreateInput = {
@@ -13335,13 +13213,17 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput
     notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput
     quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalUpdateInput = {
@@ -13349,13 +13231,17 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutPracticalNestedInput
     notes?: NoteUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalUncheckedUpdateInput = {
@@ -13364,13 +13250,17 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput
     notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalCreateManyInput = {
@@ -13379,6 +13269,11 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -13388,6 +13283,11 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13398,6 +13298,11 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13456,78 +13361,6 @@ export namespace Prisma {
     studentId?: IntFieldUpdateOperationsInput | number
     practicalId?: IntFieldUpdateOperationsInput | number
     status?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MaterialRequestCreateInput = {
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    student: UserCreateNestedOneWithoutMaterialRequestsInput
-    practical: PracticalCreateNestedOneWithoutMaterialRequestsInput
-  }
-
-  export type MaterialRequestUncheckedCreateInput = {
-    id?: number
-    studentId: number
-    practicalId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type MaterialRequestUpdateInput = {
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    student?: UserUpdateOneRequiredWithoutMaterialRequestsNestedInput
-    practical?: PracticalUpdateOneRequiredWithoutMaterialRequestsNestedInput
-  }
-
-  export type MaterialRequestUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MaterialRequestCreateManyInput = {
-    id?: number
-    studentId: number
-    practicalId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type MaterialRequestUpdateManyMutationInput = {
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MaterialRequestUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13594,78 +13427,6 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionCreateInput = {
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    student: UserCreateNestedOneWithoutReportSubmissionsInput
-    practical: PracticalCreateNestedOneWithoutReportSubmissionsInput
-  }
-
-  export type ReportSubmissionUncheckedCreateInput = {
-    id?: number
-    studentId: number
-    practicalId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReportSubmissionUpdateInput = {
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    student?: UserUpdateOneRequiredWithoutReportSubmissionsNestedInput
-    practical?: PracticalUpdateOneRequiredWithoutReportSubmissionsNestedInput
-  }
-
-  export type ReportSubmissionUncheckedUpdateInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionCreateManyInput = {
-    id?: number
-    studentId: number
-    practicalId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReportSubmissionUpdateManyMutationInput = {
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionUncheckedUpdateManyInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13955,6 +13716,138 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type LabSheetDownloadCreateInput = {
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    student: UserCreateNestedOneWithoutLabSheetDownloadsInput
+    practical: PracticalCreateNestedOneWithoutLabSheetDownloadsInput
+  }
+
+  export type LabSheetDownloadUncheckedCreateInput = {
+    id?: number
+    studentId: number
+    practicalId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LabSheetDownloadUpdateInput = {
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    student?: UserUpdateOneRequiredWithoutLabSheetDownloadsNestedInput
+    practical?: PracticalUpdateOneRequiredWithoutLabSheetDownloadsNestedInput
+  }
+
+  export type LabSheetDownloadUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    studentId?: IntFieldUpdateOperationsInput | number
+    practicalId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LabSheetDownloadCreateManyInput = {
+    id?: number
+    studentId: number
+    practicalId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type LabSheetDownloadUpdateManyMutationInput = {
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LabSheetDownloadUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    studentId?: IntFieldUpdateOperationsInput | number
+    practicalId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InventoryCreateInput = {
+    instrumentName: string
+    description?: string | null
+    quantity?: number
+    safetyPrecautions?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type InventoryUncheckedCreateInput = {
+    id?: number
+    instrumentName: string
+    description?: string | null
+    quantity?: number
+    safetyPrecautions?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type InventoryUpdateInput = {
+    instrumentName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: IntFieldUpdateOperationsInput | number
+    safetyPrecautions?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InventoryUncheckedUpdateInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    instrumentName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: IntFieldUpdateOperationsInput | number
+    safetyPrecautions?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InventoryCreateManyInput = {
+    id?: number
+    instrumentName: string
+    description?: string | null
+    quantity?: number
+    safetyPrecautions?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type InventoryUpdateManyMutationInput = {
+    instrumentName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: IntFieldUpdateOperationsInput | number
+    safetyPrecautions?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type InventoryUncheckedUpdateManyInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    instrumentName?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    quantity?: IntFieldUpdateOperationsInput | number
+    safetyPrecautions?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[] | ListIntFieldRefInput<$PrismaModel>
@@ -14021,18 +13914,6 @@ export namespace Prisma {
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
 
-  export type MaterialRequestListRelationFilter = {
-    every?: MaterialRequestWhereInput
-    some?: MaterialRequestWhereInput
-    none?: MaterialRequestWhereInput
-  }
-
-  export type ReportSubmissionListRelationFilter = {
-    every?: ReportSubmissionWhereInput
-    some?: ReportSubmissionWhereInput
-    none?: ReportSubmissionWhereInput
-  }
-
   export type QuizAttemptListRelationFilter = {
     every?: QuizAttemptWhereInput
     some?: QuizAttemptWhereInput
@@ -14051,17 +13932,15 @@ export namespace Prisma {
     none?: AttendanceWhereInput
   }
 
+  export type LabSheetDownloadListRelationFilter = {
+    every?: LabSheetDownloadWhereInput
+    some?: LabSheetDownloadWhereInput
+    none?: LabSheetDownloadWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
-  }
-
-  export type MaterialRequestOrderByRelationAggregateInput = {
-    _count?: SortOrder
-  }
-
-  export type ReportSubmissionOrderByRelationAggregateInput = {
-    _count?: SortOrder
   }
 
   export type QuizAttemptOrderByRelationAggregateInput = {
@@ -14073,6 +13952,10 @@ export namespace Prisma {
   }
 
   export type AttendanceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type LabSheetDownloadOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -14226,12 +14109,18 @@ export namespace Prisma {
     subject?: SortOrder
     lab?: SortOrder
     dateTime?: SortOrder
+    grade?: SortOrder
+    teacherName?: SortOrder
+    description?: SortOrder
+    duration?: SortOrder
+    maxStudents?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type PracticalAvgOrderByAggregateInput = {
     id?: SortOrder
+    maxStudents?: SortOrder
   }
 
   export type PracticalMaxOrderByAggregateInput = {
@@ -14240,6 +14129,11 @@ export namespace Prisma {
     subject?: SortOrder
     lab?: SortOrder
     dateTime?: SortOrder
+    grade?: SortOrder
+    teacherName?: SortOrder
+    description?: SortOrder
+    duration?: SortOrder
+    maxStudents?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -14250,12 +14144,18 @@ export namespace Prisma {
     subject?: SortOrder
     lab?: SortOrder
     dateTime?: SortOrder
+    grade?: SortOrder
+    teacherName?: SortOrder
+    description?: SortOrder
+    duration?: SortOrder
+    maxStudents?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
 
   export type PracticalSumOrderByAggregateInput = {
     id?: SortOrder
+    maxStudents?: SortOrder
   }
 
   export type EnumAttendanceStatusFilter<$PrismaModel = never> = {
@@ -14329,70 +14229,6 @@ export namespace Prisma {
     _max?: NestedEnumAttendanceStatusFilter<$PrismaModel>
   }
 
-  export type EnumMaterialRequestStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.MaterialRequestStatus | EnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumMaterialRequestStatusFilter<$PrismaModel> | $Enums.MaterialRequestStatus
-  }
-
-  export type MaterialRequestCountOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    itemName?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MaterialRequestAvgOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    quantity?: SortOrder
-  }
-
-  export type MaterialRequestMaxOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    itemName?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MaterialRequestMinOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    itemName?: SortOrder
-    quantity?: SortOrder
-    status?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MaterialRequestSumOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    quantity?: SortOrder
-  }
-
-  export type EnumMaterialRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.MaterialRequestStatus | EnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumMaterialRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.MaterialRequestStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumMaterialRequestStatusFilter<$PrismaModel>
-    _max?: NestedEnumMaterialRequestStatusFilter<$PrismaModel>
-  }
-
   export type NoteCountOrderByAggregateInput = {
     id?: SortOrder
     practicalId?: SortOrder
@@ -14431,85 +14267,6 @@ export namespace Prisma {
   export type NoteSumOrderByAggregateInput = {
     id?: SortOrder
     practicalId?: SortOrder
-  }
-
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type ReportSubmissionStudentIdPracticalIdCompoundUniqueInput = {
-    studentId: number
-    practicalId: number
-  }
-
-  export type ReportSubmissionCountOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    fileUrl?: SortOrder
-    grade?: SortOrder
-    feedback?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReportSubmissionAvgOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    grade?: SortOrder
-  }
-
-  export type ReportSubmissionMaxOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    fileUrl?: SortOrder
-    grade?: SortOrder
-    feedback?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReportSubmissionMinOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    fileUrl?: SortOrder
-    grade?: SortOrder
-    feedback?: SortOrder
-    createdAt?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type ReportSubmissionSumOrderByAggregateInput = {
-    id?: SortOrder
-    studentId?: SortOrder
-    practicalId?: SortOrder
-    grade?: SortOrder
-  }
-
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type QuizQuestionListRelationFilter = {
@@ -14820,18 +14577,86 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type MaterialRequestCreateNestedManyWithoutStudentInput = {
-    create?: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput> | MaterialRequestCreateWithoutStudentInput[] | MaterialRequestUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutStudentInput | MaterialRequestCreateOrConnectWithoutStudentInput[]
-    createMany?: MaterialRequestCreateManyStudentInputEnvelope
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
+  export type LabSheetDownloadCountOrderByAggregateInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+    filename?: SortOrder
+    downloadedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
-  export type ReportSubmissionCreateNestedManyWithoutStudentInput = {
-    create?: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput> | ReportSubmissionCreateWithoutStudentInput[] | ReportSubmissionUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutStudentInput | ReportSubmissionCreateOrConnectWithoutStudentInput[]
-    createMany?: ReportSubmissionCreateManyStudentInputEnvelope
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
+  export type LabSheetDownloadAvgOrderByAggregateInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+  }
+
+  export type LabSheetDownloadMaxOrderByAggregateInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+    filename?: SortOrder
+    downloadedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LabSheetDownloadMinOrderByAggregateInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+    filename?: SortOrder
+    downloadedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type LabSheetDownloadSumOrderByAggregateInput = {
+    id?: SortOrder
+    studentId?: SortOrder
+    practicalId?: SortOrder
+  }
+
+  export type InventoryCountOrderByAggregateInput = {
+    id?: SortOrder
+    instrumentName?: SortOrder
+    description?: SortOrder
+    quantity?: SortOrder
+    safetyPrecautions?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InventoryAvgOrderByAggregateInput = {
+    id?: SortOrder
+    quantity?: SortOrder
+  }
+
+  export type InventoryMaxOrderByAggregateInput = {
+    id?: SortOrder
+    instrumentName?: SortOrder
+    description?: SortOrder
+    quantity?: SortOrder
+    safetyPrecautions?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InventoryMinOrderByAggregateInput = {
+    id?: SortOrder
+    instrumentName?: SortOrder
+    description?: SortOrder
+    quantity?: SortOrder
+    safetyPrecautions?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type InventorySumOrderByAggregateInput = {
+    id?: SortOrder
+    quantity?: SortOrder
   }
 
   export type QuizAttemptCreateNestedManyWithoutStudentInput = {
@@ -14855,18 +14680,11 @@ export namespace Prisma {
     connect?: AttendanceWhereUniqueInput | AttendanceWhereUniqueInput[]
   }
 
-  export type MaterialRequestUncheckedCreateNestedManyWithoutStudentInput = {
-    create?: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput> | MaterialRequestCreateWithoutStudentInput[] | MaterialRequestUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutStudentInput | MaterialRequestCreateOrConnectWithoutStudentInput[]
-    createMany?: MaterialRequestCreateManyStudentInputEnvelope
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-  }
-
-  export type ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput = {
-    create?: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput> | ReportSubmissionCreateWithoutStudentInput[] | ReportSubmissionUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutStudentInput | ReportSubmissionCreateOrConnectWithoutStudentInput[]
-    createMany?: ReportSubmissionCreateManyStudentInputEnvelope
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
+  export type LabSheetDownloadCreateNestedManyWithoutStudentInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput> | LabSheetDownloadCreateWithoutStudentInput[] | LabSheetDownloadUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutStudentInput | LabSheetDownloadCreateOrConnectWithoutStudentInput[]
+    createMany?: LabSheetDownloadCreateManyStudentInputEnvelope
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
   }
 
   export type QuizAttemptUncheckedCreateNestedManyWithoutStudentInput = {
@@ -14890,6 +14708,13 @@ export namespace Prisma {
     connect?: AttendanceWhereUniqueInput | AttendanceWhereUniqueInput[]
   }
 
+  export type LabSheetDownloadUncheckedCreateNestedManyWithoutStudentInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput> | LabSheetDownloadCreateWithoutStudentInput[] | LabSheetDownloadUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutStudentInput | LabSheetDownloadCreateOrConnectWithoutStudentInput[]
+    createMany?: LabSheetDownloadCreateManyStudentInputEnvelope
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+  }
+
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
   }
@@ -14908,34 +14733,6 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
-  }
-
-  export type MaterialRequestUpdateManyWithoutStudentNestedInput = {
-    create?: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput> | MaterialRequestCreateWithoutStudentInput[] | MaterialRequestUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutStudentInput | MaterialRequestCreateOrConnectWithoutStudentInput[]
-    upsert?: MaterialRequestUpsertWithWhereUniqueWithoutStudentInput | MaterialRequestUpsertWithWhereUniqueWithoutStudentInput[]
-    createMany?: MaterialRequestCreateManyStudentInputEnvelope
-    set?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    disconnect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    delete?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    update?: MaterialRequestUpdateWithWhereUniqueWithoutStudentInput | MaterialRequestUpdateWithWhereUniqueWithoutStudentInput[]
-    updateMany?: MaterialRequestUpdateManyWithWhereWithoutStudentInput | MaterialRequestUpdateManyWithWhereWithoutStudentInput[]
-    deleteMany?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
-  }
-
-  export type ReportSubmissionUpdateManyWithoutStudentNestedInput = {
-    create?: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput> | ReportSubmissionCreateWithoutStudentInput[] | ReportSubmissionUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutStudentInput | ReportSubmissionCreateOrConnectWithoutStudentInput[]
-    upsert?: ReportSubmissionUpsertWithWhereUniqueWithoutStudentInput | ReportSubmissionUpsertWithWhereUniqueWithoutStudentInput[]
-    createMany?: ReportSubmissionCreateManyStudentInputEnvelope
-    set?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    disconnect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    delete?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    update?: ReportSubmissionUpdateWithWhereUniqueWithoutStudentInput | ReportSubmissionUpdateWithWhereUniqueWithoutStudentInput[]
-    updateMany?: ReportSubmissionUpdateManyWithWhereWithoutStudentInput | ReportSubmissionUpdateManyWithWhereWithoutStudentInput[]
-    deleteMany?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
   }
 
   export type QuizAttemptUpdateManyWithoutStudentNestedInput = {
@@ -14980,40 +14777,26 @@ export namespace Prisma {
     deleteMany?: AttendanceScalarWhereInput | AttendanceScalarWhereInput[]
   }
 
+  export type LabSheetDownloadUpdateManyWithoutStudentNestedInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput> | LabSheetDownloadCreateWithoutStudentInput[] | LabSheetDownloadUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutStudentInput | LabSheetDownloadCreateOrConnectWithoutStudentInput[]
+    upsert?: LabSheetDownloadUpsertWithWhereUniqueWithoutStudentInput | LabSheetDownloadUpsertWithWhereUniqueWithoutStudentInput[]
+    createMany?: LabSheetDownloadCreateManyStudentInputEnvelope
+    set?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    disconnect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    delete?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    update?: LabSheetDownloadUpdateWithWhereUniqueWithoutStudentInput | LabSheetDownloadUpdateWithWhereUniqueWithoutStudentInput[]
+    updateMany?: LabSheetDownloadUpdateManyWithWhereWithoutStudentInput | LabSheetDownloadUpdateManyWithWhereWithoutStudentInput[]
+    deleteMany?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
+  }
+
   export type IntFieldUpdateOperationsInput = {
     set?: number
     increment?: number
     decrement?: number
     multiply?: number
     divide?: number
-  }
-
-  export type MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput = {
-    create?: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput> | MaterialRequestCreateWithoutStudentInput[] | MaterialRequestUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutStudentInput | MaterialRequestCreateOrConnectWithoutStudentInput[]
-    upsert?: MaterialRequestUpsertWithWhereUniqueWithoutStudentInput | MaterialRequestUpsertWithWhereUniqueWithoutStudentInput[]
-    createMany?: MaterialRequestCreateManyStudentInputEnvelope
-    set?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    disconnect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    delete?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    update?: MaterialRequestUpdateWithWhereUniqueWithoutStudentInput | MaterialRequestUpdateWithWhereUniqueWithoutStudentInput[]
-    updateMany?: MaterialRequestUpdateManyWithWhereWithoutStudentInput | MaterialRequestUpdateManyWithWhereWithoutStudentInput[]
-    deleteMany?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
-  }
-
-  export type ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput = {
-    create?: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput> | ReportSubmissionCreateWithoutStudentInput[] | ReportSubmissionUncheckedCreateWithoutStudentInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutStudentInput | ReportSubmissionCreateOrConnectWithoutStudentInput[]
-    upsert?: ReportSubmissionUpsertWithWhereUniqueWithoutStudentInput | ReportSubmissionUpsertWithWhereUniqueWithoutStudentInput[]
-    createMany?: ReportSubmissionCreateManyStudentInputEnvelope
-    set?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    disconnect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    delete?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    update?: ReportSubmissionUpdateWithWhereUniqueWithoutStudentInput | ReportSubmissionUpdateWithWhereUniqueWithoutStudentInput[]
-    updateMany?: ReportSubmissionUpdateManyWithWhereWithoutStudentInput | ReportSubmissionUpdateManyWithWhereWithoutStudentInput[]
-    deleteMany?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
   }
 
   export type QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput = {
@@ -15058,11 +14841,18 @@ export namespace Prisma {
     deleteMany?: AttendanceScalarWhereInput | AttendanceScalarWhereInput[]
   }
 
-  export type MaterialRequestCreateNestedManyWithoutPracticalInput = {
-    create?: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput> | MaterialRequestCreateWithoutPracticalInput[] | MaterialRequestUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutPracticalInput | MaterialRequestCreateOrConnectWithoutPracticalInput[]
-    createMany?: MaterialRequestCreateManyPracticalInputEnvelope
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
+  export type LabSheetDownloadUncheckedUpdateManyWithoutStudentNestedInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput> | LabSheetDownloadCreateWithoutStudentInput[] | LabSheetDownloadUncheckedCreateWithoutStudentInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutStudentInput | LabSheetDownloadCreateOrConnectWithoutStudentInput[]
+    upsert?: LabSheetDownloadUpsertWithWhereUniqueWithoutStudentInput | LabSheetDownloadUpsertWithWhereUniqueWithoutStudentInput[]
+    createMany?: LabSheetDownloadCreateManyStudentInputEnvelope
+    set?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    disconnect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    delete?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    update?: LabSheetDownloadUpdateWithWhereUniqueWithoutStudentInput | LabSheetDownloadUpdateWithWhereUniqueWithoutStudentInput[]
+    updateMany?: LabSheetDownloadUpdateManyWithWhereWithoutStudentInput | LabSheetDownloadUpdateManyWithWhereWithoutStudentInput[]
+    deleteMany?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
   }
 
   export type NoteCreateNestedManyWithoutPracticalInput = {
@@ -15070,13 +14860,6 @@ export namespace Prisma {
     connectOrCreate?: NoteCreateOrConnectWithoutPracticalInput | NoteCreateOrConnectWithoutPracticalInput[]
     createMany?: NoteCreateManyPracticalInputEnvelope
     connect?: NoteWhereUniqueInput | NoteWhereUniqueInput[]
-  }
-
-  export type ReportSubmissionCreateNestedManyWithoutPracticalInput = {
-    create?: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput> | ReportSubmissionCreateWithoutPracticalInput[] | ReportSubmissionUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutPracticalInput | ReportSubmissionCreateOrConnectWithoutPracticalInput[]
-    createMany?: ReportSubmissionCreateManyPracticalInputEnvelope
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
   }
 
   export type QuizCreateNestedManyWithoutPracticalInput = {
@@ -15093,11 +14876,11 @@ export namespace Prisma {
     connect?: AttendanceWhereUniqueInput | AttendanceWhereUniqueInput[]
   }
 
-  export type MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput = {
-    create?: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput> | MaterialRequestCreateWithoutPracticalInput[] | MaterialRequestUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutPracticalInput | MaterialRequestCreateOrConnectWithoutPracticalInput[]
-    createMany?: MaterialRequestCreateManyPracticalInputEnvelope
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
+  export type LabSheetDownloadCreateNestedManyWithoutPracticalInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput> | LabSheetDownloadCreateWithoutPracticalInput[] | LabSheetDownloadUncheckedCreateWithoutPracticalInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutPracticalInput | LabSheetDownloadCreateOrConnectWithoutPracticalInput[]
+    createMany?: LabSheetDownloadCreateManyPracticalInputEnvelope
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
   }
 
   export type NoteUncheckedCreateNestedManyWithoutPracticalInput = {
@@ -15105,13 +14888,6 @@ export namespace Prisma {
     connectOrCreate?: NoteCreateOrConnectWithoutPracticalInput | NoteCreateOrConnectWithoutPracticalInput[]
     createMany?: NoteCreateManyPracticalInputEnvelope
     connect?: NoteWhereUniqueInput | NoteWhereUniqueInput[]
-  }
-
-  export type ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput = {
-    create?: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput> | ReportSubmissionCreateWithoutPracticalInput[] | ReportSubmissionUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutPracticalInput | ReportSubmissionCreateOrConnectWithoutPracticalInput[]
-    createMany?: ReportSubmissionCreateManyPracticalInputEnvelope
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
   }
 
   export type QuizUncheckedCreateNestedManyWithoutPracticalInput = {
@@ -15128,18 +14904,11 @@ export namespace Prisma {
     connect?: AttendanceWhereUniqueInput | AttendanceWhereUniqueInput[]
   }
 
-  export type MaterialRequestUpdateManyWithoutPracticalNestedInput = {
-    create?: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput> | MaterialRequestCreateWithoutPracticalInput[] | MaterialRequestUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutPracticalInput | MaterialRequestCreateOrConnectWithoutPracticalInput[]
-    upsert?: MaterialRequestUpsertWithWhereUniqueWithoutPracticalInput | MaterialRequestUpsertWithWhereUniqueWithoutPracticalInput[]
-    createMany?: MaterialRequestCreateManyPracticalInputEnvelope
-    set?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    disconnect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    delete?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    update?: MaterialRequestUpdateWithWhereUniqueWithoutPracticalInput | MaterialRequestUpdateWithWhereUniqueWithoutPracticalInput[]
-    updateMany?: MaterialRequestUpdateManyWithWhereWithoutPracticalInput | MaterialRequestUpdateManyWithWhereWithoutPracticalInput[]
-    deleteMany?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
+  export type LabSheetDownloadUncheckedCreateNestedManyWithoutPracticalInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput> | LabSheetDownloadCreateWithoutPracticalInput[] | LabSheetDownloadUncheckedCreateWithoutPracticalInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutPracticalInput | LabSheetDownloadCreateOrConnectWithoutPracticalInput[]
+    createMany?: LabSheetDownloadCreateManyPracticalInputEnvelope
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
   }
 
   export type NoteUpdateManyWithoutPracticalNestedInput = {
@@ -15154,20 +14923,6 @@ export namespace Prisma {
     update?: NoteUpdateWithWhereUniqueWithoutPracticalInput | NoteUpdateWithWhereUniqueWithoutPracticalInput[]
     updateMany?: NoteUpdateManyWithWhereWithoutPracticalInput | NoteUpdateManyWithWhereWithoutPracticalInput[]
     deleteMany?: NoteScalarWhereInput | NoteScalarWhereInput[]
-  }
-
-  export type ReportSubmissionUpdateManyWithoutPracticalNestedInput = {
-    create?: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput> | ReportSubmissionCreateWithoutPracticalInput[] | ReportSubmissionUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutPracticalInput | ReportSubmissionCreateOrConnectWithoutPracticalInput[]
-    upsert?: ReportSubmissionUpsertWithWhereUniqueWithoutPracticalInput | ReportSubmissionUpsertWithWhereUniqueWithoutPracticalInput[]
-    createMany?: ReportSubmissionCreateManyPracticalInputEnvelope
-    set?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    disconnect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    delete?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    update?: ReportSubmissionUpdateWithWhereUniqueWithoutPracticalInput | ReportSubmissionUpdateWithWhereUniqueWithoutPracticalInput[]
-    updateMany?: ReportSubmissionUpdateManyWithWhereWithoutPracticalInput | ReportSubmissionUpdateManyWithWhereWithoutPracticalInput[]
-    deleteMany?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
   }
 
   export type QuizUpdateManyWithoutPracticalNestedInput = {
@@ -15198,18 +14953,18 @@ export namespace Prisma {
     deleteMany?: AttendanceScalarWhereInput | AttendanceScalarWhereInput[]
   }
 
-  export type MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput = {
-    create?: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput> | MaterialRequestCreateWithoutPracticalInput[] | MaterialRequestUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: MaterialRequestCreateOrConnectWithoutPracticalInput | MaterialRequestCreateOrConnectWithoutPracticalInput[]
-    upsert?: MaterialRequestUpsertWithWhereUniqueWithoutPracticalInput | MaterialRequestUpsertWithWhereUniqueWithoutPracticalInput[]
-    createMany?: MaterialRequestCreateManyPracticalInputEnvelope
-    set?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    disconnect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    delete?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    connect?: MaterialRequestWhereUniqueInput | MaterialRequestWhereUniqueInput[]
-    update?: MaterialRequestUpdateWithWhereUniqueWithoutPracticalInput | MaterialRequestUpdateWithWhereUniqueWithoutPracticalInput[]
-    updateMany?: MaterialRequestUpdateManyWithWhereWithoutPracticalInput | MaterialRequestUpdateManyWithWhereWithoutPracticalInput[]
-    deleteMany?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
+  export type LabSheetDownloadUpdateManyWithoutPracticalNestedInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput> | LabSheetDownloadCreateWithoutPracticalInput[] | LabSheetDownloadUncheckedCreateWithoutPracticalInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutPracticalInput | LabSheetDownloadCreateOrConnectWithoutPracticalInput[]
+    upsert?: LabSheetDownloadUpsertWithWhereUniqueWithoutPracticalInput | LabSheetDownloadUpsertWithWhereUniqueWithoutPracticalInput[]
+    createMany?: LabSheetDownloadCreateManyPracticalInputEnvelope
+    set?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    disconnect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    delete?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    update?: LabSheetDownloadUpdateWithWhereUniqueWithoutPracticalInput | LabSheetDownloadUpdateWithWhereUniqueWithoutPracticalInput[]
+    updateMany?: LabSheetDownloadUpdateManyWithWhereWithoutPracticalInput | LabSheetDownloadUpdateManyWithWhereWithoutPracticalInput[]
+    deleteMany?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
   }
 
   export type NoteUncheckedUpdateManyWithoutPracticalNestedInput = {
@@ -15224,20 +14979,6 @@ export namespace Prisma {
     update?: NoteUpdateWithWhereUniqueWithoutPracticalInput | NoteUpdateWithWhereUniqueWithoutPracticalInput[]
     updateMany?: NoteUpdateManyWithWhereWithoutPracticalInput | NoteUpdateManyWithWhereWithoutPracticalInput[]
     deleteMany?: NoteScalarWhereInput | NoteScalarWhereInput[]
-  }
-
-  export type ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput = {
-    create?: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput> | ReportSubmissionCreateWithoutPracticalInput[] | ReportSubmissionUncheckedCreateWithoutPracticalInput[]
-    connectOrCreate?: ReportSubmissionCreateOrConnectWithoutPracticalInput | ReportSubmissionCreateOrConnectWithoutPracticalInput[]
-    upsert?: ReportSubmissionUpsertWithWhereUniqueWithoutPracticalInput | ReportSubmissionUpsertWithWhereUniqueWithoutPracticalInput[]
-    createMany?: ReportSubmissionCreateManyPracticalInputEnvelope
-    set?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    disconnect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    delete?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    connect?: ReportSubmissionWhereUniqueInput | ReportSubmissionWhereUniqueInput[]
-    update?: ReportSubmissionUpdateWithWhereUniqueWithoutPracticalInput | ReportSubmissionUpdateWithWhereUniqueWithoutPracticalInput[]
-    updateMany?: ReportSubmissionUpdateManyWithWhereWithoutPracticalInput | ReportSubmissionUpdateManyWithWhereWithoutPracticalInput[]
-    deleteMany?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
   }
 
   export type QuizUncheckedUpdateManyWithoutPracticalNestedInput = {
@@ -15266,6 +15007,20 @@ export namespace Prisma {
     update?: AttendanceUpdateWithWhereUniqueWithoutPracticalInput | AttendanceUpdateWithWhereUniqueWithoutPracticalInput[]
     updateMany?: AttendanceUpdateManyWithWhereWithoutPracticalInput | AttendanceUpdateManyWithWhereWithoutPracticalInput[]
     deleteMany?: AttendanceScalarWhereInput | AttendanceScalarWhereInput[]
+  }
+
+  export type LabSheetDownloadUncheckedUpdateManyWithoutPracticalNestedInput = {
+    create?: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput> | LabSheetDownloadCreateWithoutPracticalInput[] | LabSheetDownloadUncheckedCreateWithoutPracticalInput[]
+    connectOrCreate?: LabSheetDownloadCreateOrConnectWithoutPracticalInput | LabSheetDownloadCreateOrConnectWithoutPracticalInput[]
+    upsert?: LabSheetDownloadUpsertWithWhereUniqueWithoutPracticalInput | LabSheetDownloadUpsertWithWhereUniqueWithoutPracticalInput[]
+    createMany?: LabSheetDownloadCreateManyPracticalInputEnvelope
+    set?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    disconnect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    delete?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    connect?: LabSheetDownloadWhereUniqueInput | LabSheetDownloadWhereUniqueInput[]
+    update?: LabSheetDownloadUpdateWithWhereUniqueWithoutPracticalInput | LabSheetDownloadUpdateWithWhereUniqueWithoutPracticalInput[]
+    updateMany?: LabSheetDownloadUpdateManyWithWhereWithoutPracticalInput | LabSheetDownloadUpdateManyWithWhereWithoutPracticalInput[]
+    deleteMany?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutAttendancesInput = {
@@ -15300,38 +15055,6 @@ export namespace Prisma {
     update?: XOR<XOR<PracticalUpdateToOneWithWhereWithoutAttendancesInput, PracticalUpdateWithoutAttendancesInput>, PracticalUncheckedUpdateWithoutAttendancesInput>
   }
 
-  export type UserCreateNestedOneWithoutMaterialRequestsInput = {
-    create?: XOR<UserCreateWithoutMaterialRequestsInput, UserUncheckedCreateWithoutMaterialRequestsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutMaterialRequestsInput
-    connect?: UserWhereUniqueInput
-  }
-
-  export type PracticalCreateNestedOneWithoutMaterialRequestsInput = {
-    create?: XOR<PracticalCreateWithoutMaterialRequestsInput, PracticalUncheckedCreateWithoutMaterialRequestsInput>
-    connectOrCreate?: PracticalCreateOrConnectWithoutMaterialRequestsInput
-    connect?: PracticalWhereUniqueInput
-  }
-
-  export type EnumMaterialRequestStatusFieldUpdateOperationsInput = {
-    set?: $Enums.MaterialRequestStatus
-  }
-
-  export type UserUpdateOneRequiredWithoutMaterialRequestsNestedInput = {
-    create?: XOR<UserCreateWithoutMaterialRequestsInput, UserUncheckedCreateWithoutMaterialRequestsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutMaterialRequestsInput
-    upsert?: UserUpsertWithoutMaterialRequestsInput
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutMaterialRequestsInput, UserUpdateWithoutMaterialRequestsInput>, UserUncheckedUpdateWithoutMaterialRequestsInput>
-  }
-
-  export type PracticalUpdateOneRequiredWithoutMaterialRequestsNestedInput = {
-    create?: XOR<PracticalCreateWithoutMaterialRequestsInput, PracticalUncheckedCreateWithoutMaterialRequestsInput>
-    connectOrCreate?: PracticalCreateOrConnectWithoutMaterialRequestsInput
-    upsert?: PracticalUpsertWithoutMaterialRequestsInput
-    connect?: PracticalWhereUniqueInput
-    update?: XOR<XOR<PracticalUpdateToOneWithWhereWithoutMaterialRequestsInput, PracticalUpdateWithoutMaterialRequestsInput>, PracticalUncheckedUpdateWithoutMaterialRequestsInput>
-  }
-
   export type PracticalCreateNestedOneWithoutNotesInput = {
     create?: XOR<PracticalCreateWithoutNotesInput, PracticalUncheckedCreateWithoutNotesInput>
     connectOrCreate?: PracticalCreateOrConnectWithoutNotesInput
@@ -15344,42 +15067,6 @@ export namespace Prisma {
     upsert?: PracticalUpsertWithoutNotesInput
     connect?: PracticalWhereUniqueInput
     update?: XOR<XOR<PracticalUpdateToOneWithWhereWithoutNotesInput, PracticalUpdateWithoutNotesInput>, PracticalUncheckedUpdateWithoutNotesInput>
-  }
-
-  export type UserCreateNestedOneWithoutReportSubmissionsInput = {
-    create?: XOR<UserCreateWithoutReportSubmissionsInput, UserUncheckedCreateWithoutReportSubmissionsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutReportSubmissionsInput
-    connect?: UserWhereUniqueInput
-  }
-
-  export type PracticalCreateNestedOneWithoutReportSubmissionsInput = {
-    create?: XOR<PracticalCreateWithoutReportSubmissionsInput, PracticalUncheckedCreateWithoutReportSubmissionsInput>
-    connectOrCreate?: PracticalCreateOrConnectWithoutReportSubmissionsInput
-    connect?: PracticalWhereUniqueInput
-  }
-
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
-  export type UserUpdateOneRequiredWithoutReportSubmissionsNestedInput = {
-    create?: XOR<UserCreateWithoutReportSubmissionsInput, UserUncheckedCreateWithoutReportSubmissionsInput>
-    connectOrCreate?: UserCreateOrConnectWithoutReportSubmissionsInput
-    upsert?: UserUpsertWithoutReportSubmissionsInput
-    connect?: UserWhereUniqueInput
-    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutReportSubmissionsInput, UserUpdateWithoutReportSubmissionsInput>, UserUncheckedUpdateWithoutReportSubmissionsInput>
-  }
-
-  export type PracticalUpdateOneRequiredWithoutReportSubmissionsNestedInput = {
-    create?: XOR<PracticalCreateWithoutReportSubmissionsInput, PracticalUncheckedCreateWithoutReportSubmissionsInput>
-    connectOrCreate?: PracticalCreateOrConnectWithoutReportSubmissionsInput
-    upsert?: PracticalUpsertWithoutReportSubmissionsInput
-    connect?: PracticalWhereUniqueInput
-    update?: XOR<XOR<PracticalUpdateToOneWithWhereWithoutReportSubmissionsInput, PracticalUpdateWithoutReportSubmissionsInput>, PracticalUncheckedUpdateWithoutReportSubmissionsInput>
   }
 
   export type PracticalCreateNestedOneWithoutQuizzesInput = {
@@ -15550,6 +15237,34 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutSessionsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSessionsInput, UserUpdateWithoutSessionsInput>, UserUncheckedUpdateWithoutSessionsInput>
+  }
+
+  export type UserCreateNestedOneWithoutLabSheetDownloadsInput = {
+    create?: XOR<UserCreateWithoutLabSheetDownloadsInput, UserUncheckedCreateWithoutLabSheetDownloadsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLabSheetDownloadsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type PracticalCreateNestedOneWithoutLabSheetDownloadsInput = {
+    create?: XOR<PracticalCreateWithoutLabSheetDownloadsInput, PracticalUncheckedCreateWithoutLabSheetDownloadsInput>
+    connectOrCreate?: PracticalCreateOrConnectWithoutLabSheetDownloadsInput
+    connect?: PracticalWhereUniqueInput
+  }
+
+  export type UserUpdateOneRequiredWithoutLabSheetDownloadsNestedInput = {
+    create?: XOR<UserCreateWithoutLabSheetDownloadsInput, UserUncheckedCreateWithoutLabSheetDownloadsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutLabSheetDownloadsInput
+    upsert?: UserUpsertWithoutLabSheetDownloadsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutLabSheetDownloadsInput, UserUpdateWithoutLabSheetDownloadsInput>, UserUncheckedUpdateWithoutLabSheetDownloadsInput>
+  }
+
+  export type PracticalUpdateOneRequiredWithoutLabSheetDownloadsNestedInput = {
+    create?: XOR<PracticalCreateWithoutLabSheetDownloadsInput, PracticalUncheckedCreateWithoutLabSheetDownloadsInput>
+    connectOrCreate?: PracticalCreateOrConnectWithoutLabSheetDownloadsInput
+    upsert?: PracticalUpsertWithoutLabSheetDownloadsInput
+    connect?: PracticalWhereUniqueInput
+    update?: XOR<XOR<PracticalUpdateToOneWithWhereWithoutLabSheetDownloadsInput, PracticalUpdateWithoutLabSheetDownloadsInput>, PracticalUncheckedUpdateWithoutLabSheetDownloadsInput>
   }
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -15739,50 +15454,6 @@ export namespace Prisma {
     _max?: NestedEnumAttendanceStatusFilter<$PrismaModel>
   }
 
-  export type NestedEnumMaterialRequestStatusFilter<$PrismaModel = never> = {
-    equals?: $Enums.MaterialRequestStatus | EnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumMaterialRequestStatusFilter<$PrismaModel> | $Enums.MaterialRequestStatus
-  }
-
-  export type NestedEnumMaterialRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.MaterialRequestStatus | EnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    in?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    notIn?: $Enums.MaterialRequestStatus[] | ListEnumMaterialRequestStatusFieldRefInput<$PrismaModel>
-    not?: NestedEnumMaterialRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.MaterialRequestStatus
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedEnumMaterialRequestStatusFilter<$PrismaModel>
-    _max?: NestedEnumMaterialRequestStatusFilter<$PrismaModel>
-  }
-
-  export type NestedFloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
-  }
-
   export type NestedEnumCorrectAnswerFilter<$PrismaModel = never> = {
     equals?: $Enums.CorrectAnswer | EnumCorrectAnswerFieldRefInput<$PrismaModel>
     in?: $Enums.CorrectAnswer[] | ListEnumCorrectAnswerFieldRefInput<$PrismaModel>
@@ -15863,64 +15534,6 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type MaterialRequestCreateWithoutStudentInput = {
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    practical: PracticalCreateNestedOneWithoutMaterialRequestsInput
-  }
-
-  export type MaterialRequestUncheckedCreateWithoutStudentInput = {
-    id?: number
-    practicalId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type MaterialRequestCreateOrConnectWithoutStudentInput = {
-    where: MaterialRequestWhereUniqueInput
-    create: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput>
-  }
-
-  export type MaterialRequestCreateManyStudentInputEnvelope = {
-    data: MaterialRequestCreateManyStudentInput | MaterialRequestCreateManyStudentInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type ReportSubmissionCreateWithoutStudentInput = {
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    practical: PracticalCreateNestedOneWithoutReportSubmissionsInput
-  }
-
-  export type ReportSubmissionUncheckedCreateWithoutStudentInput = {
-    id?: number
-    practicalId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReportSubmissionCreateOrConnectWithoutStudentInput = {
-    where: ReportSubmissionWhereUniqueInput
-    create: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput>
-  }
-
-  export type ReportSubmissionCreateManyStudentInputEnvelope = {
-    data: ReportSubmissionCreateManyStudentInput | ReportSubmissionCreateManyStudentInput[]
-    skipDuplicates?: boolean
-  }
-
   export type QuizAttemptCreateWithoutStudentInput = {
     score: number
     answers?: NullableJsonNullValueInput | InputJsonValue
@@ -15998,64 +15611,31 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type MaterialRequestUpsertWithWhereUniqueWithoutStudentInput = {
-    where: MaterialRequestWhereUniqueInput
-    update: XOR<MaterialRequestUpdateWithoutStudentInput, MaterialRequestUncheckedUpdateWithoutStudentInput>
-    create: XOR<MaterialRequestCreateWithoutStudentInput, MaterialRequestUncheckedCreateWithoutStudentInput>
+  export type LabSheetDownloadCreateWithoutStudentInput = {
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    practical: PracticalCreateNestedOneWithoutLabSheetDownloadsInput
   }
 
-  export type MaterialRequestUpdateWithWhereUniqueWithoutStudentInput = {
-    where: MaterialRequestWhereUniqueInput
-    data: XOR<MaterialRequestUpdateWithoutStudentInput, MaterialRequestUncheckedUpdateWithoutStudentInput>
+  export type LabSheetDownloadUncheckedCreateWithoutStudentInput = {
+    id?: number
+    practicalId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
-  export type MaterialRequestUpdateManyWithWhereWithoutStudentInput = {
-    where: MaterialRequestScalarWhereInput
-    data: XOR<MaterialRequestUpdateManyMutationInput, MaterialRequestUncheckedUpdateManyWithoutStudentInput>
+  export type LabSheetDownloadCreateOrConnectWithoutStudentInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    create: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput>
   }
 
-  export type MaterialRequestScalarWhereInput = {
-    AND?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
-    OR?: MaterialRequestScalarWhereInput[]
-    NOT?: MaterialRequestScalarWhereInput | MaterialRequestScalarWhereInput[]
-    id?: IntFilter<"MaterialRequest"> | number
-    studentId?: IntFilter<"MaterialRequest"> | number
-    practicalId?: IntFilter<"MaterialRequest"> | number
-    itemName?: StringFilter<"MaterialRequest"> | string
-    quantity?: IntFilter<"MaterialRequest"> | number
-    status?: EnumMaterialRequestStatusFilter<"MaterialRequest"> | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-    updatedAt?: DateTimeFilter<"MaterialRequest"> | Date | string
-  }
-
-  export type ReportSubmissionUpsertWithWhereUniqueWithoutStudentInput = {
-    where: ReportSubmissionWhereUniqueInput
-    update: XOR<ReportSubmissionUpdateWithoutStudentInput, ReportSubmissionUncheckedUpdateWithoutStudentInput>
-    create: XOR<ReportSubmissionCreateWithoutStudentInput, ReportSubmissionUncheckedCreateWithoutStudentInput>
-  }
-
-  export type ReportSubmissionUpdateWithWhereUniqueWithoutStudentInput = {
-    where: ReportSubmissionWhereUniqueInput
-    data: XOR<ReportSubmissionUpdateWithoutStudentInput, ReportSubmissionUncheckedUpdateWithoutStudentInput>
-  }
-
-  export type ReportSubmissionUpdateManyWithWhereWithoutStudentInput = {
-    where: ReportSubmissionScalarWhereInput
-    data: XOR<ReportSubmissionUpdateManyMutationInput, ReportSubmissionUncheckedUpdateManyWithoutStudentInput>
-  }
-
-  export type ReportSubmissionScalarWhereInput = {
-    AND?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
-    OR?: ReportSubmissionScalarWhereInput[]
-    NOT?: ReportSubmissionScalarWhereInput | ReportSubmissionScalarWhereInput[]
-    id?: IntFilter<"ReportSubmission"> | number
-    studentId?: IntFilter<"ReportSubmission"> | number
-    practicalId?: IntFilter<"ReportSubmission"> | number
-    fileUrl?: StringFilter<"ReportSubmission"> | string
-    grade?: FloatNullableFilter<"ReportSubmission"> | number | null
-    feedback?: StringNullableFilter<"ReportSubmission"> | string | null
-    createdAt?: DateTimeFilter<"ReportSubmission"> | Date | string
-    updatedAt?: DateTimeFilter<"ReportSubmission"> | Date | string
+  export type LabSheetDownloadCreateManyStudentInputEnvelope = {
+    data: LabSheetDownloadCreateManyStudentInput | LabSheetDownloadCreateManyStudentInput[]
+    skipDuplicates?: boolean
   }
 
   export type QuizAttemptUpsertWithWhereUniqueWithoutStudentInput = {
@@ -16143,33 +15723,33 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Attendance"> | Date | string
   }
 
-  export type MaterialRequestCreateWithoutPracticalInput = {
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    student: UserCreateNestedOneWithoutMaterialRequestsInput
+  export type LabSheetDownloadUpsertWithWhereUniqueWithoutStudentInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    update: XOR<LabSheetDownloadUpdateWithoutStudentInput, LabSheetDownloadUncheckedUpdateWithoutStudentInput>
+    create: XOR<LabSheetDownloadCreateWithoutStudentInput, LabSheetDownloadUncheckedCreateWithoutStudentInput>
   }
 
-  export type MaterialRequestUncheckedCreateWithoutPracticalInput = {
-    id?: number
-    studentId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
+  export type LabSheetDownloadUpdateWithWhereUniqueWithoutStudentInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    data: XOR<LabSheetDownloadUpdateWithoutStudentInput, LabSheetDownloadUncheckedUpdateWithoutStudentInput>
   }
 
-  export type MaterialRequestCreateOrConnectWithoutPracticalInput = {
-    where: MaterialRequestWhereUniqueInput
-    create: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput>
+  export type LabSheetDownloadUpdateManyWithWhereWithoutStudentInput = {
+    where: LabSheetDownloadScalarWhereInput
+    data: XOR<LabSheetDownloadUpdateManyMutationInput, LabSheetDownloadUncheckedUpdateManyWithoutStudentInput>
   }
 
-  export type MaterialRequestCreateManyPracticalInputEnvelope = {
-    data: MaterialRequestCreateManyPracticalInput | MaterialRequestCreateManyPracticalInput[]
-    skipDuplicates?: boolean
+  export type LabSheetDownloadScalarWhereInput = {
+    AND?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
+    OR?: LabSheetDownloadScalarWhereInput[]
+    NOT?: LabSheetDownloadScalarWhereInput | LabSheetDownloadScalarWhereInput[]
+    id?: IntFilter<"LabSheetDownload"> | number
+    studentId?: IntFilter<"LabSheetDownload"> | number
+    practicalId?: IntFilter<"LabSheetDownload"> | number
+    filename?: StringFilter<"LabSheetDownload"> | string
+    downloadedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    createdAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
+    updatedAt?: DateTimeFilter<"LabSheetDownload"> | Date | string
   }
 
   export type NoteCreateWithoutPracticalInput = {
@@ -16196,35 +15776,6 @@ export namespace Prisma {
 
   export type NoteCreateManyPracticalInputEnvelope = {
     data: NoteCreateManyPracticalInput | NoteCreateManyPracticalInput[]
-    skipDuplicates?: boolean
-  }
-
-  export type ReportSubmissionCreateWithoutPracticalInput = {
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    student: UserCreateNestedOneWithoutReportSubmissionsInput
-  }
-
-  export type ReportSubmissionUncheckedCreateWithoutPracticalInput = {
-    id?: number
-    studentId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReportSubmissionCreateOrConnectWithoutPracticalInput = {
-    where: ReportSubmissionWhereUniqueInput
-    create: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput>
-  }
-
-  export type ReportSubmissionCreateManyPracticalInputEnvelope = {
-    data: ReportSubmissionCreateManyPracticalInput | ReportSubmissionCreateManyPracticalInput[]
     skipDuplicates?: boolean
   }
 
@@ -16282,20 +15833,31 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
-  export type MaterialRequestUpsertWithWhereUniqueWithoutPracticalInput = {
-    where: MaterialRequestWhereUniqueInput
-    update: XOR<MaterialRequestUpdateWithoutPracticalInput, MaterialRequestUncheckedUpdateWithoutPracticalInput>
-    create: XOR<MaterialRequestCreateWithoutPracticalInput, MaterialRequestUncheckedCreateWithoutPracticalInput>
+  export type LabSheetDownloadCreateWithoutPracticalInput = {
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    student: UserCreateNestedOneWithoutLabSheetDownloadsInput
   }
 
-  export type MaterialRequestUpdateWithWhereUniqueWithoutPracticalInput = {
-    where: MaterialRequestWhereUniqueInput
-    data: XOR<MaterialRequestUpdateWithoutPracticalInput, MaterialRequestUncheckedUpdateWithoutPracticalInput>
+  export type LabSheetDownloadUncheckedCreateWithoutPracticalInput = {
+    id?: number
+    studentId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
-  export type MaterialRequestUpdateManyWithWhereWithoutPracticalInput = {
-    where: MaterialRequestScalarWhereInput
-    data: XOR<MaterialRequestUpdateManyMutationInput, MaterialRequestUncheckedUpdateManyWithoutPracticalInput>
+  export type LabSheetDownloadCreateOrConnectWithoutPracticalInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    create: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput>
+  }
+
+  export type LabSheetDownloadCreateManyPracticalInputEnvelope = {
+    data: LabSheetDownloadCreateManyPracticalInput | LabSheetDownloadCreateManyPracticalInput[]
+    skipDuplicates?: boolean
   }
 
   export type NoteUpsertWithWhereUniqueWithoutPracticalInput = {
@@ -16325,22 +15887,6 @@ export namespace Prisma {
     description?: StringNullableFilter<"Note"> | string | null
     createdAt?: DateTimeFilter<"Note"> | Date | string
     updatedAt?: DateTimeFilter<"Note"> | Date | string
-  }
-
-  export type ReportSubmissionUpsertWithWhereUniqueWithoutPracticalInput = {
-    where: ReportSubmissionWhereUniqueInput
-    update: XOR<ReportSubmissionUpdateWithoutPracticalInput, ReportSubmissionUncheckedUpdateWithoutPracticalInput>
-    create: XOR<ReportSubmissionCreateWithoutPracticalInput, ReportSubmissionUncheckedCreateWithoutPracticalInput>
-  }
-
-  export type ReportSubmissionUpdateWithWhereUniqueWithoutPracticalInput = {
-    where: ReportSubmissionWhereUniqueInput
-    data: XOR<ReportSubmissionUpdateWithoutPracticalInput, ReportSubmissionUncheckedUpdateWithoutPracticalInput>
-  }
-
-  export type ReportSubmissionUpdateManyWithWhereWithoutPracticalInput = {
-    where: ReportSubmissionScalarWhereInput
-    data: XOR<ReportSubmissionUpdateManyMutationInput, ReportSubmissionUncheckedUpdateManyWithoutPracticalInput>
   }
 
   export type QuizUpsertWithWhereUniqueWithoutPracticalInput = {
@@ -16387,6 +15933,22 @@ export namespace Prisma {
     data: XOR<AttendanceUpdateManyMutationInput, AttendanceUncheckedUpdateManyWithoutPracticalInput>
   }
 
+  export type LabSheetDownloadUpsertWithWhereUniqueWithoutPracticalInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    update: XOR<LabSheetDownloadUpdateWithoutPracticalInput, LabSheetDownloadUncheckedUpdateWithoutPracticalInput>
+    create: XOR<LabSheetDownloadCreateWithoutPracticalInput, LabSheetDownloadUncheckedCreateWithoutPracticalInput>
+  }
+
+  export type LabSheetDownloadUpdateWithWhereUniqueWithoutPracticalInput = {
+    where: LabSheetDownloadWhereUniqueInput
+    data: XOR<LabSheetDownloadUpdateWithoutPracticalInput, LabSheetDownloadUncheckedUpdateWithoutPracticalInput>
+  }
+
+  export type LabSheetDownloadUpdateManyWithWhereWithoutPracticalInput = {
+    where: LabSheetDownloadScalarWhereInput
+    data: XOR<LabSheetDownloadUpdateManyMutationInput, LabSheetDownloadUncheckedUpdateManyWithoutPracticalInput>
+  }
+
   export type UserCreateWithoutAttendancesInput = {
     name?: string | null
     email: string
@@ -16394,10 +15956,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
     sessions?: SessionCreateNestedManyWithoutUserInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutStudentInput
   }
 
   export type UserUncheckedCreateWithoutAttendancesInput = {
@@ -16408,10 +15969,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutStudentInput
   }
 
   export type UserCreateOrConnectWithoutAttendancesInput = {
@@ -16424,12 +15984,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutPracticalInput
     notes?: NoteCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutPracticalInput
     quizzes?: QuizCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalUncheckedCreateWithoutAttendancesInput = {
@@ -16438,12 +16002,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput
     notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput
     quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalCreateOrConnectWithoutAttendancesInput = {
@@ -16469,10 +16037,9 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutStudentNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAttendancesInput = {
@@ -16483,10 +16050,9 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutStudentNestedInput
   }
 
   export type PracticalUpsertWithoutAttendancesInput = {
@@ -16505,12 +16071,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutPracticalNestedInput
     notes?: NoteUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalUncheckedUpdateWithoutAttendancesInput = {
@@ -16519,152 +16089,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput
-    notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput
-    quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
-  }
-
-  export type UserCreateWithoutMaterialRequestsInput = {
-    name?: string | null
-    email: string
-    role?: $Enums.UserRole
-    status?: $Enums.UserStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutStudentInput
-    quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
-    sessions?: SessionCreateNestedManyWithoutUserInput
-    attendances?: AttendanceCreateNestedManyWithoutStudentInput
-  }
-
-  export type UserUncheckedCreateWithoutMaterialRequestsInput = {
-    id?: number
-    name?: string | null
-    email: string
-    role?: $Enums.UserRole
-    status?: $Enums.UserStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput
-    quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
-    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
-    attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
-  }
-
-  export type UserCreateOrConnectWithoutMaterialRequestsInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutMaterialRequestsInput, UserUncheckedCreateWithoutMaterialRequestsInput>
-  }
-
-  export type PracticalCreateWithoutMaterialRequestsInput = {
-    title: string
-    subject: string
-    lab: string
-    dateTime: Date | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    notes?: NoteCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutPracticalInput
-    quizzes?: QuizCreateNestedManyWithoutPracticalInput
-    attendances?: AttendanceCreateNestedManyWithoutPracticalInput
-  }
-
-  export type PracticalUncheckedCreateWithoutMaterialRequestsInput = {
-    id?: number
-    title: string
-    subject: string
-    lab: string
-    dateTime: Date | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput
-    quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
-    attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
-  }
-
-  export type PracticalCreateOrConnectWithoutMaterialRequestsInput = {
-    where: PracticalWhereUniqueInput
-    create: XOR<PracticalCreateWithoutMaterialRequestsInput, PracticalUncheckedCreateWithoutMaterialRequestsInput>
-  }
-
-  export type UserUpsertWithoutMaterialRequestsInput = {
-    update: XOR<UserUpdateWithoutMaterialRequestsInput, UserUncheckedUpdateWithoutMaterialRequestsInput>
-    create: XOR<UserCreateWithoutMaterialRequestsInput, UserUncheckedCreateWithoutMaterialRequestsInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutMaterialRequestsInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutMaterialRequestsInput, UserUncheckedUpdateWithoutMaterialRequestsInput>
-  }
-
-  export type UserUpdateWithoutMaterialRequestsInput = {
-    name?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: StringFieldUpdateOperationsInput | string
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutStudentNestedInput
-    quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
-    sessions?: SessionUpdateManyWithoutUserNestedInput
-    attendances?: AttendanceUpdateManyWithoutStudentNestedInput
-  }
-
-  export type UserUncheckedUpdateWithoutMaterialRequestsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: StringFieldUpdateOperationsInput | string
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput
-    quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
-    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
-    attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
-  }
-
-  export type PracticalUpsertWithoutMaterialRequestsInput = {
-    update: XOR<PracticalUpdateWithoutMaterialRequestsInput, PracticalUncheckedUpdateWithoutMaterialRequestsInput>
-    create: XOR<PracticalCreateWithoutMaterialRequestsInput, PracticalUncheckedCreateWithoutMaterialRequestsInput>
-    where?: PracticalWhereInput
-  }
-
-  export type PracticalUpdateToOneWithWhereWithoutMaterialRequestsInput = {
-    where?: PracticalWhereInput
-    data: XOR<PracticalUpdateWithoutMaterialRequestsInput, PracticalUncheckedUpdateWithoutMaterialRequestsInput>
-  }
-
-  export type PracticalUpdateWithoutMaterialRequestsInput = {
-    title?: StringFieldUpdateOperationsInput | string
-    subject?: StringFieldUpdateOperationsInput | string
-    lab?: StringFieldUpdateOperationsInput | string
-    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    notes?: NoteUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutPracticalNestedInput
-    quizzes?: QuizUpdateManyWithoutPracticalNestedInput
-    attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
-  }
-
-  export type PracticalUncheckedUpdateWithoutMaterialRequestsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    subject?: StringFieldUpdateOperationsInput | string
-    lab?: StringFieldUpdateOperationsInput | string
-    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
-    attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalCreateWithoutNotesInput = {
@@ -16672,12 +16106,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutPracticalInput
     quizzes?: QuizCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalUncheckedCreateWithoutNotesInput = {
@@ -16686,12 +16124,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput
     quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalCreateOrConnectWithoutNotesInput = {
@@ -16715,12 +16157,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalUncheckedUpdateWithoutNotesInput = {
@@ -16729,152 +16175,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput
     quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
-  }
-
-  export type UserCreateWithoutReportSubmissionsInput = {
-    name?: string | null
-    email: string
-    role?: $Enums.UserRole
-    status?: $Enums.UserStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutStudentInput
-    quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
-    sessions?: SessionCreateNestedManyWithoutUserInput
-    attendances?: AttendanceCreateNestedManyWithoutStudentInput
-  }
-
-  export type UserUncheckedCreateWithoutReportSubmissionsInput = {
-    id?: number
-    name?: string | null
-    email: string
-    role?: $Enums.UserRole
-    status?: $Enums.UserStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutStudentInput
-    quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
-    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
-    attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
-  }
-
-  export type UserCreateOrConnectWithoutReportSubmissionsInput = {
-    where: UserWhereUniqueInput
-    create: XOR<UserCreateWithoutReportSubmissionsInput, UserUncheckedCreateWithoutReportSubmissionsInput>
-  }
-
-  export type PracticalCreateWithoutReportSubmissionsInput = {
-    title: string
-    subject: string
-    lab: string
-    dateTime: Date | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutPracticalInput
-    notes?: NoteCreateNestedManyWithoutPracticalInput
-    quizzes?: QuizCreateNestedManyWithoutPracticalInput
-    attendances?: AttendanceCreateNestedManyWithoutPracticalInput
-  }
-
-  export type PracticalUncheckedCreateWithoutReportSubmissionsInput = {
-    id?: number
-    title: string
-    subject: string
-    lab: string
-    dateTime: Date | string
-    createdAt?: Date | string
-    updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput
-    notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
-    quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
-    attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
-  }
-
-  export type PracticalCreateOrConnectWithoutReportSubmissionsInput = {
-    where: PracticalWhereUniqueInput
-    create: XOR<PracticalCreateWithoutReportSubmissionsInput, PracticalUncheckedCreateWithoutReportSubmissionsInput>
-  }
-
-  export type UserUpsertWithoutReportSubmissionsInput = {
-    update: XOR<UserUpdateWithoutReportSubmissionsInput, UserUncheckedUpdateWithoutReportSubmissionsInput>
-    create: XOR<UserCreateWithoutReportSubmissionsInput, UserUncheckedCreateWithoutReportSubmissionsInput>
-    where?: UserWhereInput
-  }
-
-  export type UserUpdateToOneWithWhereWithoutReportSubmissionsInput = {
-    where?: UserWhereInput
-    data: XOR<UserUpdateWithoutReportSubmissionsInput, UserUncheckedUpdateWithoutReportSubmissionsInput>
-  }
-
-  export type UserUpdateWithoutReportSubmissionsInput = {
-    name?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: StringFieldUpdateOperationsInput | string
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutStudentNestedInput
-    quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
-    sessions?: SessionUpdateManyWithoutUserNestedInput
-    attendances?: AttendanceUpdateManyWithoutStudentNestedInput
-  }
-
-  export type UserUncheckedUpdateWithoutReportSubmissionsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    name?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: StringFieldUpdateOperationsInput | string
-    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
-    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput
-    quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
-    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
-    attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
-  }
-
-  export type PracticalUpsertWithoutReportSubmissionsInput = {
-    update: XOR<PracticalUpdateWithoutReportSubmissionsInput, PracticalUncheckedUpdateWithoutReportSubmissionsInput>
-    create: XOR<PracticalCreateWithoutReportSubmissionsInput, PracticalUncheckedCreateWithoutReportSubmissionsInput>
-    where?: PracticalWhereInput
-  }
-
-  export type PracticalUpdateToOneWithWhereWithoutReportSubmissionsInput = {
-    where?: PracticalWhereInput
-    data: XOR<PracticalUpdateWithoutReportSubmissionsInput, PracticalUncheckedUpdateWithoutReportSubmissionsInput>
-  }
-
-  export type PracticalUpdateWithoutReportSubmissionsInput = {
-    title?: StringFieldUpdateOperationsInput | string
-    subject?: StringFieldUpdateOperationsInput | string
-    lab?: StringFieldUpdateOperationsInput | string
-    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutPracticalNestedInput
-    notes?: NoteUpdateManyWithoutPracticalNestedInput
-    quizzes?: QuizUpdateManyWithoutPracticalNestedInput
-    attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
-  }
-
-  export type PracticalUncheckedUpdateWithoutReportSubmissionsInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    title?: StringFieldUpdateOperationsInput | string
-    subject?: StringFieldUpdateOperationsInput | string
-    lab?: StringFieldUpdateOperationsInput | string
-    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput
-    notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
-    quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
-    attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalCreateWithoutQuizzesInput = {
@@ -16882,12 +16192,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutPracticalInput
     notes?: NoteCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalUncheckedCreateWithoutQuizzesInput = {
@@ -16896,12 +16210,16 @@ export namespace Prisma {
     subject: string
     lab: string
     dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutPracticalInput
     notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutPracticalInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutPracticalInput
   }
 
   export type PracticalCreateOrConnectWithoutQuizzesInput = {
@@ -16987,12 +16305,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutPracticalNestedInput
     notes?: NoteUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutPracticalNestedInput
   }
 
   export type PracticalUncheckedUpdateWithoutQuizzesInput = {
@@ -17001,12 +16323,16 @@ export namespace Prisma {
     subject?: StringFieldUpdateOperationsInput | string
     lab?: StringFieldUpdateOperationsInput | string
     dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutPracticalNestedInput
     notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutPracticalNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutPracticalNestedInput
   }
 
   export type QuizQuestionUpsertWithWhereUniqueWithoutQuizInput = {
@@ -17143,10 +16469,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutStudentInput
     sessions?: SessionCreateNestedManyWithoutUserInput
     attendances?: AttendanceCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutStudentInput
   }
 
   export type UserUncheckedCreateWithoutQuizAttemptsInput = {
@@ -17157,10 +16482,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput
     sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutStudentInput
   }
 
   export type UserCreateOrConnectWithoutQuizAttemptsInput = {
@@ -17216,10 +16540,9 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutStudentNestedInput
     sessions?: SessionUpdateManyWithoutUserNestedInput
     attendances?: AttendanceUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutStudentNestedInput
   }
 
   export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
@@ -17230,10 +16553,9 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput
     sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutStudentNestedInput
   }
 
   export type UserCreateWithoutSessionsInput = {
@@ -17243,10 +16565,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
     attendances?: AttendanceCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadCreateNestedManyWithoutStudentInput
   }
 
   export type UserUncheckedCreateWithoutSessionsInput = {
@@ -17257,10 +16578,9 @@ export namespace Prisma {
     status?: $Enums.UserStatus
     createdAt?: Date | string
     updatedAt?: Date | string
-    materialRequests?: MaterialRequestUncheckedCreateNestedManyWithoutStudentInput
-    reportSubmissions?: ReportSubmissionUncheckedCreateNestedManyWithoutStudentInput
     quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
     attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
+    labSheetDownloads?: LabSheetDownloadUncheckedCreateNestedManyWithoutStudentInput
   }
 
   export type UserCreateOrConnectWithoutSessionsInput = {
@@ -17286,10 +16606,9 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
     attendances?: AttendanceUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUpdateManyWithoutStudentNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessionsInput = {
@@ -17300,30 +16619,161 @@ export namespace Prisma {
     status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    materialRequests?: MaterialRequestUncheckedUpdateManyWithoutStudentNestedInput
-    reportSubmissions?: ReportSubmissionUncheckedUpdateManyWithoutStudentNestedInput
     quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
+    attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
+    labSheetDownloads?: LabSheetDownloadUncheckedUpdateManyWithoutStudentNestedInput
+  }
+
+  export type UserCreateWithoutLabSheetDownloadsInput = {
+    name?: string | null
+    email: string
+    role?: $Enums.UserRole
+    status?: $Enums.UserStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    quizAttempts?: QuizAttemptCreateNestedManyWithoutStudentInput
+    sessions?: SessionCreateNestedManyWithoutUserInput
+    attendances?: AttendanceCreateNestedManyWithoutStudentInput
+  }
+
+  export type UserUncheckedCreateWithoutLabSheetDownloadsInput = {
+    id?: number
+    name?: string | null
+    email: string
+    role?: $Enums.UserRole
+    status?: $Enums.UserStatus
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    quizAttempts?: QuizAttemptUncheckedCreateNestedManyWithoutStudentInput
+    sessions?: SessionUncheckedCreateNestedManyWithoutUserInput
+    attendances?: AttendanceUncheckedCreateNestedManyWithoutStudentInput
+  }
+
+  export type UserCreateOrConnectWithoutLabSheetDownloadsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutLabSheetDownloadsInput, UserUncheckedCreateWithoutLabSheetDownloadsInput>
+  }
+
+  export type PracticalCreateWithoutLabSheetDownloadsInput = {
+    title: string
+    subject: string
+    lab: string
+    dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    notes?: NoteCreateNestedManyWithoutPracticalInput
+    quizzes?: QuizCreateNestedManyWithoutPracticalInput
+    attendances?: AttendanceCreateNestedManyWithoutPracticalInput
+  }
+
+  export type PracticalUncheckedCreateWithoutLabSheetDownloadsInput = {
+    id?: number
+    title: string
+    subject: string
+    lab: string
+    dateTime: Date | string
+    grade?: string
+    teacherName?: string | null
+    description?: string | null
+    duration?: string | null
+    maxStudents?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    notes?: NoteUncheckedCreateNestedManyWithoutPracticalInput
+    quizzes?: QuizUncheckedCreateNestedManyWithoutPracticalInput
+    attendances?: AttendanceUncheckedCreateNestedManyWithoutPracticalInput
+  }
+
+  export type PracticalCreateOrConnectWithoutLabSheetDownloadsInput = {
+    where: PracticalWhereUniqueInput
+    create: XOR<PracticalCreateWithoutLabSheetDownloadsInput, PracticalUncheckedCreateWithoutLabSheetDownloadsInput>
+  }
+
+  export type UserUpsertWithoutLabSheetDownloadsInput = {
+    update: XOR<UserUpdateWithoutLabSheetDownloadsInput, UserUncheckedUpdateWithoutLabSheetDownloadsInput>
+    create: XOR<UserCreateWithoutLabSheetDownloadsInput, UserUncheckedCreateWithoutLabSheetDownloadsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutLabSheetDownloadsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutLabSheetDownloadsInput, UserUncheckedUpdateWithoutLabSheetDownloadsInput>
+  }
+
+  export type UserUpdateWithoutLabSheetDownloadsInput = {
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    quizAttempts?: QuizAttemptUpdateManyWithoutStudentNestedInput
+    sessions?: SessionUpdateManyWithoutUserNestedInput
+    attendances?: AttendanceUpdateManyWithoutStudentNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutLabSheetDownloadsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    status?: EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    quizAttempts?: QuizAttemptUncheckedUpdateManyWithoutStudentNestedInput
+    sessions?: SessionUncheckedUpdateManyWithoutUserNestedInput
     attendances?: AttendanceUncheckedUpdateManyWithoutStudentNestedInput
   }
 
-  export type MaterialRequestCreateManyStudentInput = {
-    id?: number
-    practicalId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
+  export type PracticalUpsertWithoutLabSheetDownloadsInput = {
+    update: XOR<PracticalUpdateWithoutLabSheetDownloadsInput, PracticalUncheckedUpdateWithoutLabSheetDownloadsInput>
+    create: XOR<PracticalCreateWithoutLabSheetDownloadsInput, PracticalUncheckedCreateWithoutLabSheetDownloadsInput>
+    where?: PracticalWhereInput
   }
 
-  export type ReportSubmissionCreateManyStudentInput = {
-    id?: number
-    practicalId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
+  export type PracticalUpdateToOneWithWhereWithoutLabSheetDownloadsInput = {
+    where?: PracticalWhereInput
+    data: XOR<PracticalUpdateWithoutLabSheetDownloadsInput, PracticalUncheckedUpdateWithoutLabSheetDownloadsInput>
+  }
+
+  export type PracticalUpdateWithoutLabSheetDownloadsInput = {
+    title?: StringFieldUpdateOperationsInput | string
+    subject?: StringFieldUpdateOperationsInput | string
+    lab?: StringFieldUpdateOperationsInput | string
+    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    notes?: NoteUpdateManyWithoutPracticalNestedInput
+    quizzes?: QuizUpdateManyWithoutPracticalNestedInput
+    attendances?: AttendanceUpdateManyWithoutPracticalNestedInput
+  }
+
+  export type PracticalUncheckedUpdateWithoutLabSheetDownloadsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    title?: StringFieldUpdateOperationsInput | string
+    subject?: StringFieldUpdateOperationsInput | string
+    lab?: StringFieldUpdateOperationsInput | string
+    dateTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    grade?: StringFieldUpdateOperationsInput | string
+    teacherName?: NullableStringFieldUpdateOperationsInput | string | null
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    duration?: NullableStringFieldUpdateOperationsInput | string | null
+    maxStudents?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    notes?: NoteUncheckedUpdateManyWithoutPracticalNestedInput
+    quizzes?: QuizUncheckedUpdateManyWithoutPracticalNestedInput
+    attendances?: AttendanceUncheckedUpdateManyWithoutPracticalNestedInput
   }
 
   export type QuizAttemptCreateManyStudentInput = {
@@ -17351,62 +16801,13 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
-  export type MaterialRequestUpdateWithoutStudentInput = {
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    practical?: PracticalUpdateOneRequiredWithoutMaterialRequestsNestedInput
-  }
-
-  export type MaterialRequestUncheckedUpdateWithoutStudentInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MaterialRequestUncheckedUpdateManyWithoutStudentInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionUpdateWithoutStudentInput = {
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    practical?: PracticalUpdateOneRequiredWithoutReportSubmissionsNestedInput
-  }
-
-  export type ReportSubmissionUncheckedUpdateWithoutStudentInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionUncheckedUpdateManyWithoutStudentInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    practicalId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  export type LabSheetDownloadCreateManyStudentInput = {
+    id?: number
+    practicalId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type QuizAttemptUpdateWithoutStudentInput = {
@@ -17481,14 +16882,30 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type MaterialRequestCreateManyPracticalInput = {
-    id?: number
-    studentId: number
-    itemName: string
-    quantity?: number
-    status?: $Enums.MaterialRequestStatus
-    createdAt?: Date | string
-    updatedAt?: Date | string
+  export type LabSheetDownloadUpdateWithoutStudentInput = {
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    practical?: PracticalUpdateOneRequiredWithoutLabSheetDownloadsNestedInput
+  }
+
+  export type LabSheetDownloadUncheckedUpdateWithoutStudentInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    practicalId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LabSheetDownloadUncheckedUpdateManyWithoutStudentInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    practicalId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type NoteCreateManyPracticalInput = {
@@ -17496,16 +16913,6 @@ export namespace Prisma {
     title: string
     fileUrl?: string | null
     description?: string | null
-    createdAt?: Date | string
-    updatedAt?: Date | string
-  }
-
-  export type ReportSubmissionCreateManyPracticalInput = {
-    id?: number
-    studentId: number
-    fileUrl: string
-    grade?: number | null
-    feedback?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -17526,33 +16933,13 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
-  export type MaterialRequestUpdateWithoutPracticalInput = {
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    student?: UserUpdateOneRequiredWithoutMaterialRequestsNestedInput
-  }
-
-  export type MaterialRequestUncheckedUpdateWithoutPracticalInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MaterialRequestUncheckedUpdateManyWithoutPracticalInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    itemName?: StringFieldUpdateOperationsInput | string
-    quantity?: IntFieldUpdateOperationsInput | number
-    status?: EnumMaterialRequestStatusFieldUpdateOperationsInput | $Enums.MaterialRequestStatus
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  export type LabSheetDownloadCreateManyPracticalInput = {
+    id?: number
+    studentId: number
+    filename: string
+    downloadedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type NoteUpdateWithoutPracticalInput = {
@@ -17577,35 +16964,6 @@ export namespace Prisma {
     title?: StringFieldUpdateOperationsInput | string
     fileUrl?: NullableStringFieldUpdateOperationsInput | string | null
     description?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionUpdateWithoutPracticalInput = {
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    student?: UserUpdateOneRequiredWithoutReportSubmissionsNestedInput
-  }
-
-  export type ReportSubmissionUncheckedUpdateWithoutPracticalInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
-    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type ReportSubmissionUncheckedUpdateManyWithoutPracticalInput = {
-    id?: IntFieldUpdateOperationsInput | number
-    studentId?: IntFieldUpdateOperationsInput | number
-    fileUrl?: StringFieldUpdateOperationsInput | string
-    grade?: NullableFloatFieldUpdateOperationsInput | number | null
-    feedback?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17656,6 +17014,32 @@ export namespace Prisma {
     id?: IntFieldUpdateOperationsInput | number
     studentId?: IntFieldUpdateOperationsInput | number
     status?: EnumAttendanceStatusFieldUpdateOperationsInput | $Enums.AttendanceStatus
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LabSheetDownloadUpdateWithoutPracticalInput = {
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    student?: UserUpdateOneRequiredWithoutLabSheetDownloadsNestedInput
+  }
+
+  export type LabSheetDownloadUncheckedUpdateWithoutPracticalInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    studentId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type LabSheetDownloadUncheckedUpdateManyWithoutPracticalInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    studentId?: IntFieldUpdateOperationsInput | number
+    filename?: StringFieldUpdateOperationsInput | string
+    downloadedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17776,17 +17160,9 @@ export namespace Prisma {
      */
     export type AttendanceArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = AttendanceDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use MaterialRequestDefaultArgs instead
-     */
-    export type MaterialRequestArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MaterialRequestDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use NoteDefaultArgs instead
      */
     export type NoteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = NoteDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use ReportSubmissionDefaultArgs instead
-     */
-    export type ReportSubmissionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = ReportSubmissionDefaultArgs<ExtArgs>
     /**
      * @deprecated Use QuizDefaultArgs instead
      */
@@ -17803,6 +17179,14 @@ export namespace Prisma {
      * @deprecated Use SessionDefaultArgs instead
      */
     export type SessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SessionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use LabSheetDownloadDefaultArgs instead
+     */
+    export type LabSheetDownloadArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = LabSheetDownloadDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use InventoryDefaultArgs instead
+     */
+    export type InventoryArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InventoryDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

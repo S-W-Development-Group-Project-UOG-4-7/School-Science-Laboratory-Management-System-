@@ -13,6 +13,8 @@ interface DownloadLabSheetButtonProps {
   className?: string;
   /** Optional: Direct filename override. If provided, skips database fetch and uses this filename directly */
   filename?: string;
+  /** Optional: Student ID to track who downloaded the lab sheet */
+  studentId?: number;
 }
 
 /**
@@ -28,6 +30,7 @@ export function DownloadLabSheetButton({
   size = 'sm',
   className = '',
   filename: directFilename,
+  studentId,
 }: DownloadLabSheetButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -123,8 +126,11 @@ export function DownloadLabSheetButton({
         return;
       }
 
-      // Step 2: Call the download API route
-      const downloadUrl = `/api/download?filename=${encodeURIComponent(actualFilename)}`;
+      // Step 2: Call the download API route with studentId and practicalId for tracking
+      let downloadUrl = `/api/download?filename=${encodeURIComponent(actualFilename)}`;
+      if (studentId) {
+        downloadUrl += `&studentId=${studentId}&practicalId=${practicalId}`;
+      }
       
       // Step 3: Download the file directly in the browser
       const response = await fetch(downloadUrl);

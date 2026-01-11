@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
     try {
         const searchParams = req.nextUrl.searchParams;
         const filename = searchParams.get('filename');
+        const studentId = searchParams.get('studentId');
+        const practicalId = searchParams.get('practicalId');
 
         if (!filename) {
             return NextResponse.json({ error: 'Filename is required' }, { status: 400 });
@@ -41,6 +44,28 @@ export async function GET(req: NextRequest) {
                 }, 
                 { status: 404 }
             );
+        }
+
+        // Record download in database if studentId and practicalId are provided
+        if (studentId && practicalId) {
+            try {
+                const parsedStudentId = parseInt(studentId);
+                const parsedPracticalId = parseInt(practicalId);
+                
+                if (!isNaN(parsedStudentId) && !isNaN(parsedPracticalId)) {
+                    await prisma.labSheetDownload.create({
+                        data: {
+                            studentId: parsedStudentId,
+                            practicalId: parsedPracticalId,
+                            filename: safeFilename,
+                        },
+                    });
+                    console.log(`Download recorded: Student ${parsedStudentId} downloaded ${safeFilename} for practical ${parsedPracticalId}`);
+                }
+            } catch (dbError: any) {
+                // Log error but don't fail the download if database recording fails
+                console.error('Error recording download in database:', dbError);
+            }
         }
 
         const fileBuffer = fs.readFileSync(filePath);

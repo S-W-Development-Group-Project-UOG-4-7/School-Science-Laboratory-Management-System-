@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { 
-  FlaskConical, 
-  Users, 
-  Calendar, 
-  Package, 
-  TrendingUp, 
+import {
+  FlaskConical,
+  Users,
+  Calendar,
+  Package,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
@@ -16,7 +16,7 @@ import {
 import { Button } from './ui/button';
 import type { UserRole } from '@/lib/types';
 import { ViewNotes } from './student/ViewNotes';
-import { ViewReports } from './student/ViewReports';
+
 import { ViewQuizzes } from './student/ViewQuizzes';
 import { ViewQuizAttempts } from './student/ViewQuizAttempts';
 
@@ -177,7 +177,7 @@ export function HomePage({ userName, userRole, userId, onNavigate }: HomePagePro
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Card 
+            <Card
               className={`${getColorClass(stat.color)} border-2 cursor-pointer transition-all hover:shadow-lg`}
               onClick={(e) => {
                 e.preventDefault();
@@ -259,14 +259,6 @@ export function HomePage({ userName, userRole, userId, onNavigate }: HomePagePro
                 >
                   <FileText className="w-5 h-5 text-blue-600" />
                   <span>View Notes</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                  onClick={() => onNavigate('reports')}
-                >
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <span>Submit Reports</span>
                 </Button>
                 <Button
                   variant="outline"

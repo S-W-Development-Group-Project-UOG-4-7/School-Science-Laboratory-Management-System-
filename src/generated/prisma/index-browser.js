@@ -138,6 +138,11 @@ exports.Prisma.PracticalScalarFieldEnum = {
   subject: 'subject',
   lab: 'lab',
   dateTime: 'dateTime',
+  grade: 'grade',
+  teacherName: 'teacherName',
+  description: 'description',
+  duration: 'duration',
+  maxStudents: 'maxStudents',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -151,34 +156,12 @@ exports.Prisma.AttendanceScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.MaterialRequestScalarFieldEnum = {
-  id: 'id',
-  studentId: 'studentId',
-  practicalId: 'practicalId',
-  itemName: 'itemName',
-  quantity: 'quantity',
-  status: 'status',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.NoteScalarFieldEnum = {
   id: 'id',
   practicalId: 'practicalId',
   title: 'title',
   fileUrl: 'fileUrl',
   description: 'description',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.ReportSubmissionScalarFieldEnum = {
-  id: 'id',
-  studentId: 'studentId',
-  practicalId: 'practicalId',
-  fileUrl: 'fileUrl',
-  grade: 'grade',
-  feedback: 'feedback',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -221,6 +204,26 @@ exports.Prisma.SessionScalarFieldEnum = {
   userId: 'userId',
   loginTime: 'loginTime',
   logoutTime: 'logoutTime',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LabSheetDownloadScalarFieldEnum = {
+  id: 'id',
+  studentId: 'studentId',
+  practicalId: 'practicalId',
+  filename: 'filename',
+  downloadedAt: 'downloadedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InventoryScalarFieldEnum = {
+  id: 'id',
+  instrumentName: 'instrumentName',
+  description: 'description',
+  quantity: 'quantity',
+  safetyPrecautions: 'safetyPrecautions',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -269,13 +272,6 @@ exports.AttendanceStatus = exports.$Enums.AttendanceStatus = {
   LATE: 'LATE'
 };
 
-exports.MaterialRequestStatus = exports.$Enums.MaterialRequestStatus = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  FULFILLED: 'FULFILLED'
-};
-
 exports.CorrectAnswer = exports.$Enums.CorrectAnswer = {
   A: 'A',
   B: 'B',
@@ -287,13 +283,13 @@ exports.Prisma.ModelName = {
   User: 'User',
   Practical: 'Practical',
   Attendance: 'Attendance',
-  MaterialRequest: 'MaterialRequest',
   Note: 'Note',
-  ReportSubmission: 'ReportSubmission',
   Quiz: 'Quiz',
   QuizQuestion: 'QuizQuestion',
   QuizAttempt: 'QuizAttempt',
-  Session: 'Session'
+  Session: 'Session',
+  LabSheetDownload: 'LabSheetDownload',
+  Inventory: 'Inventory'
 };
 
 /**

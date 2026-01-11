@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -21,7 +21,6 @@ import { motion } from 'framer-motion';
 import type { UserRole } from '@/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { AccessNotesButton } from './student/AccessNotesButton';
-import { SubmitReportButton } from './student/SubmitReportButton';
 import { AttemptQuizButton } from './student/AttemptQuizButton';
 import { DownloadLabSheetButton } from './DownloadLabSheetButton';
 
@@ -43,80 +42,45 @@ interface Practical {
   thumbnail: string;
 }
 
-const practicals: Practical[] = [
-  {
-    id: '1',
-    title: 'Acid-Base Titration',
-    grade: 'Grade 11',
-    subject: 'Chemistry',
+// Local asset mapping (images, videos, etc.) that aren't in the DB yet
+const practicalAssets: Record<string, Partial<Practical>> = {
+  'Acid-Base Titration': {
     videoUrl: '#',
     labSheetUrl: '#',
-    duration: '45 min',
-    difficulty: 'Intermediate',
-    description: 'Learn the proper technique for conducting acid-base titrations using standard solutions.',
     thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
+    difficulty: 'Intermediate',
   },
-  {
-    id: '2',
-    title: 'Microscope Usage and Cell Observation',
-    grade: 'Grade 9',
-    subject: 'Biology',
+  'Microscope Practical': {
     videoUrl: '#',
     labSheetUrl: '#',
-    duration: '30 min',
-    difficulty: 'Beginner',
-    description: 'Introduction to compound microscope operation and observing plant and animal cells.',
     thumbnail: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    id: '3',
-    title: "Newton's Laws of Motion Experiments",
-    grade: 'Grade 10',
-    subject: 'Physics',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '60 min',
-    difficulty: 'Intermediate',
-    description: 'Practical demonstrations of Newton\'s three laws of motion with calculations.',
-    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    id: '4',
-    title: 'Qualitative Analysis of Salts',
-    grade: 'Grade 12',
-    subject: 'Chemistry',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '90 min',
-    difficulty: 'Advanced',
-    description: 'Systematic identification of cations and anions in unknown salt mixtures.',
-    thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-  },
-  {
-    id: '5',
-    title: 'Photosynthesis Experiment',
-    grade: 'Grade 10',
-    subject: 'Biology',
-    videoUrl: '#',
-    labSheetUrl: '#',
-    duration: '45 min',
     difficulty: 'Beginner',
-    description: 'Investigating the factors affecting the rate of photosynthesis in aquatic plants.',
-    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
   },
-  {
-    id: '6',
-    title: 'Simple Harmonic Motion - Pendulum',
-    grade: 'Grade 11',
-    subject: 'Physics',
+  "Simple Pendulum Experiment": {
     videoUrl: '#',
     labSheetUrl: '#',
-    duration: '40 min',
-    difficulty: 'Intermediate',
-    description: 'Study the relationship between length and time period of a simple pendulum.',
     thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    difficulty: 'Intermediate',
   },
-];
+  'Qualitative Analysis of Salts': {
+    videoUrl: '#',
+    labSheetUrl: '#',
+    thumbnail: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    difficulty: 'Advanced',
+  },
+  'Photosynthesis Experiment': {
+    videoUrl: '#',
+    labSheetUrl: '#',
+    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    difficulty: 'Beginner',
+  },
+  'Simple Harmonic Motion - Pendulum': {
+    videoUrl: '#',
+    labSheetUrl: '#',
+    thumbnail: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    difficulty: 'Intermediate',
+  },
+};
 
 // Helper component for Quiz button with image icon and error handling
 function QuizButtonWithIcon({ studentId, practicalId }: { studentId: number; practicalId: number }) {
@@ -149,8 +113,48 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [practicals, setPracticals] = useState<Practical[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant';
+
+  useEffect(() => {
+    async function fetchPracticals() {
+      try {
+        const response = await fetch('/api/practicals');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+          // Map DB practicals to display format
+          const mappedPracticals = result.data.map((p: any) => {
+            // Find matching asset by title or use default
+            const asset = practicalAssets[p.title] || {
+              videoUrl: '#',
+              labSheetUrl: '#',
+              thumbnail: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&q=80&w=1080',
+              difficulty: 'Intermediate',
+            };
+
+            return {
+              id: p.id.toString(),
+              title: p.title,
+              subject: p.subject,
+              grade: p.grade || 'Grade 11',
+              description: p.description || '',
+              duration: p.duration || '60 min',
+              ...asset,
+            };
+          });
+          setPracticals(mappedPracticals);
+        }
+      } catch (error) {
+        console.error('Failed to fetch practicals:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPracticals();
+  }, []);
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -465,12 +469,10 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                       {userRole === 'student' && userId && (
                         <>
                           <AccessNotesButton practicalId={parseInt(practical.id)} />
-                          <SubmitReportButton
-                            studentId={userId}
-                            practicalId={parseInt(practical.id)}
-                          />
+
                           <DownloadLabSheetButton
                             practicalId={parseInt(practical.id)}
+                            studentId={userId}
                             buttonText="Download Lab Sheet"
                             variant="outline"
                             size="sm"
@@ -479,8 +481,8 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                               practical.labSheetUrl && practical.labSheetUrl !== '#'
                                 ? practical.labSheetUrl
                                 : practical.title === 'Acid-Base Titration'
-                                ? 'Grade_11_Acid_Base_Titration_Lab_Sheet.pdf'
-                                : undefined
+                                  ? 'Grade_11_Acid_Base_Titration_Lab_Sheet.pdf'
+                                  : undefined
                             }
                           />
                         </>
