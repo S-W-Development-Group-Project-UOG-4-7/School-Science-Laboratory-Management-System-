@@ -23,7 +23,9 @@ import {
   FileSpreadsheet,
   AlertTriangle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import {
   Dialog,
@@ -53,6 +55,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from './ui/alert';
+import { Switch } from './ui/switch';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -64,6 +67,8 @@ interface SystemUser {
   status: string;
   createdDate: string;
   lastLogin?: string | null;
+  customPrivileges?: string[];
+  revokedPrivileges?: string[];
 }
 
 interface ImportResult {
@@ -71,6 +76,29 @@ interface ImportResult {
   failed: number;
   errors: Array<{ row: number; email: string; error: string }>;
 }
+
+// Define available privileges
+const PRIVILEGES = [
+  { id: 'view_reports', label: 'View Reports', category: 'Reports', description: 'Access and view system reports' },
+  { id: 'manage_equipment', label: 'Manage Equipment', category: 'Equipment', description: 'Add, edit, and remove equipment' },
+  { id: 'manage_bookings', label: 'Manage Bookings', category: 'Bookings', description: 'Create and manage lab bookings' },
+  { id: 'manage_users', label: 'Manage Users', category: 'Administration', description: 'Create, edit, and delete user accounts' },
+  { id: 'manage_inventory', label: 'Manage Inventory', category: 'Inventory', description: 'Track and manage inventory items' },
+  { id: 'approve_requests', label: 'Approve Requests', category: 'Requests', description: 'Approve or reject user requests' },
+  { id: 'view_analytics', label: 'View Analytics', category: 'Analytics', description: 'Access analytics and insights' },
+  { id: 'manage_settings', label: 'Manage Settings', category: 'Administration', description: 'Configure system settings' },
+  { id: 'export_data', label: 'Export Data', category: 'Data', description: 'Export data to external formats' },
+  { id: 'manage_labs', label: 'Manage Labs', category: 'Labs', description: 'Create and configure laboratory spaces' },
+];
+
+// Default privileges for each role
+const DEFAULT_ROLE_PRIVILEGES: Record<string, string[]> = {
+  'STUDENT': ['view_reports', 'manage_bookings'],
+  'TEACHER': ['view_reports', 'manage_bookings', 'manage_equipment', 'approve_requests', 'view_analytics'],
+  'LAB_ASSISTANT': ['view_reports', 'manage_equipment', 'manage_bookings', 'manage_inventory', 'manage_labs'],
+  'PRINCIPAL': ['view_reports', 'manage_equipment', 'manage_bookings', 'approve_requests', 'view_analytics', 'export_data', 'manage_labs'],
+  'ADMIN': ['view_reports', 'manage_equipment', 'manage_bookings', 'manage_users', 'manage_inventory', 'approve_requests', 'view_analytics', 'manage_settings', 'export_data', 'manage_labs']
+};
 
 export function UserManagementPage() {
   const [users, setUsers] = useState<SystemUser[]>([]);
@@ -81,6 +109,7 @@ export function UserManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPrivilegeDialogOpen, setIsPrivilegeDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SystemUser | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -100,6 +129,10 @@ export function UserManagementPage() {
     password: '',
   });
 
+  // Privilege management state
+  const [customPrivileges, setCustomPrivileges] = useState<string[]>([]);
+  const [revokedPrivileges, setRevokedPrivileges] = useState<string[]>([]);
+
   // Fetch users on component mount
   useEffect(() => {
     fetchUsers();
@@ -117,6 +150,14 @@ export function UserManagementPage() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Update privilege states when user is selected
+  useEffect(() => {
+    if (selectedUser) {
+      setCustomPrivileges(selectedUser.customPrivileges || []);
+      setRevokedPrivileges(selectedUser.revokedPrivileges || []);
+    }
+  }, [selectedUser]);
 
   const fetchUsers = async (search = '') => {
     try {
@@ -295,6 +336,41 @@ export function UserManagementPage() {
     }
   };
 
+  const handleUpdatePrivileges = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setSubmitting(true);
+      const response = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: selectedUser.id, 
+          customPrivileges, 
+          revokedPrivileges 
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update privileges');
+
+      const updatedUser = await response.json();
+      setUsers(users.map(u => u.id === selectedUser.id ? updatedUser : u));
+      
+      toast.success('Privileges Updated', {
+        description: `Privileges for ${selectedUser.name} have been updated.`,
+      });
+      
+      setIsPrivilegeDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error: any) {
+      toast.error('Failed to update privileges', {
+        description: error.message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const downloadTemplate = () => {
     const template = [
       { Name: 'John Doe', Email: 'john.doe@school.lk', Role: 'student', Password: 'TempPass123' },
@@ -305,7 +381,6 @@ export function UserManagementPage() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Users');
     
-    // Add column widths
     ws['!cols'] = [
       { wch: 20 },
       { wch: 30 },
@@ -353,16 +428,14 @@ export function UserManagementPage() {
         return;
       }
 
-      // Validate and prepare data
       const usersToImport = jsonData.map((row: any, index) => ({
         name: row.Name || row.name,
         email: row.Email || row.email,
         role: (row.Role || row.role || 'student').toLowerCase(),
         password: row.Password || row.password,
-        rowNumber: index + 2, // +2 for header and 0-indexing
+        rowNumber: index + 2,
       }));
 
-      // Send to backend
       const response = await fetch('/api/users/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -377,7 +450,7 @@ export function UserManagementPage() {
       setImportResult(result);
 
       if (result.success > 0) {
-        fetchUsers(); // Refresh user list
+        fetchUsers();
         toast.success('Import Completed', {
           description: `${result.success} user(s) imported successfully.`,
         });
@@ -395,6 +468,64 @@ export function UserManagementPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Privilege helper functions
+  const getPrivilegeStatus = (privilegeId: string) => {
+    if (!selectedUser) return 'none';
+    
+    const rolePrivileges = DEFAULT_ROLE_PRIVILEGES[selectedUser.role] || [];
+    const hasFromRole = rolePrivileges.includes(privilegeId);
+    const isCustom = customPrivileges.includes(privilegeId);
+    const isRevoked = revokedPrivileges.includes(privilegeId);
+
+    if (isRevoked && hasFromRole) {
+      return 'revoked';
+    } else if (isCustom && !hasFromRole) {
+      return 'custom';
+    } else if (hasFromRole && !isRevoked) {
+      return 'role';
+    }
+    return 'none';
+  };
+
+  const isPrivilegeActive = (privilegeId: string) => {
+    if (!selectedUser) return false;
+    const status = getPrivilegeStatus(privilegeId);
+    return status === 'role' || status === 'custom';
+  };
+
+  const togglePrivilege = (privilegeId: string) => {
+    if (!selectedUser) return;
+    
+    const rolePrivileges = DEFAULT_ROLE_PRIVILEGES[selectedUser.role] || [];
+    const hasFromRole = rolePrivileges.includes(privilegeId);
+    const status = getPrivilegeStatus(privilegeId);
+
+    if (hasFromRole) {
+      // Privilege comes from role
+      if (status === 'revoked') {
+        // Currently revoked, restore it
+        setRevokedPrivileges(prev => prev.filter(p => p !== privilegeId));
+      } else {
+        // Currently active from role, revoke it
+        setRevokedPrivileges(prev => [...prev, privilegeId]);
+      }
+    } else {
+      // Privilege doesn't come from role
+      if (status === 'custom') {
+        // Currently custom added, remove it
+        setCustomPrivileges(prev => prev.filter(p => p !== privilegeId));
+      } else {
+        // Not active, add as custom
+        setCustomPrivileges(prev => [...prev, privilegeId]);
+      }
+    }
+  };
+
+  const handleResetPrivileges = () => {
+    setCustomPrivileges([]);
+    setRevokedPrivileges([]);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -438,6 +569,24 @@ export function UserManagementPage() {
     students: users.filter(u => u.role === 'STUDENT').length,
     staff: users.filter(u => u.role !== 'STUDENT').length,
   };
+
+  // Group privileges by category for the privilege dialog
+  const privilegesByCategory = PRIVILEGES.reduce((acc, priv) => {
+    if (!acc[priv.category]) acc[priv.category] = [];
+    acc[priv.category].push(priv);
+    return acc;
+  }, {} as Record<string, typeof PRIVILEGES>);
+
+  // Calculate privilege stats
+  const privilegeStats = selectedUser ? (() => {
+    const rolePrivileges = DEFAULT_ROLE_PRIVILEGES[selectedUser.role] || [];
+    return {
+      fromRole: rolePrivileges.filter(p => !revokedPrivileges.includes(p)).length,
+      custom: customPrivileges.filter(p => !rolePrivileges.includes(p)).length,
+      revoked: revokedPrivileges.length,
+      total: PRIVILEGES.filter(p => isPrivilegeActive(p.id)).length,
+    };
+  })() : { fromRole: 0, custom: 0, revoked: 0, total: 0 };
 
   return (
     <div className="space-y-6">
@@ -842,6 +991,15 @@ export function UserManagementPage() {
                                   <Edit className="w-4 h-4 mr-2" />
                                   Edit User
                                 </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setIsPrivilegeDialogOpen(true);
+                                  }}
+                                >
+                                  <Shield className="w-4 h-4 mr-2" />
+                                  Manage Privileges
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
                                   <Shield className="w-4 h-4 mr-2" />
                                   {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
@@ -1049,6 +1207,137 @@ export function UserManagementPage() {
                 <>
                   <Edit className="w-4 h-4 mr-2" />
                   Update User
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Privilege Management Dialog */}
+      <Dialog open={isPrivilegeDialogOpen} onOpenChange={setIsPrivilegeDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Manage User Privileges
+            </DialogTitle>
+            <DialogDescription>
+              Customize privileges for {selectedUser?.name} ({selectedUser?.role.replace('_', ' ')})
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Stats Summary */}
+          <div className="grid grid-cols-4 gap-3 py-3 border-y">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{privilegeStats.total}</div>
+              <div className="text-xs text-gray-600">Total Active</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{privilegeStats.fromRole}</div>
+              <div className="text-xs text-gray-600">From Role</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">{privilegeStats.custom}</div>
+              <div className="text-xs text-gray-600">Custom Added</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{privilegeStats.revoked}</div>
+              <div className="text-xs text-gray-600">Revoked</div>
+            </div>
+          </div>
+
+          {/* Privilege Categories */}
+          <div className="space-y-4 py-4">
+            {Object.entries(privilegesByCategory).map(([category, privileges]) => (
+              <div key={category} className="space-y-2">
+                <h3 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
+                  <div className="h-px flex-1 bg-gray-200" />
+                  {category}
+                  <div className="h-px flex-1 bg-gray-200" />
+                </h3>
+                
+                <div className="space-y-2">
+                  {privileges.map(privilege => {
+                    if (!selectedUser) return null;
+                    const status = getPrivilegeStatus(privilege.id);
+                    const isActive = isPrivilegeActive(privilege.id);
+
+                    return (
+                      <div
+                        key={privilege.id}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                          isActive 
+                            ? 'bg-blue-50 border-blue-200' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0 mr-4">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-sm font-medium cursor-pointer">
+                              {privilege.label}
+                            </Label>
+                            
+                            {status === 'role' && (
+                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 text-xs">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                From Role
+                              </Badge>
+                            )}
+                            
+                            {status === 'custom' && (
+                              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 text-xs">
+                                <Unlock className="w-3 h-3 mr-1" />
+                                Custom
+                              </Badge>
+                            )}
+                            
+                            {status === 'revoked' && (
+                              <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300 text-xs">
+                                <Lock className="w-3 h-3 mr-1" />
+                                Revoked
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 mt-0.5">{privilege.description}</p>
+                        </div>
+                        
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={() => togglePrivilege(privilege.id)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={handleResetPrivileges}>
+              Reset to Role Default
+            </Button>
+            <Button variant="outline" onClick={() => {
+              setIsPrivilegeDialogOpen(false);
+              setSelectedUser(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdatePrivileges}
+              disabled={submitting}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Save Changes
                 </>
               )}
             </Button>

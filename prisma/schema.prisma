@@ -35,6 +35,10 @@ model User {
   // Relations
   createdPracticals Practical[] @relation("CreatedPracticals")
   uploadedVideos    Video[]     @relation("UploadedVideos")
+
+  //custom privileges
+  customPrivileges  String[] @default([])
+  revokedPrivileges String[] @default([])
 }
 
 enum Role {

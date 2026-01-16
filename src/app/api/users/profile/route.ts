@@ -1,42 +1,61 @@
 // File: src/app/api/user/profile/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { writeFile, readFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
+import path from 'path';
+
+// Simple JSON file storage (replace with database in production)
+const STORAGE_DIR = path.join(process.cwd(), 'data');
+const USERS_FILE = path.join(STORAGE_DIR, 'users.json');
+
+// Initialize storage
+async function initStorage() {
+  if (!existsSync(STORAGE_DIR)) {
+    await mkdir(STORAGE_DIR, { recursive: true });
+  }
+  if (!existsSync(USERS_FILE)) {
+    await writeFile(USERS_FILE, JSON.stringify({}));
+  }
+}
+
+// Read users data
+async function readUsers() {
+  await initStorage();
+  const data = await readFile(USERS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
+
+// Write users data
+async function writeUsers(users: any) {
+  await writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+}
 
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const { userId, fullName, email, phone, profileImageUrl } = body;
 
-    // Here you would typically:
-    // 1. Validate the data
-    // 2. Update your database
-    // 3. Return the updated user data
+    // Read existing users
+    const users = await readUsers();
 
-    // For now, we'll just log and return success
-    console.log('Profile update request:', {
+    // Update or create user
+    users[userId] = {
       userId,
       fullName,
       email,
       phone,
-      profileImageUrl
-    });
+      profileImageUrl,
+      updatedAt: new Date().toISOString()
+    };
 
-    // Simulate database update
-    // await db.user.update({
-    //   where: { id: userId },
-    //   data: { fullName, email, phone, profileImageUrl }
-    // });
+    // Save to file
+    await writeUsers(users);
 
     return NextResponse.json({
       success: true,
       message: 'Profile updated successfully',
-      user: {
-        userId,
-        fullName,
-        email,
-        phone,
-        profileImageUrl
-      }
+      user: users[userId]
     });
 
   } catch (error) {
@@ -60,20 +79,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Here you would fetch from database
-    // const user = await db.user.findUnique({ where: { id: userId } });
+    // Read users
+    const users = await readUsers();
+    const user = users[userId];
 
-    // Mock data for now
+    if (!user) {
+      // Return default user data if not found
+      return NextResponse.json({
+        success: true,
+        user: {
+          userId,
+          fullName: 'Dr. Sarah Johnson',
+          email: userId,
+          phone: '+94 71 234 5678',
+          role: 'laboratory technician',
+          profileImageUrl: null
+        }
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      user: {
-        userId,
-        fullName: 'Dr. Sarah Johnson',
-        email: 'sarah.johnson@medlab.com',
-        phone: '+94 71 234 5678',
-        role: 'laboratory technician',
-        profileImageUrl: null
-      }
+      user: user
     });
 
   } catch (error) {

@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
         status: true,
         createdDate: true,
         lastLogin: true,
+        customPrivileges: true,
+        revokedPrivileges: true,
       },
     });
 
@@ -42,9 +44,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, customPrivileges, revokedPrivileges } = body;
 
-    // Validate required fields
     if (!name || !email || !password || !role) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -52,7 +53,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -64,10 +64,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         name,
@@ -75,6 +73,8 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         role: role.toUpperCase().replace('-', '_'),
         status: 'ACTIVE',
+        customPrivileges: customPrivileges || [],
+        revokedPrivileges: revokedPrivileges || [],
       },
       select: {
         id: true,
@@ -84,6 +84,8 @@ export async function POST(request: NextRequest) {
         status: true,
         createdDate: true,
         lastLogin: true,
+        customPrivileges: true,
+        revokedPrivileges: true,
       },
     });
 
@@ -97,11 +99,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH - Update user
+// PATCH - Update user (for status changes and privilege updates)
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, email, role, status } = body;
+    const { id, name, email, role, status, customPrivileges, revokedPrivileges } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -115,6 +117,8 @@ export async function PATCH(request: NextRequest) {
     if (email) updateData.email = email;
     if (role) updateData.role = role.toUpperCase().replace('-', '_');
     if (status) updateData.status = status.toUpperCase();
+    if (customPrivileges !== undefined) updateData.customPrivileges = customPrivileges;
+    if (revokedPrivileges !== undefined) updateData.revokedPrivileges = revokedPrivileges;
 
     const user = await prisma.user.update({
       where: { id },
@@ -127,6 +131,8 @@ export async function PATCH(request: NextRequest) {
         status: true,
         createdDate: true,
         lastLogin: true,
+        customPrivileges: true,
+        revokedPrivileges: true,
       },
     });
 
@@ -153,7 +159,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if user is admin or principal
     const user = await prisma.user.findUnique({
       where: { id },
       select: { role: true },
@@ -180,7 +185,7 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// PUT - Update user
+// PUT - Update user (full update)
 export async function PUT(request: NextRequest) {
   try {
     const { id, name, email, role } = await request.json();
@@ -192,7 +197,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -201,7 +205,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { id },
     });
@@ -213,7 +216,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if email is already taken by another user
     const emailTaken = await prisma.user.findFirst({
       where: {
         email: email.toLowerCase(),
@@ -228,7 +230,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Convert role to enum format
     const roleMap: { [key: string]: Role } = {
       'student': Role.STUDENT,
       'teacher': Role.TEACHER,
@@ -245,7 +246,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update user
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
@@ -261,6 +261,8 @@ export async function PUT(request: NextRequest) {
         status: true,
         createdDate: true,
         lastLogin: true,
+        customPrivileges: true,
+        revokedPrivileges: true,
       },
     });
 
