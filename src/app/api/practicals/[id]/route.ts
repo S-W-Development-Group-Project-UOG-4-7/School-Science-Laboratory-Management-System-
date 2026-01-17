@@ -69,7 +69,6 @@ export async function PUT(
         subject: body.subject,
         grade: body.grade,
         duration: body.duration,
-        difficulty: body.difficulty,
         videoUrl: body.videoUrl,
         labSheetUrl: body.labSheetUrl,
         thumbnail: body.thumbnail

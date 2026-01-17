@@ -42,11 +42,7 @@ enum Role {
   ADMIN
 }
 
-enum DifficultyLevel {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
-}
+
 
 enum QuestionType {
   MULTIPLE_CHOICE
@@ -108,7 +104,6 @@ model Practical {
   subject     String          @db.VarChar(100)
   grade       String          @db.VarChar(20)
   duration    String          @db.VarChar(50)
-  difficulty  DifficultyLevel @default(INTERMEDIATE)
   videoUrl    String?         @db.VarChar(500)
   labSheetUrl String?         @db.VarChar(500)
   thumbnail   String?         @db.VarChar(500)

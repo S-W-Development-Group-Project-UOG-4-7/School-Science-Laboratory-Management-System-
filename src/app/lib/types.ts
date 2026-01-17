@@ -19,11 +19,6 @@ export type AuthUser = {
 
 
 
-export enum DifficultyLevel {
-  BEGINNER = 'BEGINNER',
-  INTERMEDIATE = 'INTERMEDIATE',
-  ADVANCED = 'ADVANCED'
-}
 
 export enum QuestionType {
   MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
@@ -75,7 +70,6 @@ export interface Practical {
   subject: string;
   grade: string;
   duration: string;
-  difficulty: DifficultyLevel;
   videoUrl?: string | null;
   labSheetUrl?: string | null;
   thumbnail?: string | null;
@@ -251,7 +245,6 @@ export interface CreatePracticalInput {
   subject: string;
   grade: string;
   duration: string;
-  difficulty: DifficultyLevel;
   videoUrl?: string;
   labSheetUrl?: string;
   thumbnail?: string;
@@ -264,7 +257,6 @@ export interface UpdatePracticalInput {
   subject?: string;
   grade?: string;
   duration?: string;
-  difficulty?: DifficultyLevel;
   videoUrl?: string;
   labSheetUrl?: string;
   thumbnail?: string;
@@ -353,32 +345,8 @@ export interface SubmitQuizAttemptInput {
   status: AttemptStatus;
 }
 
-// Type Conversion Functions
-export function difficultyToUI(difficulty: DifficultyLevel): string {
-  switch (difficulty) {
-    case DifficultyLevel.BEGINNER:
-      return 'Beginner';
-    case DifficultyLevel.INTERMEDIATE:
-      return 'Intermediate';
-    case DifficultyLevel.ADVANCED:
-      return 'Advanced';
-    default:
-      return 'Intermediate';
-  }
-}
 
-export function difficultyFromUI(difficulty: string): DifficultyLevel {
-  switch (difficulty.toLowerCase()) {
-    case 'beginner':
-      return DifficultyLevel.BEGINNER;
-    case 'intermediate':
-      return DifficultyLevel.INTERMEDIATE;
-    case 'advanced':
-      return DifficultyLevel.ADVANCED;
-    default:
-      return DifficultyLevel.INTERMEDIATE;
-  }
-}
+
 
 export function questionTypeToUI(type: QuestionType): string {
   switch (type) {
@@ -489,7 +457,6 @@ export interface PracticalFilters {
   search?: string;
   subject?: string;
   grade?: string;
-  difficulty?: DifficultyLevel;
   teacherId?: number;
 }
 

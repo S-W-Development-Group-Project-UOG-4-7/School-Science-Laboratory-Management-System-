@@ -17,8 +17,7 @@ export const practicalService = {
     if (filters?.search) params.append('search', filters.search);
     if (filters?.subject && filters.subject !== 'all') params.append('subject', filters.subject);
     if (filters?.grade && filters.grade !== 'all') params.append('grade', filters.grade);
-    if (filters?.difficulty) {params.append('difficulty', filters.difficulty);
-}
+    
     if (filters?.teacherId) params.append('teacherId', String(filters.teacherId));
 
     const response = await fetch(`/api/practicals?${params.toString()}`, {

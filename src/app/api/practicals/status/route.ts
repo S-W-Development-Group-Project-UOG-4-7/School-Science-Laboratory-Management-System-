@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
         subject: body.subject,
         grade: body.grade,
         duration: body.duration || '45 min',
-        difficulty: body.difficulty || 'INTERMEDIATE',
         videoUrl: body.videoUrl,
         labSheetUrl: body.labSheetUrl,
         thumbnail: body.thumbnail,

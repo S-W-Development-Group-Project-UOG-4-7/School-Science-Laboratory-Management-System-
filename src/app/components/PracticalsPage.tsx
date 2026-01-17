@@ -40,9 +40,6 @@ import {
   Practical, 
   Quiz, 
   QuizAttempt, 
-  DifficultyLevel, 
-  difficultyFromUI, 
-  difficultyToUI,
   CreatePracticalInput,
   UpdatePracticalInput,
   AttemptStatus
@@ -427,7 +424,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
         subject: formData.get('subject') as string,
         grade: formData.get('grade') as string,
         duration: formData.get('duration') as string,
-        difficulty: difficultyFromUI(formData.get('difficulty') as string || 'Intermediate'),
         videoUrl: videoUrl || undefined,
         labSheetUrl: labSheetUrl || undefined,
         thumbnail: thumbnailUrl || undefined,
@@ -470,7 +466,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
         subject: formData.get('subject') as string,
         grade: formData.get('grade') as string,
         duration: formData.get('duration') as string,
-        difficulty: difficultyFromUI(formData.get('difficulty') as string || 'Intermediate'),
         videoUrl: formData.get('videoUrl') as string || undefined,
         labSheetUrl: formData.get('labSheetUrl') as string || undefined,
         thumbnail: formData.get('thumbnail') as string || undefined,
@@ -553,18 +548,8 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
       case 'Chemistry': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'Physics': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Biology': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Science': return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'Science': return 'bg-green-100 text-green-700 border-green-200';
       default: return 'bg-pink-100 text-pink-700 border-pink-200';
-    }
-  };
-
-  const getDifficultyColor = (difficulty: DifficultyLevel) => {
-    const uiDifficulty = difficultyToUI(difficulty);
-    switch (uiDifficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-700';
-      case 'Intermediate': return 'bg-yellow-100 text-yellow-700';
-      case 'Advanced': return 'bg-red-100 text-red-700';
-      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -705,11 +690,13 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                         <SelectValue placeholder="Select grade" />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Physics / Chemistry / Biology → Grade 12 & 13 */}
+                        {/* Physics / Chemistry / Biology → Grade 10 to 13 */}
                         {(subject === "Physics" ||
                           subject === "Chemistry" ||
                           subject === "Biology") && (
                           <>
+                            <SelectItem value="Grade 10">Grade 10</SelectItem>
+                            <SelectItem value="Grade 11">Grade 11</SelectItem>
                             <SelectItem value="Grade 12">Grade 12</SelectItem>
                             <SelectItem value="Grade 13">Grade 13</SelectItem>
                           </>
@@ -730,19 +717,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label htmlFor="difficulty">Difficulty Level</Label>
-                    <Select name="difficulty" defaultValue="Intermediate">
-                      <SelectTrigger id="difficulty">
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div>
                     <Label htmlFor="duration">Duration *</Label>
                     <Input 
@@ -1090,10 +1064,38 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Grades</SelectItem>
-                  <SelectItem value="Grade 9">Grade 9</SelectItem>
-                  <SelectItem value="Grade 10">Grade 10</SelectItem>
-                  <SelectItem value="Grade 11">Grade 11</SelectItem>
-                  <SelectItem value="Grade 12">Grade 12</SelectItem>
+                  {/* Show all grades when no specific subject is selected */}
+                  {selectedSubject === 'all' && (
+                    <>
+                      <SelectItem value="Grade 6">Grade 6</SelectItem>
+                      <SelectItem value="Grade 7">Grade 7</SelectItem>
+                      <SelectItem value="Grade 8">Grade 8</SelectItem>
+                      <SelectItem value="Grade 9">Grade 9</SelectItem>
+                      <SelectItem value="Grade 10">Grade 10</SelectItem>
+                      <SelectItem value="Grade 11">Grade 11</SelectItem>
+                      <SelectItem value="Grade 12">Grade 12</SelectItem>
+                      <SelectItem value="Grade 13">Grade 13</SelectItem>
+                    </>
+                  )}
+                  {/* Show only Science grades (6-11) when Science is selected */}
+                  {selectedSubject === 'Science' && (
+                    <>
+                      <SelectItem value="Grade 6">Grade 6</SelectItem>
+                      <SelectItem value="Grade 7">Grade 7</SelectItem>
+                      <SelectItem value="Grade 8">Grade 8</SelectItem>
+                      <SelectItem value="Grade 9">Grade 9</SelectItem>
+                      
+                    </>
+                  )}
+                  {/* Show advanced grades (10-13) for Physics, Chemistry, Biology */}
+                  {(selectedSubject === 'Physics' || selectedSubject === 'Chemistry' || selectedSubject === 'Biology') && (
+                    <>
+                      <SelectItem value="Grade 10">Grade 10</SelectItem>
+                      <SelectItem value="Grade 11">Grade 11</SelectItem>
+                      <SelectItem value="Grade 12">Grade 12</SelectItem>
+                      <SelectItem value="Grade 13">Grade 13</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -1149,9 +1151,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
 
                     <CardContent className="flex-1 flex flex-col justify-between">
                       <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge className={getDifficultyColor(practical.difficulty)} variant="outline">
-                          {difficultyToUI(practical.difficulty)}
-                        </Badge>
                         <Badge variant="outline" className="bg-gray-50">
                           ⏱️ {practical.duration}
                         </Badge>
@@ -1264,7 +1263,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 {userRole === 'student' 
                   ? 'Take quizzes to test your knowledge' 
                   : 'Manage quizzes for this practical'}
-              </DialogDescription>
+            </DialogDescription>
             </DialogHeader>
             
             {/* Quiz Results Section for Teachers */}
@@ -1455,26 +1454,28 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                       <SelectValue placeholder="Select grade" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Grade 6">Grade 6</SelectItem>
-                      <SelectItem value="Grade 7">Grade 7</SelectItem>
-                      <SelectItem value="Grade 8">Grade 8</SelectItem>
-                      <SelectItem value="Grade 9">Grade 9</SelectItem>
-                      <SelectItem value="Grade 10">Grade 10</SelectItem>
-                      <SelectItem value="Grade 11">Grade 11</SelectItem>
-                      <SelectItem value="Grade 12">Grade 12</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-difficulty">Difficulty Level</Label>
-                  <Select name="difficulty" defaultValue={difficultyToUI(editingPractical.difficulty)}>
-                    <SelectTrigger id="edit-difficulty">
-                      <SelectValue placeholder="Select difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Beginner">Beginner</SelectItem>
-                      <SelectItem value="Intermediate">Intermediate</SelectItem>
-                      <SelectItem value="Advanced">Advanced</SelectItem>
+                      {/* Physics / Chemistry / Biology → Grade 10 to 13 */}
+                      {(editingPractical.subject === "Physics" ||
+                        editingPractical.subject === "Chemistry" ||
+                        editingPractical.subject === "Biology") && (
+                        <>
+                          <SelectItem value="Grade 10">Grade 10</SelectItem>
+                          <SelectItem value="Grade 11">Grade 11</SelectItem>
+                          <SelectItem value="Grade 12">Grade 12</SelectItem>
+                          <SelectItem value="Grade 13">Grade 13</SelectItem>
+                        </>
+                      )}
+
+                      {/* Science → Grade 6 to 11 */}
+                      {editingPractical.subject === "Science" && (
+                        <>
+                          <SelectItem value="Grade 6">Grade 6</SelectItem>
+                          <SelectItem value="Grade 7">Grade 7</SelectItem>
+                          <SelectItem value="Grade 8">Grade 8</SelectItem>
+                          <SelectItem value="Grade 9">Grade 9</SelectItem>
+                          
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
