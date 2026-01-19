@@ -76,9 +76,9 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       },
       {
         id: "requests" as Page,
-        label: "Inventory Requests",
+        label: "Laboratory Requests",
         icon: FileText,
-        roles: ['teacher', 'lab-assistant', 'principal'],
+        roles: ['teacher', 'lab-assistant'],
       },
       {
         id: "users" as Page,
