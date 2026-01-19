@@ -1,14 +1,9 @@
 // src/app/api/auth/totp/verify-login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import {
-  verifyTOTPToken,
-  decryptSecret,
-  verifyBackupCode,
-  removeBackupCode,
-} from '@/src/app/lib/totpHelper';
+import { verifyTOTPToken, decryptSecret, hashBackupCode } from '@/src/app/lib/totpHelper';
+import { setAuthCookie } from '@/src/app/lib/auth';
 
-// POST - Verify TOTP during login
 export async function POST(request: NextRequest) {
   try {
     const { userId, token, isBackupCode } = await request.json();
@@ -20,7 +15,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user with 2FA secret
+    // Get user with 2FA settings
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -28,81 +23,100 @@ export async function POST(request: NextRequest) {
         name: true,
         email: true,
         role: true,
-        twoFactorEnabled: true,
         twoFactorSecret: true,
         twoFactorBackupCodes: true,
+        twoFactorEnabled: true,
       },
     });
 
-    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Two-factor authentication not enabled' },
-        { status: 400 }
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
     let isValid = false;
+    let warning = null;
 
-    // Check if using backup code
     if (isBackupCode) {
-      isValid = verifyBackupCode(token, user.twoFactorBackupCodes);
+      // Verify backup code
+      const codes = user.twoFactorBackupCodes || [];
       
-      if (isValid) {
-        // Remove used backup code
-        const updatedBackupCodes = removeBackupCode(token, user.twoFactorBackupCodes);
-        
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            twoFactorBackupCodes: updatedBackupCodes,
-            lastLogin: new Date(),
-          },
-        });
+      // Check if the token matches any of the hashed backup codes
+      // Assuming verifyBackupCode compares plain text token with hashed code
+      for (const hashedCode of codes) {
+        // Hash the input token and compare with stored hash
+        const hashedInput = hashBackupCode(token);
+        if (hashedInput === hashedCode) {
+          isValid = true;
+          
+          // Remove used backup code
+          const updatedCodes = codes.filter(code => code !== hashedCode);
+          await prisma.user.update({
+            where: { id: userId },
+            data: { twoFactorBackupCodes: updatedCodes },
+          });
 
-        // Warn user if running low on backup codes
-        const remainingCodes = updatedBackupCodes.length;
-        let warning = '';
-        if (remainingCodes === 0) {
-          warning = 'You have used your last backup code. Please generate new codes.';
-        } else if (remainingCodes <= 3) {
-          warning = `You have ${remainingCodes} backup codes remaining. Consider generating new codes.`;
+          // Warn if running low on backup codes
+          if (updatedCodes.length <= 2) {
+            warning = `Warning: You have ${updatedCodes.length} backup codes remaining. Please generate new codes.`;
+          }
+          
+          break;
         }
-
-        return NextResponse.json({
-          success: true,
-          message: 'Login successful with backup code',
-          warning,
-          remainingBackupCodes: remainingCodes,
-        });
       }
     } else {
-      // Verify TOTP token
-      const secret = decryptSecret(user.twoFactorSecret);
-      isValid = verifyTOTPToken(token, secret);
-
-      if (isValid) {
-        // Update last login
-        await prisma.user.update({
-          where: { id: userId },
-          data: { lastLogin: new Date() },
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: 'Login successful',
-        });
+      // Verify TOTP using speakeasy
+      if (user.twoFactorSecret) {
+        // Decrypt the secret first
+        const decryptedSecret = decryptSecret(user.twoFactorSecret);
+        // Verify the token
+        isValid = verifyTOTPToken(token, decryptedSecret);
       }
     }
 
-    // Invalid token
-    return NextResponse.json(
-      { error: 'Invalid verification code' },
-      { status: 401 }
-    );
+    if (!isValid) {
+      return NextResponse.json(
+        { error: 'Invalid code' },
+        { status: 401 }
+      );
+    }
+
+    // Convert role
+    const roleMap: Record<string, string> = {
+      'STUDENT': 'student',
+      'TEACHER': 'teacher',
+      'LAB_ASSISTANT': 'lab-assistant',
+      'PRINCIPAL': 'principal',
+      'ADMIN': 'admin',
+    };
+
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: roleMap[user.role] || 'student',
+      twoFactorEnabled: user.twoFactorEnabled,
+    };
+
+    // Set auth cookie after successful 2FA
+    await setAuthCookie(userData);
+
+    // Update last login
+    await prisma.user.update({
+      where: { id: userId },
+      data: { lastLogin: new Date() },
+    });
+
+    return NextResponse.json({
+      success: true,
+      warning,
+    });
   } catch (error) {
-    console.error('TOTP verification error:', error);
+    console.error('2FA verification error:', error);
     return NextResponse.json(
-      { error: 'Failed to verify code' },
+      { error: 'An error occurred during verification' },
       { status: 500 }
     );
   }

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { setAuthCookie } from '@/src/app/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,7 +73,9 @@ export async function POST(request: NextRequest) {
 
     // Check if 2FA is enabled
     if (!user.twoFactorEnabled) {
-      // No 2FA required, log in directly
+      // No 2FA required - set cookie and log in directly
+      await setAuthCookie(userData);
+      
       await prisma.user.update({
         where: { id: user.id },
         data: { lastLogin: new Date() },
@@ -85,6 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2FA enabled, require TOTP verification
+    // DON'T set cookie yet - wait for 2FA verification
     return NextResponse.json({
       user: userData,
       twoFactorRequired: true,

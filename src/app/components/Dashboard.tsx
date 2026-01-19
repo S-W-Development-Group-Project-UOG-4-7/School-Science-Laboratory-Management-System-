@@ -1,6 +1,8 @@
+// Update to Dashboard.tsx - Add these changes
+
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import {
   FlaskConical,
@@ -24,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "./ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { PracticalsPage } from "./PracticalsPage";
 import { InventoryPage } from "./InventoryPage";
 import { SchedulePage } from "./SchedulePage";
@@ -49,8 +51,41 @@ type Page =
   | "users";
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentPage, setCurrentPage] =
-    useState<Page>("home");
+  const [currentPage, setCurrentPage] = useState<Page>("home");
+  const [profileImageUrl, setProfileImageUrl] = useState<string>('');
+
+  // Fetch user's profile image on component mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const response = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user.profileImageUrl) {
+            setProfileImageUrl(data.user.profileImageUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile image:', error);
+      }
+    };
+
+    fetchProfileImage();
+  }, [user.email]);
+
+  // Listen for profile updates from SettingsPage
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      if (event.detail?.profileImageUrl) {
+        setProfileImageUrl(event.detail.profileImageUrl);
+      }
+    };
+
+    window.addEventListener('profileUpdated' as any, handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated' as any, handleProfileUpdate);
+    };
+  }, []);
 
   // Define navigation items based on user role
   const getNavigationItems = () => {
@@ -122,6 +157,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       default:
         return 'from-gray-500 to-gray-600';
     }
+  };
+
+  const handleProfileUpdate = (imageUrl: string) => {
+    setProfileImageUrl(imageUrl);
   };
 
   return (
@@ -213,6 +252,9 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     className="flex items-center gap-2 text-white hover:bg-white/10"
                   >
                     <Avatar className="w-8 h-8 border-2 border-white/30">
+                      {profileImageUrl ? (
+                        <AvatarImage src={profileImageUrl} alt={user.name} />
+                      ) : null}
                       <AvatarFallback className={`bg-gradient-to-br ${getRoleBadgeColor()} text-white text-sm`}>
                         {user.name.charAt(0)}
                       </AvatarFallback>
@@ -294,7 +336,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <UserManagementPage />
             )}
             {currentPage === "settings" && (
-              <SettingsPage user={user} />
+              <SettingsPage 
+                user={user} 
+                onProfileUpdate={handleProfileUpdate}
+              />
             )}
           </motion.div>
         </AnimatePresence>
