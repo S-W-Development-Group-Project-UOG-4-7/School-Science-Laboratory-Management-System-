@@ -21,14 +21,19 @@ import {
   Save,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Phone,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface UserType {
+  id?: string;
   name: string;
   email: string;
   role: string;
+  phone?: string | null;
 }
 
 interface SettingsPageProps {
@@ -41,17 +46,18 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   
-  // Account settings state
-  const [fullName, setFullName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
-  const [phone, setPhone] = useState('+94 71 234 5678');
+  // Account settings state - Initialize with empty values
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [profileImage, setProfileImage] = useState<string>('');
   const [savedProfileImageUrl, setSavedProfileImageUrl] = useState<string>('');
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   
   // Security settings state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [practicalReminders, setPracticalReminders] = useState(true);
@@ -60,49 +66,110 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
   // Ref for file input
   let fileInputRef: HTMLInputElement | null = null;
 
-  // Fetch user profile on component mount
+  // Fetch user data from database on component mount
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchUserData = async () => {
       try {
-        const response = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
+        setLoading(true);
+        
+        // Fetch user from the database using the email or ID
+        const response = await fetch(`/api/users?search=${encodeURIComponent(user.email)}`);
+        
         if (response.ok) {
-          const data = await response.json();
-          console.log('Fetched profile data:', data); // Debug log
+          const users = await response.json();
+          const userData = users.find((u: any) => u.email === user.email);
           
-          if (data.user.profileImageUrl) {
-            console.log('Setting profile image to:', data.user.profileImageUrl); // Debug log
-            setSavedProfileImageUrl(data.user.profileImageUrl);
-            setProfileImage(data.user.profileImageUrl);
+          if (userData) {
+            // Set real data from database
+            setFullName(userData.name || '');
+            setEmail(userData.email || '');
+            setPhone(userData.phone || '');
+            
+            // Check if user has 2FA enabled
+            setTwoFactorEnabled(userData.twoFactorEnabled || false);
+            
+            setDataLoaded(true);
+          } else {
+            // If user not found in database, use props
+            setFullName(user.name || '');
+            setEmail(user.email || '');
+            setPhone(user.phone || '');
+            setDataLoaded(true);
           }
-          // Update other fields if needed
-          if (data.user.fullName) setFullName(data.user.fullName);
-          if (data.user.phone) setPhone(data.user.phone);
         } else {
-          console.error('Failed to fetch profile:', response.status);
+          throw new Error('Failed to fetch user data');
         }
+        
+        // Try to fetch profile image from the profile endpoint
+        try {
+          const profileResponse = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.user?.profileImageUrl) {
+              setSavedProfileImageUrl(profileData.user.profileImageUrl);
+              setProfileImage(profileData.user.profileImageUrl);
+            }
+          }
+        } catch (profileError) {
+          console.log('No profile image found');
+        }
+        
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching user data:', error);
+        toast.error('Failed to load user data');
+        
+        // Fallback to props if fetch fails
+        setFullName(user.name || '');
+        setEmail(user.email || '');
+        setPhone(user.phone || '');
+        setDataLoaded(true);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
-  }, [user.email]);
+    fetchUserData();
+  }, [user.email, user.name, user.phone]);
+
+  const validatePhone = (phoneNumber: string): boolean => {
+    if (!phoneNumber) return true; // Optional field
+    
+    // Remove all spaces and special characters for validation
+    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    
+    // Sri Lankan phone number pattern: starts with +94 or 0, followed by 9 or 10 digits
+    const sriLankanPattern = /^(\+94|0)?[0-9]{9,10}$/;
+    
+    return sriLankanPattern.test(cleanPhone);
+  };
 
   const handleSave = async () => {
+    // Validate required fields
+    if (!fullName || !email) {
+      toast.error('Required fields missing', {
+        description: 'Please fill in your name and email',
+      });
+      return;
+    }
+
+    // Validate phone number
+    if (phone && !validatePhone(phone)) {
+      toast.error('Invalid Phone Number', {
+        description: 'Please enter a valid Sri Lankan phone number (e.g., +94 71 234 5678 or 0712345678)',
+      });
+      return;
+    }
+
     try {
+      setUploading(true);
+
       // First, upload the image if a new one was selected
-      let imageUrl = savedProfileImageUrl; // Use the existing saved URL
+      let imageUrl = savedProfileImageUrl;
       
       if (profileImageFile) {
-        setUploading(true);
-        
         const formData = new FormData();
         formData.append('profileImage', profileImageFile);
-        formData.append('userId', user.email); // Using email as userId
-        
-        console.log('Uploading image for user:', user.email); // Debug log
+        formData.append('userId', user.email);
         
         const uploadResponse = await fetch('/api/users/profile/upload', {
           method: 'POST',
@@ -116,44 +183,58 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
         
         const uploadData = await uploadResponse.json();
         imageUrl = uploadData.imageUrl;
-        console.log('Image uploaded successfully:', imageUrl); // Debug log
         
-        setSavedProfileImageUrl(imageUrl); // Update saved URL
-        setProfileImage(imageUrl); // Make sure to update the display
-        setUploading(false);
+        setSavedProfileImageUrl(imageUrl);
+        setProfileImage(imageUrl);
       }
       
-      console.log('Saving profile with imageUrl:', imageUrl); // Debug log
-      
-      // Then update the profile with all information
-      const response = await fetch('/api/users/profile', {
+      // Update the user in the database
+      const updateResponse = await fetch('/api/users', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.email,
-          fullName,
-          email,
-          phone,
-          profileImageUrl: imageUrl
+          id: user.id,
+          name: fullName.trim(),
+          email: email.toLowerCase().trim(),
+          phone: phone.trim() || null,
+          role: user.role.toLowerCase().replace(' ', '-'),
         })
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!updateResponse.ok) {
+        const errorData = await updateResponse.json();
         throw new Error(errorData.error || 'Failed to update profile');
       }
       
-      const responseData = await response.json();
-      console.log('Profile saved successfully:', responseData); // Debug log
+      // Also update profile-specific data if image was uploaded
+      if (imageUrl) {
+        try {
+          await fetch('/api/users/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.email,
+              fullName,
+              email,
+              phone: phone || null,
+              profileImageUrl: imageUrl
+            })
+          });
+        } catch (profileError) {
+          console.log('Profile endpoint not available, continuing...');
+        }
+      }
       
       // Notify parent component about the profile update
       if (onProfileUpdate && imageUrl) {
         onProfileUpdate(imageUrl);
       }
       
-      // Also emit a custom event for other components to listen to
+      // Emit custom event for other components
       if (imageUrl) {
         const event = new CustomEvent('profileUpdated', { 
           detail: { profileImageUrl: imageUrl } 
@@ -166,9 +247,16 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      
+      toast.success('Profile Updated', {
+        description: 'Your profile has been successfully updated.',
+      });
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error('Failed to save profile', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
       setUploading(false);
     }
   };
@@ -178,13 +266,17 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast.error('Invalid file type', {
+          description: 'Please select an image file',
+        });
         return;
       }
       
       // Validate file size (2MB max)
       if (file.size > 2 * 1024 * 1024) {
-        alert('File size must be less than 2MB');
+        toast.error('File too large', {
+          description: 'File size must be less than 2MB',
+        });
         return;
       }
 
@@ -203,6 +295,18 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
   const triggerFileInput = () => {
     fileInputRef?.click();
   };
+
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <span className="ml-3 text-gray-600">Loading your profile...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -257,7 +361,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     <Avatar className="w-24 h-24 border-4 border-emerald-100">
                       <AvatarImage src={profileImage} />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-white">
-                        {user.name.charAt(0)}
+                        {fullName ? fullName.charAt(0).toUpperCase() : user.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <motion.button
@@ -285,12 +389,13 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                 {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
+                    <Label htmlFor="fullName">Full Name *</Label>
                     <Input
                       id="fullName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="transition-all hover:border-blue-400 focus:border-blue-500"
+                      placeholder="Enter your full name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -303,24 +408,35 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="transition-all hover:border-blue-400 focus:border-blue-500"
-                    />
+                    <Label htmlFor="email">Email Address *</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 transition-all hover:border-blue-400 focus:border-blue-500"
+                        placeholder="your.email@school.lk"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="transition-all hover:border-emerald-400 focus:border-emerald-500"
-                    />
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="pl-10 transition-all hover:border-emerald-400 focus:border-emerald-500"
+                        placeholder="+94 71 234 5678"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Optional. Format: +94 71 234 5678 or 0712345678
+                    </p>
                   </div>
                 </div>
 
@@ -328,13 +444,13 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       onClick={handleSave}
-                      disabled={uploading}
+                      disabled={uploading || !fullName || !email}
                       className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50"
                     >
                       {uploading ? (
                         <>
-                          <span className="animate-spin mr-2">⏳</span>
-                          Uploading...
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
                         </>
                       ) : saved ? (
                         <>
@@ -563,15 +679,4 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
       </Tabs>
     </div>
   );
-}
-
-// Demo wrapper
-export default function SettingsDemo() {
-  const demoUser = {
-    name: 'Dr. Sarah Johnson',
-    email: 'sarah.johnson@medlab.com',
-    role: 'laboratory technician'
-  };
-
-  return <SettingsPage user={demoUser} />;
 }

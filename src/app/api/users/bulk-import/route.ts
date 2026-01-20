@@ -7,6 +7,7 @@ import { Role, Status } from '@prisma/client';
 interface ImportUser {
   name: string;
   email: string;
+  phone?: string;
   role: string;
   password: string;
   rowNumber: number;
@@ -117,6 +118,7 @@ export async function POST(request: NextRequest) {
           data: {
             name: user.name.trim(),
             email: user.email.toLowerCase().trim(),
+            phone: user.phone?.trim() || null,
             password: hashedPassword,
             role: roleEnum,
             status: Status.ACTIVE,

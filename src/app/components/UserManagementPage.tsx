@@ -25,7 +25,8 @@ import {
   CheckCircle,
   XCircle,
   Lock,
-  Unlock
+  Unlock,
+  Phone
 } from 'lucide-react';
 import {
   Dialog,
@@ -63,6 +64,7 @@ interface SystemUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   role: string;
   status: string;
   createdDate: string;
@@ -117,6 +119,7 @@ export function UserManagementPage() {
     id: '',
     name: '',
     email: '',
+    phone: '',
     role: '',
   });
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -125,6 +128,7 @@ export function UserManagementPage() {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    phone: '',
     role: 'student',
     password: '',
   });
@@ -179,9 +183,23 @@ export function UserManagementPage() {
     }
   };
 
+  const validatePhone = (phoneNumber: string): boolean => {
+    if (!phoneNumber) return true; // Optional field
+    
+    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
+    const sriLankanPattern = /^(\+94|0)?[0-9]{9,10}$/;
+    
+    return sriLankanPattern.test(cleanPhone);
+  };
+
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
-      toast.error('Please fill in all fields');
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (newUser.phone && !validatePhone(newUser.phone)) {
+      toast.error('Invalid phone number format');
       return;
     }
 
@@ -190,7 +208,10 @@ export function UserManagementPage() {
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser),
+        body: JSON.stringify({
+          ...newUser,
+          phone: newUser.phone || null
+        }),
       });
 
       if (!response.ok) {
@@ -201,7 +222,7 @@ export function UserManagementPage() {
       const user = await response.json();
       setUsers([user, ...users]);
       setIsAddDialogOpen(false);
-      setNewUser({ name: '', email: '', role: 'student', password: '' });
+      setNewUser({ name: '', email: '', phone: '', role: 'student', password: '' });
       
       toast.success('User Added Successfully', {
         description: `${user.name} has been added to the system.`,
@@ -306,12 +327,20 @@ export function UserManagementPage() {
       return;
     }
 
+    if (editUser.phone && !validatePhone(editUser.phone)) {
+      toast.error('Invalid phone number format');
+      return;
+    }
+
     try {
       setSubmitting(true);
       const response = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editUser),
+        body: JSON.stringify({
+          ...editUser,
+          phone: editUser.phone || null
+        }),
       });
 
       if (!response.ok) {
@@ -322,7 +351,7 @@ export function UserManagementPage() {
       const updatedUser = await response.json();
       setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
       setIsEditDialogOpen(false);
-      setEditUser({ id: '', name: '', email: '', role: '' });
+      setEditUser({ id: '', name: '', email: '', phone: '', role: '' });
       
       toast.success('User Updated Successfully', {
         description: `${updatedUser.name}'s information has been updated.`,
@@ -373,8 +402,8 @@ export function UserManagementPage() {
 
   const downloadTemplate = () => {
     const template = [
-      { Name: 'John Doe', Email: 'john.doe@school.lk', Role: 'student', Password: 'TempPass123' },
-      { Name: 'Jane Smith', Email: 'jane.smith@school.lk', Role: 'teacher', Password: 'TempPass456' },
+      { Name: 'John Doe', Email: 'john.doe@school.lk', Phone: '+94 71 234 5678', Role: 'student', Password: 'TempPass123' },
+      { Name: 'Jane Smith', Email: 'jane.smith@school.lk', Phone: '+94 77 987 6543', Role: 'teacher', Password: 'TempPass456' },
     ];
 
     const ws = XLSX.utils.json_to_sheet(template);
@@ -384,6 +413,7 @@ export function UserManagementPage() {
     ws['!cols'] = [
       { wch: 20 },
       { wch: 30 },
+      { wch: 18 },
       { wch: 15 },
       { wch: 15 }
     ];
@@ -431,6 +461,7 @@ export function UserManagementPage() {
       const usersToImport = jsonData.map((row: any, index) => ({
         name: row.Name || row.name,
         email: row.Email || row.email,
+        phone: row.Phone || row.phone || null,
         role: (row.Role || row.role || 'student').toLowerCase(),
         password: row.Password || row.password,
         rowNumber: index + 2,
@@ -503,21 +534,15 @@ export function UserManagementPage() {
     const status = getPrivilegeStatus(privilegeId);
 
     if (hasFromRole) {
-      // Privilege comes from role
       if (status === 'revoked') {
-        // Currently revoked, restore it
         setRevokedPrivileges(prev => prev.filter(p => p !== privilegeId));
       } else {
-        // Currently active from role, revoke it
         setRevokedPrivileges(prev => [...prev, privilegeId]);
       }
     } else {
-      // Privilege doesn't come from role
       if (status === 'custom') {
-        // Currently custom added, remove it
         setCustomPrivileges(prev => prev.filter(p => p !== privilegeId));
       } else {
-        // Not active, add as custom
         setCustomPrivileges(prev => [...prev, privilegeId]);
       }
     }
@@ -563,6 +588,11 @@ export function UserManagementPage() {
     });
   };
 
+  const formatPhone = (phone?: string) => {
+    if (!phone) return 'N/A';
+    return phone;
+  };
+
   const stats = {
     total: users.length,
     active: users.filter(u => u.status === 'ACTIVE').length,
@@ -570,14 +600,12 @@ export function UserManagementPage() {
     staff: users.filter(u => u.role !== 'STUDENT').length,
   };
 
-  // Group privileges by category for the privilege dialog
   const privilegesByCategory = PRIVILEGES.reduce((acc, priv) => {
     if (!acc[priv.category]) acc[priv.category] = [];
     acc[priv.category].push(priv);
     return acc;
   }, {} as Record<string, typeof PRIVILEGES>);
 
-  // Calculate privilege stats
   const privilegeStats = selectedUser ? (() => {
     const rolePrivileges = DEFAULT_ROLE_PRIVILEGES[selectedUser.role] || [];
     return {
@@ -623,7 +651,7 @@ export function UserManagementPage() {
                   <FileSpreadsheet className="h-4 w-4" />
                   <AlertTitle>Template Format</AlertTitle>
                   <AlertDescription>
-                    Your Excel file should have columns: Name, Email, Role, Password
+                    Your Excel file should have columns: Name, Email, Phone (optional), Role, Password
                     <br />
                     Valid roles: student, teacher, lab-assistant, principal, admin
                   </AlertDescription>
@@ -731,7 +759,7 @@ export function UserManagementPage() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name *</Label>
                   <Input
                     id="name"
                     placeholder="Enter full name"
@@ -740,7 +768,7 @@ export function UserManagementPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">Email Address *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -750,7 +778,18 @@ export function UserManagementPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+94 71 234 5678"
+                    value={newUser.phone}
+                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500">Optional. Format: +94 71 234 5678</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role *</Label>
                   <select
                     id="role"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -765,7 +804,7 @@ export function UserManagementPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Initial Password</Label>
+                  <Label htmlFor="password">Initial Password *</Label>
                   <Input
                     id="password"
                     type="password"
@@ -805,77 +844,31 @@ export function UserManagementPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="border-blue-200 bg-blue-50/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-blue-700">{stats.total}</p>
+        {[
+          { label: 'Total Users', value: stats.total, icon: Users, color: 'blue', delay: 0.1 },
+          { label: 'Active Users', value: stats.active, icon: Shield, color: 'green', delay: 0.2 },
+          { label: 'Students', value: stats.students, icon: Users, color: 'yellow', delay: 0.3 },
+          { label: 'Staff', value: stats.staff, icon: Shield, color: 'purple', delay: 0.4 },
+        ].map((stat) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: stat.delay }}
+          >
+            <Card className={`border-${stat.color}-200 bg-${stat.color}-50/50`}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                    <p className={`text-3xl font-bold text-${stat.color}-700`}>{stat.value}</p>
+                  </div>
+                  <stat.icon className={`w-10 h-10 text-${stat.color}-600 opacity-80`} />
                 </div>
-                <Users className="w-10 h-10 text-blue-600 opacity-80" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card className="border-green-200 bg-green-50/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                  <p className="text-3xl font-bold text-green-700">{stats.active}</p>
-                </div>
-                <Shield className="w-10 h-10 text-green-600 opacity-80" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="border-yellow-200 bg-yellow-50/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Students</p>
-                  <p className="text-3xl font-bold text-yellow-700">{stats.students}</p>
-                </div>
-                <Users className="w-10 h-10 text-yellow-600 opacity-80" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="border-purple-200 bg-purple-50/50">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Staff</p>
-                  <p className="text-3xl font-bold text-purple-700">{stats.staff}</p>
-                </div>
-                <Shield className="w-10 h-10 text-purple-600 opacity-80" />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
       {/* Search */}
@@ -889,7 +882,7 @@ export function UserManagementPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
-                placeholder="Search users by name, email, or role..."
+                placeholder="Search users by name, email, phone, or role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -918,12 +911,13 @@ export function UserManagementPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Last Login</TableHead>
@@ -933,7 +927,7 @@ export function UserManagementPage() {
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           No users found
                         </TableCell>
                       </TableRow>
@@ -952,6 +946,12 @@ export function UserManagementPage() {
                             <div className="flex items-center gap-2">
                               <Mail className="w-4 h-4 text-gray-400" />
                               <span className="text-sm">{user.email}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-gray-400" />
+                              <span className="text-sm">{formatPhone(user.phone)}</span>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -983,6 +983,7 @@ export function UserManagementPage() {
                                       id: user.id,
                                       name: user.name,
                                       email: user.email,
+                                      phone: user.phone || '',
                                       role: user.role.toLowerCase().replace('_', '-'),
                                     });
                                     setIsEditDialogOpen(true);
@@ -1001,7 +1002,7 @@ export function UserManagementPage() {
                                   Manage Privileges
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleToggleStatus(user.id)}>
-                                  <Shield className="w-4 h-4 mr-2" />
+                                  {user.status === 'ACTIVE' ? <Lock className="w-4 h-4 mr-2" /> : <Unlock className="w-4 h-4 mr-2" />}
                                   {user.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
@@ -1037,7 +1038,92 @@ export function UserManagementPage() {
         </Card>
       </motion.div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name *</Label>
+              <Input
+                id="edit-name"
+                placeholder="Enter full name"
+                value={editUser.name}
+                onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email Address *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                placeholder="user@school.lk"
+                value={editUser.email}
+                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone Number</Label>
+              <Input
+                id="edit-phone"
+                type="tel"
+                placeholder="+94 71 234 5678"
+                value={editUser.phone}
+                onChange={(e) => setEditUser({ ...editUser, phone: e.target.value })}
+              />
+              <p className="text-xs text-gray-500">Optional. Format: +94 71 234 5678</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-role">Role *</Label>
+              <select
+                id="edit-role"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                value={editUser.role}
+                onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+              >
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+                <option value="lab-assistant">Lab Assistant</option>
+                <option value="principal">Principal</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false);
+              setEditUser({ id: '', name: '', email: '', phone: '', role: '' });
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleEditUser}
+              disabled={!editUser.name || !editUser.email || submitting}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Update User
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Other Dialogs - Delete, Reset Password, Privilege Management remain the same */}
+      
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1055,6 +1141,7 @@ export function UserManagementPage() {
                 <div className="space-y-2">
                   <p><strong>Name:</strong> {selectedUser.name}</p>
                   <p><strong>Email:</strong> {selectedUser.email}</p>
+                  <p><strong>Phone:</strong> {formatPhone(selectedUser.phone)}</p>
                   <p><strong>Role:</strong> {formatRole(selectedUser.role)}</p>
                 </div>
               </AlertDescription>
@@ -1092,7 +1179,6 @@ export function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Reset Password Dialog */}
       <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1134,210 +1220,6 @@ export function UserManagementPage() {
                 <>
                   <Key className="w-4 h-4 mr-2" />
                   Reset Password
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user information
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Full Name</Label>
-              <Input
-                id="edit-name"
-                placeholder="Enter full name"
-                value={editUser.name}
-                onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-email">Email Address</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                placeholder="user@school.lk"
-                value={editUser.email}
-                onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-role">Role</Label>
-              <select
-                id="edit-role"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                value={editUser.role}
-                onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
-              >
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-                <option value="lab-assistant">Lab Assistant</option>
-                <option value="principal">Principal</option>
-                <option value="admin">Administrator</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsEditDialogOpen(false);
-              setEditUser({ id: '', name: '', email: '', role: '' });
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleEditUser}
-              disabled={!editUser.name || !editUser.email || submitting}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Update User
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Privilege Management Dialog */}
-      <Dialog open={isPrivilegeDialogOpen} onOpenChange={setIsPrivilegeDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-blue-600" />
-              Manage User Privileges
-            </DialogTitle>
-            <DialogDescription>
-              Customize privileges for {selectedUser?.name} ({selectedUser?.role.replace('_', ' ')})
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Stats Summary */}
-          <div className="grid grid-cols-4 gap-3 py-3 border-y">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{privilegeStats.total}</div>
-              <div className="text-xs text-gray-600">Total Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{privilegeStats.fromRole}</div>
-              <div className="text-xs text-gray-600">From Role</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{privilegeStats.custom}</div>
-              <div className="text-xs text-gray-600">Custom Added</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{privilegeStats.revoked}</div>
-              <div className="text-xs text-gray-600">Revoked</div>
-            </div>
-          </div>
-
-          {/* Privilege Categories */}
-          <div className="space-y-4 py-4">
-            {Object.entries(privilegesByCategory).map(([category, privileges]) => (
-              <div key={category} className="space-y-2">
-                <h3 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
-                  <div className="h-px flex-1 bg-gray-200" />
-                  {category}
-                  <div className="h-px flex-1 bg-gray-200" />
-                </h3>
-                
-                <div className="space-y-2">
-                  {privileges.map(privilege => {
-                    if (!selectedUser) return null;
-                    const status = getPrivilegeStatus(privilege.id);
-                    const isActive = isPrivilegeActive(privilege.id);
-
-                    return (
-                      <div
-                        key={privilege.id}
-                        className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                          isActive 
-                            ? 'bg-blue-50 border-blue-200' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0 mr-4">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-sm font-medium cursor-pointer">
-                              {privilege.label}
-                            </Label>
-                            
-                            {status === 'role' && (
-                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 text-xs">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                From Role
-                              </Badge>
-                            )}
-                            
-                            {status === 'custom' && (
-                              <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 text-xs">
-                                <Unlock className="w-3 h-3 mr-1" />
-                                Custom
-                              </Badge>
-                            )}
-                            
-                            {status === 'revoked' && (
-                              <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300 text-xs">
-                                <Lock className="w-3 h-3 mr-1" />
-                                Revoked
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-600 mt-0.5">{privilege.description}</p>
-                        </div>
-                        
-                        <Switch
-                          checked={isActive}
-                          onCheckedChange={() => togglePrivilege(privilege.id)}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleResetPrivileges}>
-              Reset to Role Default
-            </Button>
-            <Button variant="outline" onClick={() => {
-              setIsPrivilegeDialogOpen(false);
-              setSelectedUser(null);
-            }}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdatePrivileges}
-              disabled={submitting}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Shield className="w-4 h-4 mr-2" />
-                  Save Changes
                 </>
               )}
             </Button>

@@ -1,3 +1,5 @@
+// src/app/api/users/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import prisma  from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -14,6 +16,7 @@ export async function GET(request: NextRequest) {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
         ],
       } : {},
       orderBy: { createdDate: 'desc' },
@@ -21,6 +24,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         status: true,
         createdDate: true,
@@ -44,7 +48,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, role, customPrivileges, revokedPrivileges } = body;
+    const { name, email, phone, password, role, customPrivileges, revokedPrivileges } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json(
@@ -70,6 +74,7 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         email,
+        phone: phone || null,
         password: hashedPassword,
         role: role.toUpperCase().replace('-', '_'),
         status: 'ACTIVE',
@@ -80,6 +85,7 @@ export async function POST(request: NextRequest) {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         status: true,
         createdDate: true,
@@ -103,7 +109,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, email, role, status, customPrivileges, revokedPrivileges } = body;
+    const { id, name, email, phone, role, status, customPrivileges, revokedPrivileges } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -115,6 +121,7 @@ export async function PATCH(request: NextRequest) {
     const updateData: any = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone || null;
     if (role) updateData.role = role.toUpperCase().replace('-', '_');
     if (status) updateData.status = status.toUpperCase();
     if (customPrivileges !== undefined) updateData.customPrivileges = customPrivileges;
@@ -127,6 +134,7 @@ export async function PATCH(request: NextRequest) {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         status: true,
         createdDate: true,
@@ -188,7 +196,7 @@ export async function DELETE(request: NextRequest) {
 // PUT - Update user (full update)
 export async function PUT(request: NextRequest) {
   try {
-    const { id, name, email, role } = await request.json();
+    const { id, name, email, phone, role } = await request.json();
 
     if (!id || !name || !email || !role) {
       return NextResponse.json(
@@ -251,12 +259,14 @@ export async function PUT(request: NextRequest) {
       data: {
         name: name.trim(),
         email: email.toLowerCase().trim(),
+        phone: phone || null,
         role: roleEnum,
       },
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
         role: true,
         status: true,
         createdDate: true,
