@@ -15,46 +15,41 @@ import {
   Lock, 
   Bell, 
   Shield, 
-  Mail, 
-  Smartphone,
   Camera,
   Save,
   Eye,
   EyeOff,
   Check,
-  Phone,
+  Smartphone,
+  Key,
+  RefreshCw,
+  AlertCircle,
   Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
-
-interface UserType {
-  id?: string;
-  name: string;
-  email: string;
-  role: string;
-  phone?: string | null;
-}
+import type { User as UserType } from '@/src/app/lib/types';
+import { TwoFactorSetupPage } from './TwoFactorSetupPage';
 
 interface SettingsPageProps {
   user: UserType;
-  onProfileUpdate?: (imageUrl: string) => void;
+  onUserUpdate?: (user: UserType) => void;
 }
 
-export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
+export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
   
-  // Account settings state - Initialize with empty values
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  // Account settings state
+  const [fullName, setFullName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState('');
   const [profileImage, setProfileImage] = useState<string>('');
   const [savedProfileImageUrl, setSavedProfileImageUrl] = useState<string>('');
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [userId, setUserId] = useState(user.id);
   
   // Security settings state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
@@ -72,7 +67,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
       try {
         setLoading(true);
         
-        // Fetch user from the database using the email or ID
+        // Fetch user from database to get current 2FA status
         const response = await fetch(`/api/users?search=${encodeURIComponent(user.email)}`);
         
         if (response.ok) {
@@ -80,29 +75,25 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
           const userData = users.find((u: any) => u.email === user.email);
           
           if (userData) {
-            // Set real data from database
-            setFullName(userData.name || '');
-            setEmail(userData.email || '');
+            // Update state with real data from database
+            setUserId(userData.id);
+            setFullName(userData.name || user.name);
+            setEmail(userData.email || user.email);
             setPhone(userData.phone || '');
             
-            // Check if user has 2FA enabled
+            // IMPORTANT: Set 2FA status from database
             setTwoFactorEnabled(userData.twoFactorEnabled || false);
             
-            setDataLoaded(true);
+            console.log('User 2FA Status from DB:', userData.twoFactorEnabled);
           } else {
-            // If user not found in database, use props
-            setFullName(user.name || '');
-            setEmail(user.email || '');
-            setPhone(user.phone || '');
-            setDataLoaded(true);
+            // Fallback to props if not found
+            setTwoFactorEnabled(user.twoFactorEnabled || false);
           }
-        } else {
-          throw new Error('Failed to fetch user data');
         }
         
-        // Try to fetch profile image from the profile endpoint
+        // Try to fetch profile image
         try {
-          const profileResponse = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
+          const profileResponse = await fetch(`/api/user/profile?userId=${encodeURIComponent(user.email)}`);
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             if (profileData.user?.profileImageUrl) {
@@ -111,67 +102,33 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
             }
           }
         } catch (profileError) {
-          console.log('No profile image found');
+          console.log('Profile image not found');
         }
         
       } catch (error) {
         console.error('Error fetching user data:', error);
-        toast.error('Failed to load user data');
-        
-        // Fallback to props if fetch fails
-        setFullName(user.name || '');
-        setEmail(user.email || '');
-        setPhone(user.phone || '');
-        setDataLoaded(true);
+        // Fallback to props
+        setTwoFactorEnabled(user.twoFactorEnabled || false);
       } finally {
         setLoading(false);
       }
     };
 
     fetchUserData();
-  }, [user.email, user.name, user.phone]);
-
-  const validatePhone = (phoneNumber: string): boolean => {
-    if (!phoneNumber) return true; // Optional field
-    
-    // Remove all spaces and special characters for validation
-    const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
-    
-    // Sri Lankan phone number pattern: starts with +94 or 0, followed by 9 or 10 digits
-    const sriLankanPattern = /^(\+94|0)?[0-9]{9,10}$/;
-    
-    return sriLankanPattern.test(cleanPhone);
-  };
+  }, [user.email, user.name, user.id, user.twoFactorEnabled]);
 
   const handleSave = async () => {
-    // Validate required fields
-    if (!fullName || !email) {
-      toast.error('Required fields missing', {
-        description: 'Please fill in your name and email',
-      });
-      return;
-    }
-
-    // Validate phone number
-    if (phone && !validatePhone(phone)) {
-      toast.error('Invalid Phone Number', {
-        description: 'Please enter a valid Sri Lankan phone number (e.g., +94 71 234 5678 or 0712345678)',
-      });
-      return;
-    }
-
     try {
-      setUploading(true);
-
-      // First, upload the image if a new one was selected
       let imageUrl = savedProfileImageUrl;
       
       if (profileImageFile) {
+        setUploading(true);
+        
         const formData = new FormData();
         formData.append('profileImage', profileImageFile);
         formData.append('userId', user.email);
         
-        const uploadResponse = await fetch('/api/users/profile/upload', {
+        const uploadResponse = await fetch('/api/user/profile/upload', {
           method: 'POST',
           body: formData
         });
@@ -183,80 +140,35 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
         
         const uploadData = await uploadResponse.json();
         imageUrl = uploadData.imageUrl;
-        
         setSavedProfileImageUrl(imageUrl);
-        setProfileImage(imageUrl);
+        setUploading(false);
       }
       
-      // Update the user in the database
-      const updateResponse = await fetch('/api/users', {
+      const response = await fetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: user.id,
-          name: fullName.trim(),
-          email: email.toLowerCase().trim(),
-          phone: phone.trim() || null,
-          role: user.role.toLowerCase().replace(' ', '-'),
+          userId: user.email,
+          fullName,
+          email,
+          phone,
+          profileImageUrl: imageUrl
         })
       });
       
-      if (!updateResponse.ok) {
-        const errorData = await updateResponse.json();
+      if (!response.ok) {
+        const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update profile');
       }
       
-      // Also update profile-specific data if image was uploaded
-      if (imageUrl) {
-        try {
-          await fetch('/api/users/profile', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              userId: user.email,
-              fullName,
-              email,
-              phone: phone || null,
-              profileImageUrl: imageUrl
-            })
-          });
-        } catch (profileError) {
-          console.log('Profile endpoint not available, continuing...');
-        }
-      }
-      
-      // Notify parent component about the profile update
-      if (onProfileUpdate && imageUrl) {
-        onProfileUpdate(imageUrl);
-      }
-      
-      // Emit custom event for other components
-      if (imageUrl) {
-        const event = new CustomEvent('profileUpdated', { 
-          detail: { profileImageUrl: imageUrl } 
-        });
-        window.dispatchEvent(event);
-      }
-      
-      // Clear the file selection after successful save
       setProfileImageFile(null);
-      
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-      
-      toast.success('Profile Updated', {
-        description: 'Your profile has been successfully updated.',
-      });
     } catch (error) {
       console.error('Error saving profile:', error);
-      toast.error('Failed to save profile', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
+      alert(`Failed to save profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setUploading(false);
     }
   };
@@ -264,26 +176,18 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
-        toast.error('Invalid file type', {
-          description: 'Please select an image file',
-        });
+        alert('Please select an image file');
         return;
       }
       
-      // Validate file size (2MB max)
       if (file.size > 2 * 1024 * 1024) {
-        toast.error('File too large', {
-          description: 'File size must be less than 2MB',
-        });
+        alert('File size must be less than 2MB');
         return;
       }
 
-      // Store the actual file for uploading later
       setProfileImageFile(file);
 
-      // Read and preview the image
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfileImage(e.target?.result as string);
@@ -296,7 +200,73 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
     fileInputRef?.click();
   };
 
-  // Show loading state while fetching data
+  // 2FA Handler Functions
+  const handleDisable2FA = async () => {
+    try {
+      console.log('Disabling 2FA for user:', userId);
+      
+      const response = await fetch('/api/auth/totp/disable', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId }),
+      });
+
+      const data = await response.json();
+      console.log('Disable 2FA response:', data);
+
+      if (response.ok) {
+        setTwoFactorEnabled(false);
+        if (onUserUpdate) {
+          onUserUpdate({ ...user, twoFactorEnabled: false });
+        }
+        alert('2FA has been disabled successfully');
+      } else {
+        alert(data.error || 'Failed to disable 2FA');
+      }
+    } catch (error) {
+      console.error('Error disabling 2FA:', error);
+      alert('An error occurred while disabling 2FA');
+    }
+  };
+
+  const handleReset2FA = async () => {
+    try {
+      await handleDisable2FA();
+      // Wait a bit for the database to update
+      setTimeout(() => {
+        setShow2FASetup(true);
+      }, 500);
+    } catch (error) {
+      console.error('Error resetting 2FA:', error);
+    }
+  };
+
+  const handle2FASetupComplete = async () => {
+    setShow2FASetup(false);
+    setTwoFactorEnabled(true);
+    
+    if (onUserUpdate) {
+      onUserUpdate({ ...user, twoFactorEnabled: true });
+    }
+    
+    alert('Two-factor authentication has been enabled successfully!');
+    
+    // Refresh the page to sync state
+    window.location.reload();
+  };
+
+  // Show 2FA setup page if user clicked enable
+  if (show2FASetup) {
+    return (
+      <TwoFactorSetupPage
+        user={{ ...user, id: userId }}
+        onComplete={handle2FASetupComplete}
+        onCancel={() => setShow2FASetup(false)}
+      />
+    );
+  }
+
+  // Show loading while fetching user data
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -348,7 +318,6 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                 <CardDescription>Update your personal information and profile picture</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Profile Picture */}
                 <div className="flex items-center gap-6">
                   <input
                     ref={(ref) => { fileInputRef = ref; }}
@@ -361,7 +330,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     <Avatar className="w-24 h-24 border-4 border-emerald-100">
                       <AvatarImage src={profileImage} />
                       <AvatarFallback className="text-2xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-white">
-                        {fullName ? fullName.charAt(0).toUpperCase() : user.name.charAt(0).toUpperCase()}
+                        {fullName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <motion.button
@@ -375,7 +344,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     </motion.button>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 mb-1">Profile Picture</p>
+                    <p className="font-semibold text-gray-900 mb-1">Profile Picture</p>
                     <p className="text-sm text-gray-600 mb-3">JPG, PNG or GIF. Max size 2MB</p>
                     <Button variant="outline" size="sm" onClick={triggerFileInput} type="button">
                       <Camera className="w-4 h-4 mr-2" />
@@ -386,16 +355,14 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
 
                 <Separator />
 
-                {/* Form Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Label htmlFor="fullName">Full Name</Label>
                     <Input
                       id="fullName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       className="transition-all hover:border-blue-400 focus:border-blue-500"
-                      placeholder="Enter your full name"
                     />
                   </div>
                   <div className="space-y-2">
@@ -408,35 +375,25 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 transition-all hover:border-blue-400 focus:border-blue-500"
-                        placeholder="your.email@school.lk"
-                      />
-                    </div>
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="transition-all hover:border-blue-400 focus:border-blue-500"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="pl-10 transition-all hover:border-emerald-400 focus:border-emerald-500"
-                        placeholder="+94 71 234 5678"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Optional. Format: +94 71 234 5678 or 0712345678
-                    </p>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="transition-all hover:border-emerald-400 focus:border-emerald-500"
+                      placeholder="+94 71 234 5678"
+                    />
                   </div>
                 </div>
 
@@ -444,13 +401,13 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       onClick={handleSave}
-                      disabled={uploading || !fullName || !email}
-                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50"
+                      disabled={uploading}
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
                     >
                       {uploading ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Saving...
+                          Uploading...
                         </>
                       ) : saved ? (
                         <>
@@ -528,17 +485,17 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Two-Factor Authentication */}
+            {/* Two-Factor Authentication (TOTP) */}
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Shield className="w-5 h-5" />
-                      Two-Factor Authentication
+                      Two-Factor Authentication (TOTP)
                     </CardTitle>
                     <CardDescription className="mt-2">
-                      Add an extra layer of security to your account
+                      Use Google Authenticator or similar app for extra security
                     </CardDescription>
                   </div>
                   <Badge className={twoFactorEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
@@ -547,33 +504,90 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-600 rounded-lg">
-                      <Smartphone className="w-5 h-5 text-white" />
+                {!twoFactorEnabled ? (
+                  <div className="p-6 bg-blue-50 rounded-lg border border-blue-200 text-center space-y-4">
+                    <div className="flex justify-center">
+                      <div className="p-3 bg-blue-600 rounded-full">
+                        <Smartphone className="w-8 h-8 text-white" />
+                      </div>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">SMS Authentication</p>
-                      <p className="text-sm text-gray-600">Receive codes via SMS</p>
+                      <h4 className="text-gray-900 font-medium mb-2">Secure Your Account</h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Add an extra layer of security with Google Authenticator. 
+                        It's free, works offline, and takes only 1 minute to setup.
+                      </p>
+                      <Button
+                        onClick={() => setShow2FASetup(true)}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Enable 2FA
+                      </Button>
                     </div>
                   </div>
-                  <Switch
-                    checked={twoFactorEnabled}
-                    onCheckedChange={setTwoFactorEnabled}
-                  />
-                </div>
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-600 rounded-lg">
-                      <Mail className="w-5 h-5 text-white" />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-600 rounded-lg">
+                          <Check className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-gray-900 font-medium">2FA Active</p>
+                          <p className="text-sm text-gray-600">Your account is protected</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={twoFactorEnabled}
+                        onCheckedChange={(checked) => {
+                          if (!checked) {
+                            if (confirm('Are you sure you want to disable 2FA? This will make your account less secure.')) {
+                              handleDisable2FA();
+                            }
+                          }
+                        }}
+                      />
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Email Authentication</p>
-                      <p className="text-sm text-gray-600">Receive codes via email</p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          alert('Backup codes were provided during setup. Contact admin if you need new codes.');
+                        }}
+                        className="justify-start"
+                      >
+                        <Key className="w-4 h-4 mr-2" />
+                        View Backup Codes
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          if (confirm('Reset 2FA? You will need to scan a new QR code.')) {
+                            handleReset2FA();
+                          }
+                        }}
+                        className="justify-start"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Reset 2FA
+                      </Button>
+                    </div>
+
+                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div className="flex gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="text-yellow-900 font-medium mb-1">Keep Your Backup Codes Safe</p>
+                          <p className="text-yellow-700">
+                            Save your backup codes in a secure location. You'll need them if you lose your phone.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <Switch checked={false} />
-                </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -601,7 +615,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Email Notifications</p>
+                        <p className="text-gray-900">Email Notifications</p>
                         <p className="text-sm text-gray-600">Receive updates via email</p>
                       </div>
                       <Switch
@@ -612,7 +626,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     <Separator />
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">SMS Notifications</p>
+                        <p className="text-gray-900">SMS Notifications</p>
                         <p className="text-sm text-gray-600">Receive updates via SMS</p>
                       </div>
                       <Switch
@@ -630,7 +644,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Practical Reminders</p>
+                        <p className="text-gray-900">Practical Reminders</p>
                         <p className="text-sm text-gray-600">Get notified before scheduled practicals</p>
                       </div>
                       <Switch
@@ -641,7 +655,7 @@ export function SettingsPage({ user, onProfileUpdate }: SettingsPageProps) {
                     <Separator />
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">Inventory Alerts</p>
+                        <p className="text-gray-900">Inventory Alerts</p>
                         <p className="text-sm text-gray-600">Low stock and reorder notifications</p>
                       </div>
                       <Switch

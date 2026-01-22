@@ -18,8 +18,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-
-type UserRole = 'student' | 'teacher' | 'admin' | 'staff';
+import type { UserRole } from '@/src/app/lib/types';
 
 interface PracticalsPageProps {
   userRole: UserRole;
@@ -97,7 +96,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   // Permissions
   const canCreatePractical = userRole === 'teacher';
   const canUploadVideo = userRole === 'admin';
-  const canViewAll = userRole === 'admin' || userRole === 'teacher' || userRole === 'staff';
+  const canViewAll = userRole === 'admin' || userRole === 'teacher';
 
   const filteredPracticals = practicals.filter((practical) => {
     const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

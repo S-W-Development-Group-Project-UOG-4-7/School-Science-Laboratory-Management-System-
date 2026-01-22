@@ -34,7 +34,7 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
       case 'admin':
         return 'You have full system administration access';
       case 'principal':
-        return 'Welcome to your administrative dashboard';
+        return 'Welcome to your dashboard';
       case 'teacher':
         return 'Ready to inspire young scientists today';
       case 'lab-assistant':

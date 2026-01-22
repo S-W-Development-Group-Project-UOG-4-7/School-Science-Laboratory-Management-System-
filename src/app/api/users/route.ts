@@ -31,8 +31,15 @@ export async function GET(request: NextRequest) {
         lastLogin: true,
         customPrivileges: true,
         revokedPrivileges: true,
+        // ✅ CRITICAL FIX: Include 2FA status
+        twoFactorEnabled: true,
       },
     });
+
+    console.log('Fetched users with 2FA status:', users.length);
+    if (users.length > 0) {
+      console.log('Sample user 2FA status:', users[0].email, users[0].twoFactorEnabled);
+    }
 
     return NextResponse.json(users);
   } catch (error) {
@@ -92,6 +99,7 @@ export async function POST(request: NextRequest) {
         lastLogin: true,
         customPrivileges: true,
         revokedPrivileges: true,
+        twoFactorEnabled: true,
       },
     });
 
@@ -141,6 +149,7 @@ export async function PATCH(request: NextRequest) {
         lastLogin: true,
         customPrivileges: true,
         revokedPrivileges: true,
+        twoFactorEnabled: true,
       },
     });
 
@@ -273,6 +282,7 @@ export async function PUT(request: NextRequest) {
         lastLogin: true,
         customPrivileges: true,
         revokedPrivileges: true,
+        twoFactorEnabled: true,
       },
     });
 

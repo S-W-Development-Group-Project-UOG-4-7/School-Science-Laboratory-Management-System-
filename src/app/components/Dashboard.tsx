@@ -1,8 +1,9 @@
-// Update to Dashboard.tsx - Add these changes
+// Dashboard.tsx - Updated with state persistence
 
 'use client';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
 import {
   FlaskConical,
@@ -39,6 +40,7 @@ import type { User } from "@/src/app/lib/types";
 interface DashboardProps {
   user: User;
   onLogout: () => void;
+  initialView?: string;
 }
 
 type Page =
@@ -50,9 +52,45 @@ type Page =
   | "requests"
   | "users";
 
-export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentPage, setCurrentPage] = useState<Page>("home");
+export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
+  const router = useRouter();
   const [profileImageUrl, setProfileImageUrl] = useState<string>('');
+  
+  // Initialize currentPage from initialView (URL) or localStorage
+  const [currentPage, setCurrentPage] = useState<Page>(() => {
+    // First priority: URL parameter
+    if (initialView && isValidPage(initialView)) {
+      return initialView as Page;
+    }
+    
+    // Second priority: localStorage
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard-view');
+      if (saved && isValidPage(saved)) {
+        return saved as Page;
+      }
+    }
+    
+    // Default: home
+    return "home";
+  });
+
+  // Helper function to validate page names
+  function isValidPage(page: string): boolean {
+    const validPages: Page[] = ["home", "practicals", "inventory", "schedule", "settings", "requests", "users"];
+    return validPages.includes(page as Page);
+  }
+
+  // Handle page changes - save to both localStorage and URL
+  const handlePageChange = (page: Page) => {
+    setCurrentPage(page);
+    
+    // Save to localStorage
+    localStorage.setItem('dashboard-view', page);
+    
+    // Update URL without page reload
+    router.push(`/?view=${page}`, { scroll: false });
+  };
 
   // Fetch user's profile image on component mount
   useEffect(() => {
@@ -159,10 +197,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
     }
   };
 
-  const handleProfileUpdate = (imageUrl: string) => {
-    setProfileImageUrl(imageUrl);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-yellow-50/30">
       {/* Header */}
@@ -179,7 +213,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               className="flex items-center gap-3 cursor-pointer"
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
-              onClick={() => setCurrentPage("home")}
+              onClick={() => handlePageChange("home")}
             >
               <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
                 <FlaskConical className="w-6 h-6 text-white" />
@@ -194,7 +228,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               {navigation.map((item) => (
                 <motion.button
                   key={item.id}
-                  onClick={() => setCurrentPage(item.id)}
+                  onClick={() => handlePageChange(item.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     currentPage === item.id
                       ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
@@ -230,7 +264,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                     {navigation.map((item) => (
                       <DropdownMenuItem
                         key={item.id}
-                        onClick={() => setCurrentPage(item.id)}
+                        onClick={() => handlePageChange(item.id)}
                         className={
                           currentPage === item.id ? "bg-blue-50" : ""
                         }
@@ -279,7 +313,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => setCurrentPage("settings")}
+                    onClick={() => handlePageChange("settings")}
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
@@ -313,7 +347,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <HomePage 
                 userName={user.name}
                 userRole={user.role} 
-                onNavigate={(page) => setCurrentPage(page as Page)}
+                onNavigate={(page) => handlePageChange(page as Page)}
               />
             )}
             {currentPage === "practicals" && (
@@ -337,8 +371,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             )}
             {currentPage === "settings" && (
               <SettingsPage 
-                user={user} 
-                onProfileUpdate={handleProfileUpdate}
+                user={user}
               />
             )}
           </motion.div>
