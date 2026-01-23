@@ -12,14 +12,14 @@ enum EquipmentCategory {
   INSTRUMENTS
   CHEMICALS
   SAFETY
+  ELECTRONICS
+  BIOLOGY
   OTHER
 }
 
 enum RequestStatus {
   PENDING
   APPROVED
-  PREPARED
-  COMPLETED
   REJECTED
 }
 
@@ -41,8 +41,6 @@ enum Role {
   PRINCIPAL
   ADMIN
 }
-
-
 
 enum QuestionType {
   MULTIPLE_CHOICE
@@ -87,14 +85,107 @@ model Teacher {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  practicals Practical[]
-  schedules  Schedule[]
-  quizzes    Quiz[]
-
-  equipmentRequests EquipmentRequest[]
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practicals          Practical[]
+  schedules           Schedule[]
+  practicalSchedules  PracticalSchedule[]
+  quizzes             Quiz[]
+  equipmentRequests   EquipmentRequest[]
 
   @@map("teachers")
+}
+
+// NEW MODEL: For the frontend scheduling system (matches ScheduledPractical interface)
+model PracticalSchedule {
+  id           Int            @id @default(autoincrement())
+  title        String         @db.VarChar(255)
+  date         DateTime       // Store as DateTime, frontend uses string
+  period       String         @db.VarChar(20) // e.g., "1", "2", "3"
+  grade        String         @db.VarChar(20) // e.g., "Grade 11"
+  className    String         @db.VarChar(10) // e.g., "A", "B", "C"
+  fullClassName String        @db.VarChar(100) // e.g., "Grade 11 - A"
+  subject      String         @db.VarChar(50) // e.g., "Chemistry", "Physics", "Biology", "Science"
+  teacherId    Int
+  teacherName  String         @db.VarChar(255)
+  location     String         @db.VarChar(100) @default("Primary Lab")
+  notes        String?        @db.Text
+  status       ScheduleStatus @default(UPCOMING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  // Relations
+  teacher           Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attachments       PracticalScheduleAttachment[]
+  equipmentRequests EquipmentRequest[]
+
+  // Indexes
+  @@index([teacherId])
+  @@index([date])
+  @@index([grade, className])
+  @@index([status])
+  @@map("practical_schedules")
+}
+
+model PracticalScheduleAttachment {
+  id                 Int              @id @default(autoincrement())
+  practicalScheduleId Int
+  fileName           String           @db.VarChar(255)
+  fileUrl            String           @db.VarChar(500)
+  fileType           String?          @db.VarChar(50)
+  fileSize           Int?             // in bytes
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  // Relation
+  practicalSchedule  PracticalSchedule @relation(fields: [practicalScheduleId], references: [id], onDelete: Cascade)
+
+  @@index([practicalScheduleId])
+  @@map("practical_schedule_attachments")
+}
+
+model Schedule {
+  id           Int                  @id @default(autoincrement())
+  title        String
+  date         DateTime
+  time         String
+  duration     String
+  grade        String
+  classSection String
+  subject      String
+  location     String
+  notes        String?
+  maxStudents  Int
+  status       ScheduleStatus
+  teacherId    Int
+  teacher      Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attachments  ScheduleAttachment[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  // NEW FIELDS for frontend compatibility
+  studentRequirements String?
+  daySchedule         String?
+
+  @@index([grade, classSection])
+  @@index([date, time])
+  @@map("schedules")
+}
+
+model ScheduleAttachment {
+  id         Int      @id @default(autoincrement())
+  scheduleId Int
+  fileName   String
+  fileUrl    String
+  fileType   String?
+  fileSize   Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relation
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId])
+  @@map("schedule_attachments")
 }
 
 model Practical {
@@ -195,49 +286,6 @@ model QuizAttempt {
   @@map("quiz_attempts")
 }
 
-model Schedule {
-  id           Int                  @id @default(autoincrement())
-  title        String
-  date         DateTime
-  time         String
-  duration     String
-  grade        String
-  classSection String
-  subject      String
-  location     String
-  notes        String?
-  maxStudents  Int
-  status       ScheduleStatus
-  teacherId    Int
-  teacher      Teacher              @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  attachments  ScheduleAttachment[]
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-
-  // NEW FIELDS for frontend compatibility
-  studentRequirements String?
-  daySchedule         String?
-
-  @@index([grade, classSection])
-  @@index([date, time])
-  @@map("schedules")
-}
-
-model ScheduleAttachment {
-  id         Int      @id @default(autoincrement())
-  scheduleId Int
-  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
-  fileName   String
-  fileUrl    String
-  fileType   String?
-  fileSize   Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([scheduleId])
-  @@map("schedule_attachments")
-}
-
 model FileUpload {
   id           Int      @id @default(autoincrement())
   filename     String   @db.VarChar(255)
@@ -287,40 +335,46 @@ model LabAssistant {
   id                Int                @id @default(autoincrement())
   userId            Int                @unique
   email             String?            @db.VarChar(255)
+  availability      String[]           // Array of available days, e.g., ['Monday', 'Tuesday', 'Wednesday']
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
+  
+  // Relations
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   equipmentRequests EquipmentRequest[]
+  
   @@map("lab_assistants")
 }
 
 model EquipmentRequest {
-  id              Int           @id @default(autoincrement())
-  teacherId       Int
-  labAssistantId  Int
+  id                 Int           @id @default(autoincrement())
+  teacherId          Int
+  labAssistantId     Int
+  practicalScheduleId Int?
+  
+  className          String        @db.VarChar(50)
+  grade              String        @db.VarChar(20)
+  subject            String        @db.VarChar(100)
+  practicalDate      DateTime
+  practicalTime      String        @db.VarChar(100)
+  
+  additionalNotes    String?       @db.Text
+  status             RequestStatus @default(PENDING)
+  responseNote       String?       @db.Text
+  responseDate       DateTime?
+  
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  className       String        @db.VarChar(50)
-  grade           String        @db.VarChar(20)
-  subject         String        @db.VarChar(100)
-  practicalDate   DateTime
-  practicalTime   String        @db.VarChar(100)
-
-  additionalNotes String?       @db.Text
-  status          RequestStatus @default(PENDING)
-  responseNote    String?       @db.Text
-  responseDate    DateTime?
-
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  // ✅ RELATIONS — MUST BE INSIDE MODEL
-  teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  labAssistant LabAssistant @relation(fields: [labAssistantId], references: [id])
-
-  equipmentItems EquipmentItem[]
+  // Relations
+  teacher           Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  labAssistant      LabAssistant      @relation(fields: [labAssistantId], references: [id])
+  practicalSchedule PracticalSchedule? @relation(fields: [practicalScheduleId], references: [id])
+  equipmentItems    EquipmentItem[]
 
   @@index([teacherId])
   @@index([labAssistantId])
+  @@index([practicalScheduleId])
   @@index([status])
   @@index([practicalDate])
   @@map("equipment_requests")
@@ -342,4 +396,3 @@ model EquipmentItem {
   @@index([equipmentRequestId])
   @@map("equipment_items")
 }
-

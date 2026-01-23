@@ -1,53 +1,106 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, RequestStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
-
-// PATCH update equipment request status
-export async function PATCH(
+// GET /api/equipment-requests/[id]
+export async function GET(
   request: NextRequest,
-  { params }: RouteParams
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-    const body = await request.json();
+    const requestId = parseInt(params.id);
     
-    const { status, responseNote } = body;
+    const equipmentRequest = await prisma.equipmentRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        teacher: {
+          include: {
+            user: true
+          }
+        },
+        labAssistant: {
+          include: {
+            user: true
+          }
+        },
+        equipmentItems: true,
+        practicalSchedule: true
+      }
+    });
 
-    // Validate status
-    const validStatuses = ['PENDING', 'APPROVED', 'PREPARED', 'COMPLETED', 'REJECTED'];
-    if (!validStatuses.includes(status)) {
+    if (!equipmentRequest) {
       return NextResponse.json(
-        { error: 'Invalid status' },
-        { status: 400 }
+        { error: 'Equipment request not found' },
+        { status: 404 }
       );
     }
 
-    const equipmentRequest = await (prisma as any).equipmentRequest.update({
-  where: { id: parseInt(id) },
-  data: {
-    status,
-    responseNote,
-    responseDate: new Date(),
-  },
-  include: {
-    teacher: { include: { user: true } },
-    labAssistant: { include: { user: true } },
-    equipmentItems: true,
-  },
-});
-
-
-
     return NextResponse.json({ request: equipmentRequest });
   } catch (error) {
+    console.error('Error fetching equipment request:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch equipment request' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/equipment-requests/[id]
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const requestId = parseInt(params.id);
+    const body = await request.json();
+
+    const existingRequest = await prisma.equipmentRequest.findUnique({
+      where: { id: requestId }
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json(
+        { error: 'Equipment request not found' },
+        { status: 404 }
+      );
+    }
+
+    const updateData: any = {};
+    
+    if (body.status) updateData.status = body.status as RequestStatus;
+    if (body.responseNote !== undefined) updateData.responseNote = body.responseNote;
+    if (body.status && (body.status === 'APPROVED' || body.status === 'REJECTED')) {
+      updateData.responseDate = new Date();
+    }
+
+    const updatedRequest = await prisma.equipmentRequest.update({
+      where: { id: requestId },
+      data: updateData,
+      include: {
+        teacher: {
+          include: {
+            user: true
+          }
+        },
+        labAssistant: {
+          include: {
+            user: true
+          }
+        },
+        equipmentItems: true,
+        practicalSchedule: true
+      }
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      request: updatedRequest 
+    });
+  } catch (error: any) {
     console.error('Error updating equipment request:', error);
     return NextResponse.json(
-      { error: 'Failed to update equipment request' },
+      { error: error.message || 'Failed to update equipment request' },
       { status: 500 }
     );
   }
