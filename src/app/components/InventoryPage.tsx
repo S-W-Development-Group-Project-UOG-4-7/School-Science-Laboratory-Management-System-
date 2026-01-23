@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 import useSWR, { mutate } from 'swr';
 import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -26,7 +27,7 @@ interface InventoryPageProps {
 interface InventoryItem {
   id: string;
   name: string;
-  category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety' | 'Instruments';
+  category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety Materials' | 'Instruments';
   stockLevel: number;
   minStockLevel: number;
   unit: string;
@@ -40,6 +41,13 @@ interface InventoryItem {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+const LOCATIONS = [
+  'Junior Lab',
+  'Physics Lab',
+  'Bio Lab',
+  'Chemistry Lab'
+];
+
 export function InventoryPage({ userRole }: InventoryPageProps) {
   const { data: inventoryItems, error } = useSWR<InventoryItem[]>(
     '/api/inventory',
@@ -50,7 +58,6 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
-  const [showMoreInfo, setShowMoreInfo] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -58,7 +65,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     stockLevel: 0,
     minStockLevel: 0,
     unit: '',
-    location: '',
+    location: 'Junior Lab',
     storageInstructions: '',
     handlingProcedure: '',
     safetyNotes: '',
@@ -76,8 +83,17 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     return matchesSearch && matchesCategory;
   });
   
-  // Fix: Adjust based on your actual UserRole values
-  const canEdit = userRole === 'admin' || userRole === 'lab-assistant'; // Changed from 'teacher'/'staff'
+  // Sort items: low stock items first
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const aIsLowStock = a.stockLevel <= a.minStockLevel;
+    const bIsLowStock = b.stockLevel <= b.minStockLevel;
+    
+    if (aIsLowStock && !bIsLowStock) return -1;
+    if (!aIsLowStock && bIsLowStock) return 1;
+    return 0;
+  });
+
+  const canEdit = userRole === 'admin' || userRole === 'lab-assistant';
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -99,7 +115,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       stockLevel: 0,
       minStockLevel: 0,
       unit: '',
-      location: '',
+      location: 'Junior Lab',
       storageInstructions: '',
       handlingProcedure: '',
       safetyNotes: '',
@@ -119,7 +135,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     mutate('/api/inventory');
   };
 
-  const handleDeleteItem = async (itemId: string) => { // Fixed: itemId is string, not number
+  const handleDeleteItem = async (itemId: string) => {
     if (!confirm('Delete this item?')) return;
     await fetch('/api/inventory', {
       method: 'DELETE',
@@ -128,6 +144,9 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     });
     mutate('/api/inventory');
   };
+
+  const inStockCount = inventoryItems.filter(item => item.stockLevel > item.minStockLevel).length;
+  const lowStockCount = inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length;
  
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -148,111 +167,149 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             Add Item
           </Button>
         )}
-        </div>
+      </div>
       
-          <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-             <DialogContent>
-              <DialogHeader>
-                 <DialogTitle>Add Inventory Item</DialogTitle>
-              </DialogHeader>
-            <div className="space-y-4">
-
-            {/* BASIC INFO */}
-            <h3 className="text-sm font-semibold text-gray-800">Basic Information</h3>
-
-            <Input
-                 placeholder="Item name"
-                 value={form.name}
-                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-
-           {/* Stock Level */}
+      {/* Add Item Dialog */}
+      <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Inventory Item</DialogTitle>
+            <DialogDescription>Fill in all the required information</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
             <div>
-             <label className="text-sm font-medium">Stock Level</label>
-             <Input
-                type="number"
-                min={0}
-                 value={form.stockLevel}
-                  onChange={(e) =>
-                  setForm({ ...form, stockLevel: Number(e.target.value) })
-                }
-               />
-             </div>
-
-             {/* Min Stock Level */}
-             <div>
-              <label className="text-sm font-medium">Min Stock Level</label>
+              <label className="text-sm font-medium mb-1 block">Item Name</label>
               <Input
-                 type="number"
-                 min={0}
-                 value={form.minStockLevel}
-                 onChange={(e) =>
-                 setForm({ ...form, minStockLevel: Number(e.target.value) })
-              }
-             />
+                placeholder="Enter item name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
             </div>
 
+            <div>
+              <label className="text-sm font-medium mb-1 block">Category</label>
+              <Select
+                value={form.category}
+                onValueChange={(value) =>
+                  setForm({ ...form, category: value as InventoryItem['category'] })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Glassware">Glassware</SelectItem>
+                  <SelectItem value="Equipment">Equipment</SelectItem>
+                  <SelectItem value="Chemicals">Chemicals</SelectItem>
+                  <SelectItem value="Safety Materials">Safety Materials</SelectItem>
+                  <SelectItem value="Instruments">Instruments</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Quantity</label>
               <Input
-                placeholder="Unit (pcs, ml, kg)"
+                type="number"
+                min={0}
+                placeholder="Enter quantity"
+                value={form.stockLevel}
+                onChange={(e) =>
+                  setForm({ ...form, stockLevel: Number(e.target.value) })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Minimum Stock Level</label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Enter minimum stock level"
+                value={form.minStockLevel}
+                onChange={(e) =>
+                  setForm({ ...form, minStockLevel: Number(e.target.value) })
+                }
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1 block">Unit</label>
+              <Input
+                placeholder="e.g., pcs, ml, kg"
                 value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
               />
+            </div>
 
-             <Input
-                placeholder="Location"
+            <div>
+              <label className="text-sm font-medium mb-1 block">Location</label>
+              <Select
                 value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-               />
+                onValueChange={(value) => setForm({ ...form, location: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LOCATIONS.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* TOGGLE OPTIONAL INFO */}
-             <button
-                 type="button"
-                 className="text-blue-600 text-sm underline"
-                  onClick={() => setShowMoreInfo(!showMoreInfo)}
-             >
-              {showMoreInfo ? 'Hide more information' : 'Add more information (optional)'}
-            </button>
-
-          {/* OPTIONAL INFO */}
-          {showMoreInfo && (
-          <div className="space-y-3 pt-2 border-t">
-
+            <div>
+              <label className="text-sm font-medium mb-1 block">Photo URL</label>
               <Input
-                 placeholder="Photo URL"
-                 value={form.photo}
-                 onChange={(e) => setForm({ ...form, photo: e.target.value })}
-               />
+                placeholder="Enter photo URL"
+                value={form.photo}
+                onChange={(e) => setForm({ ...form, photo: e.target.value })}
+              />
+            </div>
 
-               <Input
-                 placeholder="Storage Instructions"
-                 value={form.storageInstructions}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Storage Instructions</label>
+              <Textarea
+                placeholder="Enter storage instructions"
+                value={form.storageInstructions}
                 onChange={(e) =>
-                setForm({ ...form, storageInstructions: e.target.value })
+                  setForm({ ...form, storageInstructions: e.target.value })
                 }
-                 />
+                rows={3}
+              />
+            </div>
 
-                <Input
-                 placeholder="Handling Procedure"
-                 value={form.handlingProcedure}
-                 onChange={(e) =>
-                 setForm({ ...form, handlingProcedure: e.target.value })
-                 }
-                />
+            <div>
+              <label className="text-sm font-medium mb-1 block">Handling Procedure</label>
+              <Textarea
+                placeholder="Enter handling procedure"
+                value={form.handlingProcedure}
+                onChange={(e) =>
+                  setForm({ ...form, handlingProcedure: e.target.value })
+                }
+                rows={3}
+              />
+            </div>
 
-                 <Input
-                  placeholder="Safety Notes"
-                  value={form.safetyNotes}
-                  onChange={(e) =>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Safety Notes</label>
+              <Textarea
+                placeholder="Enter safety notes"
+                value={form.safetyNotes}
+                onChange={(e) =>
                   setForm({ ...form, safetyNotes: e.target.value })
-                   }
-                 />
-                </div>
-              )}
+                }
+                rows={3}
+              />
+            </div>
 
-               <Button onClick={handleAddItem}>Save Item</Button>
-              </div>
-           </DialogContent>
-         </Dialog>
+            <Button onClick={handleAddItem} className="w-full">Save Item</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Filters */}
       <Card>
@@ -270,21 +327,22 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               </div>
             </div>
             <div>
-              <select
-                value={form.category}
-                onChange={(e) =>
-                setForm({ ...form, category: e.target.value })
-              }
-               className="border rounded p-2"
+              <Select
+                value={selectedCategory}
+                onValueChange={(value) => setSelectedCategory(value)}
               >
-                <option value="">Select Category</option>
-                <option value="Glassware">Glassware</option>
-                <option value="Equipment">Equipment</option>
-                <option value="Chemicals">Chemicals</option>
-                <option value="Safety">Safety</option>
-                <option value="Instruments">Instruments</option>
-              </select>
-
+                <SelectTrigger>
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="Glassware">Glassware</SelectItem>
+                  <SelectItem value="Equipment">Equipment</SelectItem>
+                  <SelectItem value="Chemicals">Chemicals</SelectItem>
+                  <SelectItem value="Safety Materials">Safety Materials</SelectItem>
+                  <SelectItem value="Instruments">Instruments</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -294,11 +352,11 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Total Items</CardTitle>
+            <CardTitle className="text-lg">In Stock</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-900">{inventoryItems.length}</p>
-            <p className="text-sm text-gray-600">Unique item types</p>
+            <p className="text-3xl font-bold text-green-600">{inStockCount}</p>
+            <p className="text-sm text-gray-600">Items above minimum level</p>
           </CardContent>
         </Card>
         <Card>
@@ -306,24 +364,28 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             <CardTitle className="text-lg">Low Stock Alerts</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-red-600">{inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length}</p>
+            <p className="text-3xl font-bold text-red-600">{lowStockCount}</p>
             <p className="text-sm text-gray-600">Items need restocking</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Last Updated</CardTitle>
+            <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-900">Today</p>
-            <p className="text-sm text-gray-600">2025-11-12</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {inventoryItems.length > 0
+                ? new Date(inventoryItems[0].lastUpdated).toLocaleDateString()
+                : 'N/A'}
+            </p>
+            <p className="text-sm text-gray-600">Last item updated</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Inventory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item) => {
+        {sortedItems.map((item) => {
           const status = getStockStatus(item);
           const StatusIcon = status.icon;
 
@@ -351,13 +413,13 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-sm text-gray-600">Current Stock</p>
-                    <p className="text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {item.stockLevel} {item.unit}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-gray-600">Min. Required</p>
-                    <p className="text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {item.minStockLevel} {item.unit}
                     </p>
                   </div>
@@ -400,7 +462,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                             <p>{item.location}</p>
                           </div>
                           <div>
-                            <p className="text-sm font-medium">Stock Level</p>
+                            <p className="text-sm font-medium">Quantity</p>
                             <p>{item.stockLevel} {item.unit}</p>
                           </div>
                           <div>
@@ -410,19 +472,19 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                         </div>
                         <div>
                           <p className="text-sm font-medium">Storage Instructions</p>
-                          <p>{item.storageInstructions}</p>
+                          <p className="text-gray-700">{item.storageInstructions || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium">Handling Procedure</p>
-                          <p>{item.handlingProcedure}</p>
+                          <p className="text-gray-700">{item.handlingProcedure || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium">Safety Notes</p>
-                          <p>{item.safetyNotes}</p>
+                          <p className="text-gray-700">{item.safetyNotes || 'N/A'}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium">Last Updated</p>
-                          <p>{item.lastUpdated}</p>
+                          <p className="text-gray-700">{new Date(item.lastUpdated).toLocaleDateString()}</p>
                         </div>
                       </div>
                     </DialogContent>
@@ -461,17 +523,46 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       <Dialog open={!!selectedItem && !openDetails} onOpenChange={(open) => {
         if (!open) setSelectedItem(null);
       }}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-            <Input type="number" value={form.stockLevel} onChange={e => setForm({ ...form, stockLevel: Number(e.target.value) })} />
-            <Input type="number" value={form.minStockLevel} onChange={e => setForm({ ...form, minStockLevel: Number(e.target.value) })} />
-            <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
-            <Input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
-            <Button onClick={handleUpdateItem}>Update</Button>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Item Name</label>
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Quantity</label>
+              <Input type="number" value={form.stockLevel} onChange={e => setForm({ ...form, stockLevel: Number(e.target.value) })} />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Minimum Stock Level</label>
+              <Input type="number" value={form.minStockLevel} onChange={e => setForm({ ...form, minStockLevel: Number(e.target.value) })} />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Unit</label>
+              <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Location</label>
+              <Select value={form.location} onValueChange={(value) => setForm({ ...form, location: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LOCATIONS.map((loc) => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button onClick={handleUpdateItem} className="w-full">Update Item</Button>
           </div>
         </DialogContent>
       </Dialog>

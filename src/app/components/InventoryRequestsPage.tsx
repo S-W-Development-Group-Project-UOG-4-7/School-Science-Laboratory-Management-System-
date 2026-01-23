@@ -8,6 +8,7 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Edit, Trash2 } from 'lucide-react';
 import useSWR from 'swr';
 import { 
   PackagePlus, 
@@ -78,21 +79,13 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
     reason: '',
     urgency: 'medium',
 });
-
-const [isDialogOpen, setIsDialogOpen] = useState(false);
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
-  '/api/inventory-requests',
-  fetcher
-);
-if (error) return <div>Failed to load requests</div>;
-if (!requests) return <div>Loading requests...</div>;
-  
-  
-
-  //const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
-  //const canApproveRequest = userRole === 'principal';
+  const [editForm, setEditForm] = useState<NewRequestState>({
+  itemId: '',
+  quantity: 1,
+  reason: '',
+  urgency: 'medium',
+ });
+   //const canApproveRequest = userRole === 'principal';
 const role = userRole
   .toUpperCase()
   .replace('-', '_')
@@ -105,6 +98,24 @@ const canApproveRequest =
   role === 'ADMIN';
 console.log('userRole:', userRole);
 console.log('normalized role:', role);
+
+const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
+const [openEditDialog, setOpenEditDialog] = useState(false);
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
+  '/api/inventory-requests',
+  fetcher
+);
+if (error) return <div>Failed to load requests</div>;
+if (!requests) return <div>Loading requests...</div>;
+  
+
+
+
+  //const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
+
 
   const handleCreateRequest = async () => {  
    const request: InventoryRequestCreate = {
@@ -154,9 +165,13 @@ console.log('normalized role:', role);
             responseDate: new Date().toISOString().split('T')[0],
             responseNote: 'Approved by Principal'
           } 
+ 
         : req
     ));
-    
+     <div className="flex gap-2 mt-2">
+    <Button size="sm">TEST EDIT</Button>
+     <Button size="sm" variant="destructive">TEST DELETE</Button>
+     </div>
     toast.success('Request Approved', {
       description: 'Email notification sent to the requester.',
     });
@@ -181,6 +196,57 @@ const handleRejectRequest = (requestId: string) => {
       description: 'Email notification sent to the requester.',
     });
   };
+  const handleEditRequest = (request: InventoryRequest) => {
+  setSelectedRequest(request);
+  setEditForm({
+    itemId: request.itemId,
+    quantity: request.quantity,
+    reason: request.reason,
+    urgency: request.urgency,
+  });
+  setOpenEditDialog(true);
+};
+
+const handleUpdate = async (id: string, updatedData: any) => {
+  try {
+    const res = await fetch(`/api/inventory-requests/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    });
+     if (!res.ok) {
+      throw new Error('Update failed');
+    }
+
+    setOpenEditDialog(false);
+    setSelectedRequest(null);
+    // Refresh list after update
+  
+  } catch (error) {
+    console.error(error);
+    alert('Failed to update request');
+  }
+};
+
+const handleDelete = async (id: string) => {
+  try {
+    const res = await fetch(`/api/inventory-requests/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Delete failed');
+    }
+
+    await mutate(); // re-fetch
+    toast.success('Request deleted successfully');
+  } catch (err) {
+    toast.error('Failed to delete request');
+    console.error(err);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -378,7 +444,8 @@ const handleRejectRequest = (requestId: string) => {
           </Card>
         ) : (
           displayRequests.map((request, index) => (
-            <motion.div
+ 
+          <motion.div
               key={request.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -432,35 +499,55 @@ const handleRejectRequest = (requestId: string) => {
                       </div>
                     )}
 
-                    {canApproveRequest && request.status === 'pending' && (
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                          onClick={() => handleApproveRequest(request.id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-                          onClick={() => handleRejectRequest(request.id)}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="ml-auto"
-                        >
-                          <Mail className="w-4 h-4 mr-1" />
-                          Send Email
-                        </Button>
-                      </div>
-                    )}
+                    {request.status === 'pending' && (canApproveRequest || request.requesterId === userId) && (
+  <div className="flex gap-2 pt-2">
+    {canApproveRequest && (
+      <>
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+          onClick={() => handleApproveRequest(request.id)}
+        >
+          <CheckCircle className="w-4 h-4 mr-1" />
+          Approve
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+          onClick={() => handleRejectRequest(request.id)}
+        >
+          <XCircle className="w-4 h-4 mr-1" />
+          Reject
+        </Button>
+      </>
+    )}
+
+    {request.requesterId === userId && (
+      <>
+        <Button size="sm" onClick={() => handleEditRequest(request)}>
+          <Edit className="w-4 h-4 mr-1" />
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => handleDelete(request.id)}
+        >
+          <Trash2 className="w-4 h-4 mr-1" />
+          Delete
+        </Button>
+      </>
+    )}
+
+    <Button size="sm" variant="outline" className="ml-auto">
+      <Mail className="w-4 h-4 mr-1" />
+      Send Email
+    </Button>
+  </div>
+)}
+
+
                   </div>
                 </CardContent>
               </Card>
@@ -468,6 +555,71 @@ const handleRejectRequest = (requestId: string) => {
           ))
         )}
       </div>
+      <Dialog open={openEditDialog} onOpenChange={(open) => {
+  if (!open) setSelectedRequest(null);
+}}>
+  <DialogContent className="sm:max-w-[500px]">
+    <DialogHeader>
+      <DialogTitle>Edit Inventory Request</DialogTitle>
+      <DialogDescription>Modify your request details before submission</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="editItemId">Item ID</Label>
+        <Input
+          id="editItemId"
+          value={editForm.itemId}
+          onChange={(e) => setEditForm({ ...editForm, itemId: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editQuantity">Quantity</Label>
+        <Input
+          id="editQuantity"
+          type="number"
+          min="1"
+          value={editForm.quantity}
+          onChange={(e) => setEditForm({ ...editForm, quantity: parseInt(e.target.value) || 1 })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editUrgency">Urgency</Label>
+        <select
+          id="editUrgency"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          value={editForm.urgency}
+          onChange={(e) => setEditForm({ ...editForm, urgency: e.target.value as any })}
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editReason">Reason</Label>
+        <Textarea
+          id="editReason"
+          rows={4}
+          value={editForm.reason}
+          onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+        />
+      </div>
     </div>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+      <Button
+        onClick={() =>
+         selectedRequest &&
+         handleUpdate(selectedRequest.id, editForm)
+        }
+          className="bg-blue-600 text-white"
+       >
+           Update
+        </Button>
+        </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+</div>
   );
 }

@@ -39,12 +39,12 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
-        // ✅ GENERATE APPROVAL TOKEN
-    const approvalToken = crypto.randomUUID();
-    const tokenExpiresAt = new Date(
-      Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-    );
-
+   
+    // ✅ GENERATE APPROVAL TOKEN
+       const approvalToken = crypto.randomUUID();
+       const tokenExpiresAt = new Date(
+       Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+       );
     const created = await prisma.inventoryRequest.create({
       data: {
         requesterName: data.requesterName,
@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
   }  
   catch (err) {
   console.error("Error in POST /inventory-requests:", err);
-  return NextResponse.json({ error: 'Failed to create request', details: err instanceof Error ? err.message : err }, { status: 500 });
+  return NextResponse.json({ error: 'Failed to create request', details: err instanceof Error ? err.message : err }, { status: 500 }); 
+ }
 }
-}
+
