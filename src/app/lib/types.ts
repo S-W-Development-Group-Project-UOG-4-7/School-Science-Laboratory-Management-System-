@@ -770,3 +770,11 @@ export interface UploadedFile {
   buffer: Buffer;
   size: number;
 }
+
+// ========== FILTER TYPES ==========
+export interface PracticalFilters {
+  search?: string;
+  subject?: string;
+  grade?: string;
+  teacherId?: number;
+}

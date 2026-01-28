@@ -42,7 +42,7 @@ import {
   QuizAttempt, 
   CreatePracticalInput,
   UpdatePracticalInput,
-  AttemptStatus
+  QuizAttemptStatus
 } from '@/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
@@ -63,7 +63,7 @@ interface StudentQuizResult {
   score: number;
   totalQuestions: number;
   percentage: number;
-  status: AttemptStatus;
+  status: QuizAttemptStatus;
   startedAt: Date;
   completedAt: Date;
   timeTaken: string; // in minutes
@@ -198,7 +198,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
           score: 8,
           totalQuestions: 10,
           percentage: 80,
-          status: AttemptStatus.COMPLETED,
+          status: QuizAttemptStatus.COMPLETED,
           startedAt: new Date('2024-01-15T10:00:00'),
           completedAt: new Date('2024-01-15T10:15:00'),
           timeTaken: '15'
@@ -212,7 +212,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
           score: 9,
           totalQuestions: 10,
           percentage: 90,
-          status: AttemptStatus.COMPLETED,
+          status: QuizAttemptStatus.COMPLETED,
           startedAt: new Date('2024-01-15T11:00:00'),
           completedAt: new Date('2024-01-15T11:20:00'),
           timeTaken: '20'
@@ -226,7 +226,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
           score: 6,
           totalQuestions: 10,
           percentage: 60,
-          status: AttemptStatus.COMPLETED,
+          status: QuizAttemptStatus.COMPLETED,
           startedAt: new Date('2024-01-16T09:00:00'),
           completedAt: new Date('2024-01-16T09:25:00'),
           timeTaken: '25'
@@ -317,138 +317,90 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   };
 
   const handleAddPractical = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  e.preventDefault();
+  setIsSubmitting(true);
+  setError(null);
 
-    try {
-      const form = e.currentTarget;
-      const formData = new FormData(form);
-      
-      // Basic validation
-      if (!formData.get('title') || !formData.get('subject') || 
-          !formData.get('grade') || !formData.get('duration')) {
+  try {
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    // Validation
+    const requiredFields = ['title', 'subject', 'grade', 'duration'];
+    for (const field of requiredFields) {
+      if (!formData.get(field)) {
         alert('Please fill in all required fields');
+        setIsSubmitting(false);
         return;
       }
-
-      if (currentUserId === null) {
-        alert('Teacher not found. Please login again.');
-        return;
-      }
-
-      let videoUrl = formData.get('videoUrl') as string || '';
-      let labSheetUrl = formData.get('labSheetUrl') as string || '';
-      let thumbnailUrl = formData.get('thumbnail') as string || '';
-
-      // Upload files if selected
-      setIsUploading(true);
-      
-      // Upload video file if selected
-      if (videoFile) {
-        setUploadProgress(prev => ({ ...prev, video: 0 }));
-        try {
-          // Simulate upload progress
-          const interval = setInterval(() => {
-            setUploadProgress(prev => {
-              const newProgress = prev.video + 10;
-              if (newProgress >= 100) {
-                clearInterval(interval);
-                return { ...prev, video: 100 };
-              }
-              return { ...prev, video: newProgress };
-            });
-          }, 200);
-          
-          videoUrl = await uploadFile(videoFile, 'video');
-          clearInterval(interval);
-          setUploadProgress(prev => ({ ...prev, video: 100 }));
-        } catch (err) {
-          console.error('Failed to upload video:', err);
-          // User can still use URL if upload fails
-        }
-      }
-
-      // Upload lab sheet if selected
-      if (labSheetFile) {
-        setUploadProgress(prev => ({ ...prev, labSheet: 0 }));
-        try {
-          const interval = setInterval(() => {
-            setUploadProgress(prev => {
-              const newProgress = prev.labSheet + 15;
-              if (newProgress >= 100) {
-                clearInterval(interval);
-                return { ...prev, labSheet: 100 };
-              }
-              return { ...prev, labSheet: newProgress };
-            });
-          }, 200);
-          
-          labSheetUrl = await uploadFile(labSheetFile, 'labSheet');
-          clearInterval(interval);
-          setUploadProgress(prev => ({ ...prev, labSheet: 100 }));
-        } catch (err) {
-          console.error('Failed to upload lab sheet:', err);
-        }
-      }
-
-      // Upload thumbnail if selected
-      if (thumbnailFile) {
-        setUploadProgress(prev => ({ ...prev, thumbnail: 0 }));
-        try {
-          const interval = setInterval(() => {
-            setUploadProgress(prev => {
-              const newProgress = prev.thumbnail + 20;
-              if (newProgress >= 100) {
-                clearInterval(interval);
-                return { ...prev, thumbnail: 100 };
-              }
-              return { ...prev, thumbnail: newProgress };
-            });
-          }, 200);
-          
-          thumbnailUrl = await uploadFile(thumbnailFile, 'thumbnail');
-          clearInterval(interval);
-          setUploadProgress(prev => ({ ...prev, thumbnail: 100 }));
-        } catch (err) {
-          console.error('Failed to upload thumbnail:', err);
-        }
-      }
-      
-      setIsUploading(false);
-
-      // Create practical with uploaded URLs or provided URLs
-      await practicalService.create({
-        title: formData.get('title') as string,
-        description: formData.get('description') as string || undefined,
-        subject: formData.get('subject') as string,
-        grade: formData.get('grade') as string,
-        duration: formData.get('duration') as string,
-        videoUrl: videoUrl || undefined,
-        labSheetUrl: labSheetUrl || undefined,
-        thumbnail: thumbnailUrl || undefined,
-        teacherId: currentUserId,
-      });
-
-      // Reset form
-      setRefreshKey(prev => prev + 1);
-      setIsAddDialogOpen(false);
-      setVideoFile(null);
-      setLabSheetFile(null);
-      setThumbnailFile(null);
-      setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
-      form.reset();
-      
-      alert('Practical created successfully!');
-    } catch (err: any) {
-      console.error('Error creating practical:', err);
-      setError(err.message || 'Failed to create practical');
-      alert(err.message || 'Something went wrong');
-    } finally {
-      setIsSubmitting(false);
-      setIsUploading(false);
     }
-  };
+
+    if (currentUserId === null) {
+      alert('Teacher not found. Please login again.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    let videoUrl = formData.get('videoUrl') as string || '';
+    let labSheetUrl = formData.get('labSheetUrl') as string || '';
+    let thumbnailUrl = formData.get('thumbnail') as string || '';
+
+    setIsUploading(true);
+
+    // Helper function for upload
+    const safeUpload = async (file: File | null, type: 'video' | 'labSheet' | 'thumbnail') => {
+      if (!file) return '';
+      setUploadProgress(prev => ({ ...prev, [type]: 0 }));
+      try {
+        const url = await uploadFile(file, type);
+        setUploadProgress(prev => ({ ...prev, [type]: 100 }));
+        return url;
+      } catch (err) {
+        console.error(`Failed to upload ${type}:`, err);
+        return '';
+      }
+    };
+
+    // Upload files
+    videoUrl = await safeUpload(videoFile, 'video') || videoUrl;
+    labSheetUrl = await safeUpload(labSheetFile, 'labSheet') || labSheetUrl;
+    thumbnailUrl = await safeUpload(thumbnailFile, 'thumbnail') || thumbnailUrl;
+
+    // Create practical
+    const newPractical = await practicalService.create({
+      title: formData.get('title') as string,
+      description: formData.get('description') as string || undefined,
+      subject: formData.get('subject') as string,
+      grade: formData.get('grade') as string,
+      duration: formData.get('duration') as string,
+      videoUrl: videoUrl || undefined,
+      labSheetUrl: labSheetUrl || undefined,
+      thumbnail: thumbnailUrl || undefined,
+      teacherId: currentUserId,
+    });
+
+    // Add to existing practicals state
+    setPracticals(prev => [newPractical, ...prev]);
+
+    // Reset form
+    setIsAddDialogOpen(false);
+    setVideoFile(null);
+    setLabSheetFile(null);
+    setThumbnailFile(null);
+    setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
+    form.reset();
+
+    alert('Practical created successfully!');
+  } catch (err: any) {
+    console.error('Error creating practical:', err);
+    setError(err.message || 'Failed to create practical');
+    alert(err.message || 'Something went wrong');
+  } finally {
+    setIsSubmitting(false);
+    setIsUploading(false);
+  }
+};
+
 
   // Add this function for updating practical
   const handleUpdatePractical = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -533,7 +485,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
       id: Number(new Date()),
       startedAt: new Date(),
       completedAt: new Date(),
-      status: AttemptStatus.COMPLETED
+      status: QuizAttemptStatus.COMPLETED
     };
     
     setQuizAttempts([...quizAttempts, newAttempt]);
@@ -1365,8 +1317,8 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                               <td className="px-4 py-2 border">{result.timeTaken} min</td>
                               <td className="px-4 py-2 border">
                                 <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  result.status === AttemptStatus.COMPLETED ? 'bg-green-100 text-green-800' :
-                                  result.status === AttemptStatus.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
+                                  result.status === QuizAttemptStatus.COMPLETED ? 'bg-green-100 text-green-800' :
+                                  result.status === QuizAttemptStatus.IN_PROGRESS ? 'bg-blue-100 text-blue-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>
                                   {result.status}

@@ -97,34 +97,29 @@ model Teacher {
 
 // NEW MODEL: For the frontend scheduling system (matches ScheduledPractical interface)
 model PracticalSchedule {
-  id           Int            @id @default(autoincrement())
-  title        String         @db.VarChar(255)
-  date         DateTime       // Store as DateTime, frontend uses string
-  period       String         @db.VarChar(20) // e.g., "1", "2", "3"
-  grade        String         @db.VarChar(20) // e.g., "Grade 11"
-  className    String         @db.VarChar(10) // e.g., "A", "B", "C"
-  fullClassName String        @db.VarChar(100) // e.g., "Grade 11 - A"
-  subject      String         @db.VarChar(50) // e.g., "Chemistry", "Physics", "Biology", "Science"
-  teacherId    Int
-  teacherName  String         @db.VarChar(255)
-  location     String         @db.VarChar(100) @default("Primary Lab")
-  notes        String?        @db.Text
-  status       ScheduleStatus @default(UPCOMING)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id            Int            @id @default(autoincrement())
+  title         String         @db.VarChar(255)
+  date          DateTime
+  period        String         @db.VarChar(20)
+  grade         String         @db.VarChar(20)
+  className     String         @db.VarChar(10)
+  fullClassName String         @db.VarChar(100)
+  subject       String         @db.VarChar(50)
 
-  // Relations
-  teacher           Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacherId     Int
+  teacher       Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  location      String         @db.VarChar(100) @default("Primary Lab")
+  notes         String?
+  status        ScheduleStatus @default(UPCOMING)
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
   attachments       PracticalScheduleAttachment[]
   equipmentRequests EquipmentRequest[]
-
-  // Indexes
-  @@index([teacherId])
-  @@index([date])
-  @@index([grade, className])
-  @@index([status])
-  @@map("practical_schedules")
 }
+
 
 model PracticalScheduleAttachment {
   id                 Int              @id @default(autoincrement())
