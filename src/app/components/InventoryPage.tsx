@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, AlertTriangle, CheckCircle, Package, Info, Plus, Edit, X } from 'lucide-react';
+import { Search, AlertTriangle, CheckCircle, Info, Plus, Edit, X, Bell, CheckCircle2, Clock, User, Package, AlertCircle, Mail, Download, CheckCheck, ShoppingCart } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -14,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose,
 } from './ui/dialog';
 import {
   Table,
@@ -44,6 +43,39 @@ interface InventoryItem {
   handlingProcedure: string;
   safetyNotes: string;
   lastUpdated: string;
+}
+
+interface InventoryRequest {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCategory: string;
+  requestedBy: string;
+  requestedByRole: string;
+  requestedDate: string;
+  neededDate: string;
+  quantity: number;
+  priority: 'low' | 'medium' | 'high';
+  status: 'pending' | 'approved' | 'rejected' | 'in-progress' | 'fulfilled';
+  reason: string;
+  attachments: string[];
+  approvedBy?: string;
+  approvedDate?: string;
+  fulfilledBy?: string;
+  fulfilledDate?: string;
+  fulfilledQuantity?: number;
+  notes?: string;
+}
+
+interface Notification {
+  id: string;
+  type: 'request' | 'approval' | 'rejection' | 'fulfillment';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  requestId?: string;
+  itemId?: string;
 }
 
 const inventoryItems: InventoryItem[] = [
@@ -133,10 +165,106 @@ const inventoryItems: InventoryItem[] = [
   },
 ];
 
+const initialRequests: InventoryRequest[] = [
+  {
+    id: 'req1',
+    itemId: '2',
+    itemName: 'Compound Microscopes',
+    itemCategory: 'Instruments',
+    requestedBy: 'Lab Assistant Sarah',
+    requestedByRole: 'lab-assistant',
+    requestedDate: '2025-11-12',
+    neededDate: '2025-11-20',
+    quantity: 5,
+    priority: 'high',
+    status: 'approved',
+    reason: 'Stock running low. Need additional units for upcoming biology practical exams.',
+    attachments: ['lesson_plan.pdf', 'student_list.csv'],
+    approvedBy: 'Principal Silva',
+    approvedDate: '2025-11-13',
+  },
+  {
+    id: 'req2',
+    itemId: '4',
+    itemName: 'Safety Goggles',
+    itemCategory: 'Safety',
+    requestedBy: 'Lab Assistant Mike',
+    requestedByRole: 'lab-assistant',
+    requestedDate: '2025-11-11',
+    neededDate: '2025-11-25',
+    quantity: 20,
+    priority: 'medium',
+    status: 'fulfilled',
+    reason: 'Stock running low due to increased class sizes. Need additional pairs for safety compliance.',
+    attachments: ['inventory_report.pdf'],
+    approvedBy: 'Principal Silva',
+    approvedDate: '2025-11-12',
+    fulfilledBy: 'Lab Assistant Mike',
+    fulfilledDate: '2025-11-15',
+    fulfilledQuantity: 20,
+    notes: 'Purchased from Science Supplies Ltd. Added to inventory on 2025-11-15.',
+  },
+  {
+    id: 'req3',
+    itemId: '1',
+    itemName: 'Beakers (250ml)',
+    itemCategory: 'Glassware',
+    requestedBy: 'Mr. Perera',
+    requestedByRole: 'teacher',
+    requestedDate: '2025-11-13',
+    neededDate: '2025-11-26',
+    quantity: 20,
+    priority: 'high',
+    status: 'pending',
+    reason: 'Chemistry practical session for Grade 10 students scheduled next week.',
+    attachments: ['lesson_plan.pdf', 'student_list.csv'],
+  },
+];
+
+const initialNotifications: Notification[] = [
+  {
+    id: 'notif1',
+    type: 'fulfillment',
+    title: 'Safety Goggles Restocked',
+    message: 'Lab Assistant Mike has added 20 pieces of Safety Goggles to inventory.',
+    timestamp: '2025-11-15 02:15 PM',
+    read: false,
+    requestId: 'req2',
+    itemId: '4',
+  },
+  {
+    id: 'notif2',
+    type: 'fulfillment',
+    title: 'Test Tubes Restocked',
+    message: 'Lab Assistant Sarah has added 50 pieces of Test Tubes (20ml) to inventory.',
+    timestamp: '2025-11-14 11:30 AM',
+    read: false,
+    requestId: 'req4',
+    itemId: '3',
+  },
+];
+
 export function InventoryPage({ userRole }: InventoryPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [requests, setRequests] = useState<InventoryRequest[]>(initialRequests);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
+  
+  // Request form state
+  const [requestQuantity, setRequestQuantity] = useState('');
+  const [requestPriority, setRequestPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [requestReason, setRequestReason] = useState('');
+  const [requestNeededDate, setRequestNeededDate] = useState('');
+  
+  // Fulfillment form state
+  const [fulfilledQuantity, setFulfilledQuantity] = useState('');
+  const [fulfillmentNotes, setFulfillmentNotes] = useState('');
+  const [fulfillmentDate, setFulfillmentDate] = useState('');
 
   const filteredItems = inventoryItems.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -152,10 +280,201 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   };
 
   const canEdit = userRole === 'teacher' || userRole === 'lab-assistant';
+  const isPrincipal = userRole === 'principal';
+  const isLabAssistant = userRole === 'lab-assistant';
+  const isTeacher = userRole === 'teacher';
+
+  const pendingRequests = requests.filter(req => req.status === 'pending');
+  const approvedRequests = requests.filter(req => req.status === 'approved');
+  const fulfilledRequests = requests.filter(req => req.status === 'fulfilled');
+  const inProgressRequests = requests.filter(req => req.status === 'in-progress');
+  const rejectedRequests = requests.filter(req => req.status === 'rejected');
+
+  const unreadNotifications = notifications.filter(n => !n.read);
+  const fulfillmentNotifications = notifications.filter(n => n.type === 'fulfillment');
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-700 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'low': return 'bg-blue-100 text-blue-700 border-blue-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'approved': return 'bg-green-100 text-green-700 border-green-200';
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
+      case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'fulfilled': return 'bg-purple-100 text-purple-700 border-purple-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const handleRequestSubmit = () => {
+    if (!selectedItem || !requestQuantity || !requestReason || !requestNeededDate) return;
+    
+    const newRequest: InventoryRequest = {
+      id: `req${requests.length + 1}`,
+      itemId: selectedItem.id,
+      itemName: selectedItem.name,
+      itemCategory: selectedItem.category,
+      requestedBy: isLabAssistant ? 'Lab Assistant' : 'Teacher',
+      requestedByRole: userRole,
+      requestedDate: new Date().toISOString().split('T')[0],
+      neededDate: requestNeededDate,
+      quantity: parseInt(requestQuantity),
+      priority: requestPriority,
+      status: 'pending',
+      reason: requestReason,
+      attachments: [],
+    };
+
+    setRequests([newRequest, ...requests]);
+    
+    // Send notification to principal
+    const notification: Notification = {
+      id: `notif${notifications.length + 1}`,
+      type: 'request',
+      title: 'New Inventory Request',
+      message: `${newRequest.requestedBy} requested ${newRequest.quantity} ${selectedItem.unit} of ${selectedItem.name}`,
+      timestamp: new Date().toLocaleString(),
+      read: false,
+      requestId: newRequest.id,
+      itemId: selectedItem.id,
+    };
+
+    setNotifications([notification, ...notifications]);
+    
+    // Reset form
+    setShowRequestDialog(false);
+    setRequestQuantity('');
+    setRequestPriority('medium');
+    setRequestReason('');
+    setRequestNeededDate('');
+  };
+
+  const handleApproveRequest = (requestId: string) => {
+    const request = requests.find(req => req.id === requestId);
+    if (!request) return;
+
+    const updatedRequests = requests.map(req => 
+      req.id === requestId 
+        ? { ...req, status: 'approved', approvedBy: 'Principal Silva', approvedDate: new Date().toISOString().split('T')[0] }
+        : req
+    );
+
+    setRequests(updatedRequests);
+
+    // Send notification to requester
+    const notification: Notification = {
+      id: `notif${notifications.length + 1}`,
+      type: 'approval',
+      title: 'Request Approved',
+      message: `Your request for ${request.quantity} ${inventoryItems.find(i => i.id === request.itemId)?.unit} of ${request.itemName} has been approved by Principal Silva.`,
+      timestamp: new Date().toLocaleString(),
+      read: false,
+      requestId: requestId,
+      itemId: request.itemId,
+    };
+
+    setNotifications([notification, ...notifications]);
+  };
+
+  const handleRejectRequest = (requestId: string) => {
+    const request = requests.find(req => req.id === requestId);
+    if (!request) return;
+
+    const updatedRequests = requests.map(req => 
+      req.id === requestId 
+        ? { ...req, status: 'rejected' }
+        : req
+    );
+
+    setRequests(updatedRequests);
+
+    // Send notification to requester
+    const notification: Notification = {
+      id: `notif${notifications.length + 1}`,
+      type: 'rejection',
+      title: 'Request Rejected',
+      message: `Your request for ${request.quantity} ${inventoryItems.find(i => i.id === request.itemId)?.unit} of ${request.itemName} has been rejected.`,
+      timestamp: new Date().toLocaleString(),
+      read: false,
+      requestId: requestId,
+      itemId: request.itemId,
+    };
+
+    setNotifications([notification, ...notifications]);
+  };
+
+  const handleFulfillRequest = () => {
+    if (!selectedRequest || !fulfilledQuantity || !fulfillmentDate) return;
+
+    const updatedRequests = requests.map(req => 
+      req.id === selectedRequest.id 
+        ? { 
+            ...req, 
+            status: 'fulfilled',
+            fulfilledBy: 'Lab Assistant',
+            fulfilledDate: fulfillmentDate,
+            fulfilledQuantity: parseInt(fulfilledQuantity),
+            notes: fulfillmentNotes,
+          }
+        : req
+    );
+
+    setRequests(updatedRequests);
+
+    // Update inventory stock level
+    const item = inventoryItems.find(i => i.id === selectedRequest.itemId);
+    if (item) {
+      // In a real app, you would update the actual inventory here
+      console.log(`Updated ${item.name} stock: +${fulfilledQuantity} ${item.unit}`);
+    }
+
+    // Send fulfillment notification
+    const notification: Notification = {
+      id: `notif${notifications.length + 1}`,
+      type: 'fulfillment',
+      title: `${selectedRequest.itemName} Restocked`,
+      message: `Lab Assistant has added ${fulfilledQuantity} ${item?.unit} of ${selectedRequest.itemName} to inventory.`,
+      timestamp: new Date().toLocaleString(),
+      read: false,
+      requestId: selectedRequest.id,
+      itemId: selectedRequest.itemId,
+    };
+
+    setNotifications([notification, ...notifications]);
+
+    // Reset form
+    setShowFulfillDialog(false);
+    setSelectedRequest(null);
+    setFulfilledQuantity('');
+    setFulfillmentNotes('');
+    setFulfillmentDate('');
+  };
+
+  const markNotificationAsRead = (notificationId: string) => {
+    setNotifications(notifications.map(notif => 
+      notif.id === notificationId ? { ...notif, read: true } : notif
+    ));
+  };
+
+  const markAllNotificationsAsRead = () => {
+    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  };
+
+  // Get requests for a specific item
+  const getItemRequests = (itemId: string) => {
+    return requests.filter(req => req.itemId === itemId);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
+      {/* Header with Notifications */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-gray-900 mb-2">Laboratory Inventory</h2>
@@ -163,102 +482,230 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             Manage and track all laboratory equipment, glassware, and materials
           </p>
         </div>
-        {canEdit && (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
-              <DialogHeader>
-                <DialogTitle>Add New Inventory Item</DialogTitle>
-                <DialogDescription>
-                  Add new equipment or material to the laboratory inventory
-                </DialogDescription>
-              </DialogHeader>
-              <form className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Item Name</label>
-                    <Input placeholder="e.g., Beakers (250ml)" className="mt-1" />
+        <div className="flex items-center gap-4">
+          {/* Notifications Bell */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5" />
+              {unreadNotifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
+                  {unreadNotifications.length}
+                </span>
+              )}
+            </Button>
+            
+            {/* Notifications Dropdown - MODIFIED to show fulfillment details */}
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Fulfillment Notifications</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={markAllNotificationsAsRead}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Mark all as read
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Category</label>
-                    <Select>
-                      <SelectTrigger className="mt-1 bg-white">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                        <SelectItem value="Glassware">Glassware</SelectItem>
-                        <SelectItem value="Equipment">Equipment</SelectItem>
-                        <SelectItem value="Chemicals">Chemicals</SelectItem>
-                        <SelectItem value="Safety">Safety Equipment</SelectItem>
-                        <SelectItem value="Instruments">Instruments</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Stock Level</label>
-                    <Input type="number" placeholder="e.g., 35" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Minimum Stock Level</label>
-                    <Input type="number" placeholder="e.g., 20" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Unit</label>
-                    <Input placeholder="e.g., pieces, units" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Location</label>
-                    <Input placeholder="e.g., Cabinet A2 - Shelf 3" className="mt-1" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Storage Instructions</label>
-                    <textarea
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={3}
-                      placeholder="Enter storage instructions..."
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Handling Procedure</label>
-                    <textarea
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={3}
-                      placeholder="Enter handling procedure..."
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Safety Notes</label>
-                    <textarea
-                      className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows={3}
-                      placeholder="Enter safety notes..."
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Photo URL</label>
-                    <Input placeholder="https://example.com/photo.jpg" className="mt-1" />
-                  </div>
+                  <p className="text-sm text-gray-600 mt-1">Items that have been restocked</p>
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline">
+                <div className="max-h-96 overflow-y-auto">
+                  {fulfillmentNotifications.length > 0 ? (
+                    fulfillmentNotifications.map((notification) => {
+                      const request = requests.find(req => req.id === notification.requestId);
+                      const item = inventoryItems.find(i => i.id === notification.itemId);
+                      
+                      return (
+                        <div
+                          key={notification.id}
+                          className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                            !notification.read ? 'bg-purple-50' : ''
+                          }`}
+                          onClick={() => markNotificationAsRead(notification.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="rounded-full p-2 bg-purple-100 text-purple-600">
+                              <Package className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                                {!notification.read && (
+                                  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
+                                )}
+                              </div>
+                              
+                              {/* Detailed fulfillment information */}
+                              <div className="mt-2 space-y-2">
+                                <p className="text-sm text-gray-600">{notification.message}</p>
+                                
+                                {request && (
+                                  <div className="text-sm">
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                      <span className="font-medium">Requested by:</span>
+                                      <span>{request.requestedBy}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-700">
+                                      <span className="font-medium">Date fulfilled:</span>
+                                      <span>{request.fulfilledDate}</span>
+                                    </div>
+                                    {request.notes && (
+                                      <div className="mt-1 p-2 bg-gray-50 rounded border border-gray-200">
+                                        <span className="font-medium text-gray-700">Notes: </span>
+                                        <span className="text-gray-600">{request.notes}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {item && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
+                                    <span className="text-xs text-gray-500">Location: {item.location}</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-xs text-gray-500 mt-3">{notification.timestamp}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-8 text-center">
+                      <CheckCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">No fulfillment notifications</p>
+                      <p className="text-sm text-gray-500 mt-1">Items restocked will appear here</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {canEdit && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Item
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+                <DialogHeader>
+                  <DialogTitle>Add New Inventory Item</DialogTitle>
+                  <DialogDescription>
+                    Add new equipment or material to the laboratory inventory
+                  </DialogDescription>
+                </DialogHeader>
+                <form className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Item Name</label>
+                      <Input placeholder="e.g., Beakers (250ml)" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Category</label>
+                      <Select>
+                        <SelectTrigger className="mt-1 bg-white">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                          <SelectItem value="Glassware">Glassware</SelectItem>
+                          <SelectItem value="Equipment">Equipment</SelectItem>
+                          <SelectItem value="Chemicals">Chemicals</SelectItem>
+                          <SelectItem value="Safety">Safety Equipment</SelectItem>
+                          <SelectItem value="Instruments">Instruments</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Stock Level</label>
+                      <Input type="number" placeholder="e.g., 35" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Minimum Stock Level</label>
+                      <Input type="number" placeholder="e.g., 20" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Unit</label>
+                      <Input placeholder="e.g., pieces, units" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Location</label>
+                      <Input placeholder="e.g., Cabinet A2 - Shelf 3" className="mt-1" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="outline" onClick={() => {}}>
                       Cancel
                     </Button>
-                  </DialogClose>
-                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                    Add Item
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        )}
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                      Add Item
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
+
+      {/* Fulfillment Statistics - ONLY FULFILLED */}
+      {isPrincipal && (
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <Card className="border border-gray-200 shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Items Restocked</p>
+                  <p className="text-3xl font-bold text-purple-600">{fulfilledRequests.length}</p>
+                  <p className="text-sm text-gray-600 mt-1">Fulfilled requests</p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <Package className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              
+              {/* Recent Fulfillments */}
+              {fulfilledRequests.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <h4 className="font-medium text-gray-900 mb-3">Recently Restocked</h4>
+                  <div className="space-y-3">
+                    {fulfilledRequests.slice(0, 3).map((request) => {
+                      const item = inventoryItems.find(i => i.id === request.itemId);
+                      return (
+                        <div key={request.id} className="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <CheckCheck className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900">{request.itemName}</p>
+                              <p className="text-xs text-gray-600">
+                                {request.fulfilledQuantity} {item?.unit} added by {request.fulfilledBy}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-500">{request.fulfilledDate}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card className="border border-gray-200 shadow-sm">
@@ -325,189 +772,354 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
         </Card>
       </div>
 
+    {/* Inventory Grid Container */}
+        <div className="border border-gray-200 rounded-lg shadow-sm">
+        <div className="p-6">
       {/* Inventory Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map((item) => {
-          const status = getStockStatus(item);
-          const StatusIcon = status.icon;
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {filteredItems.map((item) =>{
+              const status = getStockStatus(item);
+              const StatusIcon = status.icon;
+              const itemRequests = getItemRequests(item.id);
+              const hasPendingRequest = itemRequests.some(req => req.status === 'pending');
+              const hasApprovedRequest = itemRequests.some(req => req.status === 'approved');
+              const hasFulfilledRequest = itemRequests.some(req => req.status === 'fulfilled');
 
-          return (
-            <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border border-gray-200">
-              <div className="h-48 bg-gray-100 relative">
-                <ImageWithFallback
-                  src={item.photo}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
-                  <Badge className={status.color}>
-                    <StatusIcon className="w-3 h-3 mr-1" />
-                    {status.label}
-                  </Badge>
-                </div>
-              </div>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
-                  <span className="text-xs text-gray-500">{item.lastUpdated}</span>
-                </div>
-                <CardTitle className="text-lg font-semibold text-gray-900">{item.name}</CardTitle>
-                <CardDescription className="text-sm text-gray-600">Location: {item.location}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-0">
-                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Current Stock</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      {item.stockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
-                    </p>
+              return (
+                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border border-gray-200">
+                  <div className="h-48 bg-gray-100 relative">
+                    <ImageWithFallback
+                      src={item.photo}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <Badge className={status.color}>
+                        <StatusIcon className="w-3 h-3 mr-1" />
+                        {status.label}
+                      </Badge>
+                    </div>
+                    {(hasPendingRequest || hasApprovedRequest || hasFulfilledRequest) && (
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {hasPendingRequest && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Request Pending
+                          </Badge>
+                        )}
+                        {hasApprovedRequest && (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Approved
+                          </Badge>
+                        )}
+                        {hasFulfilledRequest && (
+                          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                            <Package className="w-3 h-3 mr-1" />
+                            Fulfilled
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Min. Required</p>
-                    <p className="text-lg font-bold text-gray-900 mt-1">
-                      {item.minStockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
-                    </p>
-                  </div>
-                </div>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
+                      <span className="text-xs text-gray-500">{item.lastUpdated}</span>
+                    </div>
+                    <CardTitle className="text-lg font-semibold text-gray-900">{item.name}</CardTitle>
+                    <CardDescription className="text-sm text-gray-600">Location: {item.location}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-0">
+                    <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Current Stock</p>
+                        <p className="text-lg font-bold text-gray-900 mt-1">
+                          {item.stockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium">Min. Required</p>
+                        <p className="text-lg font-bold text-gray-900 mt-1">
+                          {item.minStockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
+                        </p>
+                      </div>
+                    </div>
 
-                <div className="flex gap-2">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                        onClick={() => setSelectedItem(item)}
-                      >
-                        <Info className="w-4 h-4 mr-2" />
-                        Details
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl">
-                      <DialogHeader className="border-b border-gray-200 pb-4">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <DialogTitle className="text-xl font-bold text-gray-900">{item.name}</DialogTitle>
-                            <DialogDescription className="text-gray-600 mt-1">
-                              Complete information and handling procedures
+                    <div className="flex gap-2">
+                      {/* Details Button */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                            onClick={() => setSelectedItem(item)}
+                          >
+                            <Info className="w-4 h-4 mr-2" />
+                            Details
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl bg-white border border-gray-200 shadow-xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="text-2xl font-bold text-gray-900">{item.name}</DialogTitle>
+                            <DialogDescription className="text-gray-600">
+                              Inventory details and restock history
                             </DialogDescription>
-                          </div>
-                          <DialogClose asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </DialogClose>
-                        </div>
-                      </DialogHeader>
-                      
-                      <div className="space-y-6 py-4">
-                        {/* Image */}
-                        <div className="h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                          <ImageWithFallback
-                            src={item.photo}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                          </DialogHeader>
+                          
+                          <div className="space-y-6 py-4">
+                            {/* Image */}
+                            <div className="h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                              <ImageWithFallback
+                                src={item.photo}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
 
-                        {/* Details Table */}
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader className="bg-gray-50">
-                              <TableRow>
-                                <TableHead className="font-semibold">Property</TableHead>
-                                <TableHead className="font-semibold">Value</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow className="border-b border-gray-100">
-                                <TableCell className="font-medium text-gray-600 py-3">Category</TableCell>
-                                <TableCell className="py-3">
-                                  <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
-                                </TableCell>
-                              </TableRow>
-                              <TableRow className="border-b border-gray-100">
-                                <TableCell className="font-medium text-gray-600 py-3">Location</TableCell>
-                                <TableCell className="py-3">{item.location}</TableCell>
-                              </TableRow>
-                              <TableRow className="border-b border-gray-100">
-                                <TableCell className="font-medium text-gray-600 py-3">Stock Level</TableCell>
-                                <TableCell className="py-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-900">{item.stockLevel} {item.unit}</span>
+                            {/* Divider */}
+                            <hr className="border-gray-300" />
+
+                            {/* Table-like Details - UPDATED to match new screenshot */}
+                            <div className="space-y-6">
+                              <h3 className="text-lg font-semibold text-gray-900">Property</h3>
+                              <div className="space-y-4">
+                                {/* Category */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-1">Category</h4>
+                                  <div>
+                                    <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
+                                  </div>
+                                </div>
+                                
+                                {/* Location */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-1">Location</h4>
+                                  <p className="text-gray-900">{item.location}</p>
+                                </div>
+                                
+                                {/* Stock Level */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-1">Stock Level</h4>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-semibold text-gray-900">
+                                      {item.stockLevel} {item.unit}
+                                    </span>
                                     <Badge className={status.color} variant="outline">
                                       <StatusIcon className="w-3 h-3 mr-1" />
                                       {status.label}
                                     </Badge>
                                   </div>
-                                </TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="font-medium text-gray-600 py-3">Last Updated</TableCell>
-                                <TableCell className="py-3">{item.lastUpdated}</TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
-
-                        {/* Handling Procedure */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Info className="w-4 h-4 text-blue-600" />
+                                </div>
+                                
+                                {/* Last Updated */}
+                                <div>
+                                  <h4 className="text-sm font-medium text-gray-700 mb-1">Last Updated</h4>
+                                  <p className="text-gray-900">{item.lastUpdated}</p>
+                                </div>
+                              </div>
                             </div>
-                            <h4 className="text-lg font-semibold text-blue-900">Handling Procedure</h4>
-                          </div>
-                          <p className="text-gray-700 whitespace-pre-line">{item.handlingProcedure}</p>
-                        </div>
 
-                        {/* Safety Notes */}
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                              <AlertTriangle className="w-4 h-4 text-red-600" />
+                            {/* Divider */}
+                            <hr className="border-gray-300" />
+
+                            {/* Restock History Section - UPDATED to match new screenshot */}
+                            <div className="space-y-6">
+                              <h3 className="text-lg font-semibold text-gray-900">Restock History</h3>
+                              
+                              {/* Filter to only show fulfilled requests for this item from lab assistants */}
+                              {itemRequests.filter(request => 
+                                request.status === 'fulfilled' && 
+                                request.requestedByRole === 'lab-assistant'
+                              ).length > 0 ? (
+                                <div className="space-y-6">
+                                  {itemRequests.filter(request => 
+                                    request.status === 'fulfilled' && 
+                                    request.requestedByRole === 'lab-assistant'
+                                  ).map((request) => (
+                                    <div key={request.id} className="space-y-4">
+                                      {/* Requester and status */}
+                                      <div>
+                                        <h4 className="text-lg font-bold text-gray-900">{request.requestedBy}</h4>
+                                        <div className="flex items-center gap-3 mt-2">
+                                          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                                            <CheckCheck className="w-3 h-3 mr-1" />
+                                            Fulfilled
+                                          </Badge>
+                                          <span className="text-sm text-gray-600 italic">
+                                            {request.priority} Priority
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Quantity */}
+                                      <div>
+                                        <p className="text-2xl font-bold text-gray-900">{request.quantity} {item.unit}</p>
+                                        <p className="text-sm text-gray-500 mt-1">Quantity requested</p>
+                                      </div>
+                                      
+                                      {/* Dates */}
+                                      <div className="text-sm text-gray-700">
+                                        <p>
+                                          <span className="font-medium">Requested:</span> {request.requestedDate} · 
+                                          <span className="font-medium ml-1">Needed:</span> {request.neededDate}
+                                        </p>
+                                      </div>
+                                      
+                                      {/* Reason */}
+                                      <p className="text-gray-700">
+                                        {request.reason}
+                                      </p>
+                                      
+                                      {/* Divider */}
+                                      <hr className="border-gray-300" />
+                                      
+                                      {/* Fulfillment Details */}
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <CheckCheck className="w-5 h-5 text-green-600" />
+                                          <h5 className="font-bold text-gray-900">
+                                            Fulfilled by {request.fulfilledBy} on {request.fulfilledDate}
+                                          </h5>
+                                        </div>
+                                        <p className="text-gray-700">
+                                          <span className="font-medium">Quantity added:</span> {request.fulfilledQuantity} {item.unit}
+                                        </p>
+                                        {request.notes && (
+                                          <div className="mt-2">
+                                            <p className="text-gray-700">
+                                              <span className="font-medium">Notes:</span> {request.notes}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                  <p className="text-gray-600">No restock history available</p>
+                                  <p className="text-sm text-gray-500 mt-1">Restocked items will appear here</p>
+                                </div>
+                              )}
                             </div>
-                            <h4 className="text-lg font-semibold text-red-900">⚠️ Safety Notes</h4>
                           </div>
-                          <p className="text-gray-700 whitespace-pre-line">{item.safetyNotes}</p>
-                        </div>
+                        </DialogContent>
+                      </Dialog>
 
-                        {/* Storage Instructions */}
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                          <div className="flex items-center gap-2 mb-3">
-                            <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                              <Package className="w-4 h-4 text-emerald-600" />
-                            </div>
-                            <h4 className="text-lg font-semibold text-emerald-900">Storage Instructions</h4>
-                          </div>
-                          <p className="text-gray-700 whitespace-pre-line">{item.storageInstructions}</p>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      {/* Edit Button */}
+                      {canEdit && (
+                        <Button size="sm" variant="outline" className="border-gray-300 hover:border-blue-400 hover:bg-blue-50">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-                  {canEdit && (
-                    <Button size="sm" variant="outline" className="border-gray-300 hover:border-blue-400 hover:bg-blue-50">
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  )}
+          {/* Empty State */}
+          {filteredItems.length === 0 && (
+            <Card className="py-12 border border-gray-200 shadow-sm">
+              <CardContent className="text-center">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-6 h-6 text-gray-400" />
                 </div>
+                <h3 className="text-gray-900 mb-2 font-semibold">No items found</h3>
+                <p className="text-gray-600">Try adjusting your filters or search query</p>
               </CardContent>
             </Card>
-          );
-        })}
+          )}
+        </div>
       </div>
 
-      {/* Empty State */}
-      {filteredItems.length === 0 && (
-        <Card className="py-12 border border-gray-200 shadow-sm">
-          <CardContent className="text-center">
-            <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-gray-900 mb-2 font-semibold">No items found</h3>
-            <p className="text-gray-600">Try adjusting your filters or search query</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Fulfillment Dialog for Lab Assistant */}
+      <Dialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
+        <DialogContent className="bg-white">
+          <DialogHeader>
+            <DialogTitle>Mark Request as Fulfilled</DialogTitle>
+            <DialogDescription>
+              Confirm that you have added the requested items to inventory
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {selectedRequest && (
+              <>
+                <div className="p-3 bg-gray-50 rounded-lg border">
+                  <h4 className="font-semibold text-gray-900">{selectedRequest.itemName}</h4>
+                  <p className="text-sm text-gray-600">Requested by: {selectedRequest.requestedBy}</p>
+                  <p className="text-sm text-gray-600">Quantity requested: {selectedRequest.quantity} {inventoryItems.find(i => i.id === selectedRequest.itemId)?.unit}</p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Quantity Fulfilled
+                  </label>
+                  <Input
+                    type="number"
+                    placeholder="Enter quantity added"
+                    value={fulfilledQuantity}
+                    onChange={(e) => setFulfilledQuantity(e.target.value)}
+                    min="1"
+                    max={selectedRequest.quantity.toString()}
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Requested: {selectedRequest.quantity} {inventoryItems.find(i => i.id === selectedRequest.itemId)?.unit}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Fulfillment Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={fulfillmentDate}
+                    onChange={(e) => setFulfillmentDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Add any notes about the fulfillment (e.g., supplier, quality, storage location)"
+                    value={fulfillmentNotes}
+                    onChange={(e) => setFulfillmentNotes(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowFulfillDialog(false);
+                setSelectedRequest(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="bg-purple-600 hover:bg-purple-700"
+              onClick={handleFulfillRequest}
+              disabled={!fulfilledQuantity || !fulfillmentDate}
+            >
+              <CheckCheck className="w-4 h-4 mr-2" />
+              Mark as Fulfilled
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
@@ -10,24 +10,29 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { 
   PackagePlus, 
-  Send, 
+ 
   CheckCircle, 
   XCircle, 
   Clock, 
-  Mail,
+  PauseCircle,
   AlertCircle,
   Check,
   User,
   FlaskConical,
-  Eye,
-  EyeOff,
-  TrendingUp,
-  FileText,
-  Download,
-  AlertTriangle,
   Bell,
+  BellRing,
+  Inbox,
+  MessageSquare,
+ 
+  TrendingUp,
+  
+  AlertTriangle,
+ 
   Calendar,
-  Archive
+  Archive,
+  Send,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +48,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 
 interface InventoryRequest {
   id: string;
@@ -54,14 +60,23 @@ interface InventoryRequest {
   quantity: number;
   reason: string;
   urgency: 'low' | 'medium' | 'high';
-  status: 'pending' | 'approved' | 'rejected' | 'in-progress';
+  status: 'pending' | 'approved' | 'rejected' | 'on-hold';
   requestDate: string;
   responseDate?: string;
   responseNote?: string;
-  emailSent?: boolean;
-  emailSentTo?: string;
-  emailSentAt?: string;
-  attachments?: { name: string; url: string; size: string }[];
+}
+
+interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+  requestId?: string;
+  senderName: string;
+  senderRole: string;
 }
 
 interface InventoryRequestsPageProps {
@@ -71,30 +86,27 @@ interface InventoryRequestsPageProps {
   userEmail: string;
 }
 
-// Mock data matching your image
+// Updated mock data without email fields
 const mockRequests: InventoryRequest[] = [
   {
     id: 'req-001',
-    requesterName: 'Mr. Perera',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-001',
-    requesterEmail: 'perera@school.edu',
+    requesterName: 'Lab Assistant Perera',
+    requesterRole: 'Lab Assistant',
+    requesterId: 'lab-001',
+    requesterEmail: 'perera.lab@school.edu',
     itemName: 'Beakers (250ml)',
     quantity: 20,
     reason: 'Chemistry practical session for Grade 10 students scheduled next week',
     urgency: 'high',
     status: 'pending',
     requestDate: '2025-11-26',
-    attachments: [
-      { name: 'lesson_plan.pdf', url: '/attachments/lesson_plan.pdf', size: '1.2 MB' },
-      { name: 'student_list.csv', url: '/attachments/student_list.csv', size: '0.5 MB' }
-    ]
+  
   },
   {
     id: 'req-002',
     requesterName: 'Lab Assistant Kumar',
     requesterRole: 'Lab Assistant',
-    requesterId: 'lab-001',
+    requesterId: 'lab-002',
     requesterEmail: 'kumar.lab@school.edu',
     itemName: 'Microscope Slides',
     quantity: 50,
@@ -104,37 +116,30 @@ const mockRequests: InventoryRequest[] = [
     requestDate: '2025-11-25',
     responseDate: '2025-11-25',
     responseNote: 'Approved. Purchase order initiated.',
-    emailSent: true,
-    emailSentTo: 'kumar.lab@school.edu',
-    emailSentAt: '2025-11-25 14:30',
-    attachments: [
-      { name: 'inventory_report.pdf', url: '/attachments/inventory_report.pdf', size: '2.1 MB' }
-    ]
+ 
   },
   {
     id: 'req-003',
-    requesterName: 'Mrs. Fernando',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-002',
-    requesterEmail: 'fernando@school.edu',
+    requesterName: 'Lab Assistant Fernando',
+    requesterRole: 'Lab Assistant',
+    requesterId: 'lab-003',
+    requesterEmail: 'fernando.lab@school.edu',
     itemName: 'Safety Goggles',
     quantity: 30,
     reason: 'Additional safety equipment needed for expanded class size',
     urgency: 'high',
-    status: 'in-progress',
+    status: 'on-hold',
     requestDate: '2025-11-24',
     responseDate: '2025-11-24',
     responseNote: 'Processing. Checking stock availability.',
-    emailSent: true,
-    emailSentTo: 'fernando@school.edu',
-    emailSentAt: '2025-11-24 10:15'
+  
   },
   {
     id: 'req-004',
-    requesterName: 'Mr. Silva',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-003',
-    requesterEmail: 'silva@school.edu',
+    requesterName: 'Lab Assistant Silva',
+    requesterRole: 'Lab Assistant',
+    requesterId: 'lab-004',
+    requesterEmail: 'silva.lab@school.edu',
     itemName: 'Bunsen Burners',
     quantity: 10,
     reason: 'Replace old equipment for physics lab',
@@ -143,25 +148,61 @@ const mockRequests: InventoryRequest[] = [
     requestDate: '2025-11-23',
     responseDate: '2025-11-23',
     responseNote: 'Rejected. Budget constraints for this quarter.',
-    emailSent: true,
-    emailSentTo: 'silva@school.edu',
-    emailSentAt: '2025-11-23 16:45'
+  },
+];
+
+// Initial notifications
+const initialNotifications: Notification[] = [
+  {
+    id: 'notif-001',
+    userId: 'lab-002',
+    title: 'Request Approved',
+    message: 'Your request for 50x Microscope Slides has been approved. Purchase order initiated.',
+    type: 'success',
+    timestamp: '2025-11-25 14:30',
+    read: false,
+    requestId: 'req-002',
+    senderName: 'Principal Johnson',
+    senderRole: 'Principal'
+  },
+  {
+    id: 'notif-002',
+    userId: 'lab-003',
+    title: 'Request On Hold',
+    message: 'Your request for 30x Safety Goggles is being processed. Checking stock availability.',
+    type: 'info',
+    timestamp: '2025-11-24 10:15',
+    read: false,
+    requestId: 'req-003',
+    senderName: 'Lab Manager Smith',
+    senderRole: 'Lab Manager'
+  },
+  {
+    id: 'notif-003',
+    userId: 'lab-004',
+    title: 'Request Rejected',
+    message: 'Your request for 10x Bunsen Burners was rejected due to budget constraints.',
+    type: 'error',
+    timestamp: '2025-11-23 16:45',
+    read: true,
+    requestId: 'req-004',
+    senderName: 'Principal Johnson',
+    senderRole: 'Principal'
   },
 ];
 
 export function InventoryRequestsPage({ userRole, userId, userName, userEmail }: InventoryRequestsPageProps) {
   const [requests, setRequests] = useState<InventoryRequest[]>(mockRequests);
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
-  const [isViewEmailDialogOpen, setIsViewEmailDialogOpen] = useState(false);
+  const [isNotifyDialogOpen, setIsNotifyDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
-  const [emailContent, setEmailContent] = useState('');
-  const [emailSubject, setEmailSubject] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
   const [selectedTab, setSelectedTab] = useState<string>('all');
   const [filterUrgency, setFilterUrgency] = useState<string>('all');
   const [notifyRequester, setNotifyRequester] = useState(true);
-  const [emailSignature, setEmailSignature] = useState(`\n\nBest regards,\n${userName}\n${userRole === 'principal' ? 'School Principal' : userRole === 'lab-manager' ? 'Lab Manager' : 'Administrator'}`);
   
+
   const [newRequest, setNewRequest] = useState({
     itemName: '',
     quantity: 1,
@@ -169,77 +210,86 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
     urgency: 'medium' as const,
     priority: 'normal',
     expectedDate: '',
-    attachments: [] as File[],
+  
   });
 
-  const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+  // ONLY lab assistants can create requests
+  const canCreateRequest = userRole === 'lab-assistant';
+  
+  // Principals, lab managers, and admins can approve requests
   const canApproveRequest = userRole === 'principal' || userRole === 'lab-manager' || userRole === 'admin';
-  const canSendEmail = userRole === 'principal' || userRole === 'lab-manager' || userRole === 'admin';
-
-  // Function to handle sending email
-  const handleSendEmail = (request: InventoryRequest) => {
+  // Principals, lab managers, and admins can send notifications
+  const canSendNotification = userRole === 'principal' || userRole === 'lab-manager' || userRole === 'admin';
+  // Function to handle sending notification
+  const handleSendNotification = (request: InventoryRequest) => {
     setSelectedRequest(request);
-    setEmailSubject(`Update on Your Inventory Request: ${request.itemName}`);
+   
     
-    // Pre-fill email content based on request status
-    let defaultContent = '';
+    
+    // Pre-fill notification message based on request status
+    let defaultMessage = '';
     if (request.status === 'approved') {
-      defaultContent = `Dear ${request.requesterName},\n\nYour request for ${request.quantity} x ${request.itemName} has been approved.\n\nReason: ${request.reason}\n\nResponse: ${request.responseNote}\n\nYou will be notified once the items are available for collection.\n\nRequest ID: ${request.id}\nRequest Date: ${request.requestDate}`;
+      defaultMessage = `Your request for ${request.quantity} x ${request.itemName} has been approved. You will be notified once the items are available for collection.`;
     } else if (request.status === 'rejected') {
-      defaultContent = `Dear ${request.requesterName},\n\nRegarding your request for ${request.quantity} x ${request.itemName}:\n\nWe regret to inform you that this request cannot be approved at this time.\n\nReason for rejection: ${request.responseNote}\n\nYou may revise and resubmit your request if needed.\n\nRequest ID: ${request.id}\nRequest Date: ${request.requestDate}`;
+      defaultMessage = `Your request for ${request.quantity} x ${request.itemName} cannot be approved at this time. You may revise and resubmit your request if needed.`;
+    } else if (request.status === 'on-hold') {
+      defaultMessage = `Your request for ${request.quantity} x ${request.itemName} is being processed. We will update you once there's progress.`;
     } else {
-      defaultContent = `Dear ${request.requesterName},\n\nThis is an update regarding your inventory request for ${request.quantity} x ${request.itemName}.\n\nCurrent Status: ${request.status}\n\nWe will notify you once there's an update.\n\nRequest ID: ${request.id}\nRequest Date: ${request.requestDate}`;
+      defaultMessage = `Update regarding your inventory request for ${request.quantity} x ${request.itemName}. We will notify you once there's an update.`;
     }
     
-    setEmailContent(defaultContent + emailSignature);
-    setIsEmailDialogOpen(true);
+    setNotificationMessage(defaultMessage);
+    setIsNotifyDialogOpen(true);
   };
 
-  // Function to actually send the email
-  const sendEmail = () => {
+  // Function to actually send the notification
+  const sendNotification = () => {
     if (!selectedRequest) return;
 
-    // Update request with email sent info
-    setRequests(prevRequests => prevRequests.map(req => 
-      req.id === selectedRequest.id 
-        ? { 
-            ...req, 
-            emailSent: true,
-            emailSentTo: req.requesterEmail,
-            emailSentAt: new Date().toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          } 
-        : req
-    ));
+    const notificationType = selectedRequest.status === 'approved' ? 'success' :
+                            selectedRequest.status === 'rejected' ? 'error' :
+                            selectedRequest.status === 'on-hold' ? 'info' : 'warning';
 
-    toast.success('Email Sent Successfully', {
-      description: `Email sent to ${selectedRequest.requesterName} (${selectedRequest.requesterEmail})`,
-      icon: <Mail className="w-4 h-4" />,
-      duration: 4000,
+    const newNotification: Notification = {
+      id: `notif-${Date.now()}`,
+      userId: selectedRequest.requesterId,
+      title: `Request ${selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}`,
+      message: notificationMessage,
+      type: notificationType,
+      timestamp: new Date().toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      read: false,
+      requestId: selectedRequest.id,
+      senderName: userName,
+      senderRole: userRole === 'principal' ? 'Principal' : userRole === 'lab-manager' ? 'Lab Manager' : 'Administrator'
+    };
+
+    setNotifications(prev => [newNotification, ...prev]);
+
+    toast.success('Notification Sent', {
+      description: `Notification sent to ${selectedRequest.requesterName}`,
+      duration: 3000,
       action: {
         label: 'View',
         onClick: () => {
-          setSelectedRequest(selectedRequest);
-          setIsViewEmailDialogOpen(true);
+          // Mark as read and optionally scroll to notification
+          setNotifications(prev => 
+            prev.map(notif => 
+              notif.id === newNotification.id ? { ...notif, read: true } : notif
+            )
+          );
         }
       }
     });
 
-    // In a real app, you would send the email via API here
-    console.log('Email sent:', {
-      to: selectedRequest.requesterEmail,
-      subject: emailSubject,
-      body: emailContent,
-      requestId: selectedRequest.id
-    });
-
-    setIsEmailDialogOpen(false);
+    setIsNotifyDialogOpen(false);
     setSelectedRequest(null);
+    setNotificationMessage('');
   };
 
   const handleApproveRequest = (requestId: string) => {
@@ -252,18 +302,40 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
         status: 'approved',
         responseDate: new Date().toISOString().split('T')[0],
         responseNote: 'Approved by ' + userName,
-        emailSent: notifyRequester,
-        emailSentTo: notifyRequester ? request.requesterEmail : undefined,
-        emailSentAt: notifyRequester ? new Date().toLocaleString() : undefined
+      
       };
 
       const updatedRequests = prevRequests.map(req => 
         req.id === requestId ? updatedRequest : req
       );
-      
+
+      // Send automatic notification
+      if (notifyRequester) {
+        const newNotification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: request.requesterId,
+          title: 'Request Approved',
+          message: `Your request for ${request.quantity} x ${request.itemName} has been approved by ${userName}.`,
+          type: 'success',
+          timestamp: new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          read: false,
+          requestId: request.id,
+          senderName: userName,
+          senderRole: userRole === 'principal' ? 'Principal' : userRole === 'lab-manager' ? 'Lab Manager' : 'Administrator'
+        };
+
+        setNotifications(prev => [newNotification, ...prev]);
+      }
+
       toast.success('Request Approved', {
         description: notifyRequester 
-          ? `Approved and email sent to ${request.requesterName}`
+          ? `Approved and notification sent to ${request.requesterName}`
           : `Approved request for ${request.itemName}`,
         duration: 3000,
       });
@@ -282,14 +354,36 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
         status: 'rejected',
         responseDate: new Date().toISOString().split('T')[0],
         responseNote: 'Not approved at this time',
-        emailSent: notifyRequester,
-        emailSentTo: notifyRequester ? request.requesterEmail : undefined,
-        emailSentAt: notifyRequester ? new Date().toLocaleString() : undefined
+      
       };
 
       const updatedRequests = prevRequests.map(req => 
         req.id === requestId ? updatedRequest : req
       );
+
+      // Send automatic notification
+      if (notifyRequester) {
+        const newNotification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: request.requesterId,
+          title: 'Request Rejected',
+          message: `Your request for ${request.quantity} x ${request.itemName} was not approved at this time.`,
+          type: 'error',
+          timestamp: new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          read: false,
+          requestId: request.id,
+          senderName: userName,
+          senderRole: userRole === 'principal' ? 'Principal' : userRole === 'lab-manager' ? 'Lab Manager' : 'Administrator'
+        };
+
+        setNotifications(prev => [newNotification, ...prev]);
+      }
       
       toast.error('Request Rejected', {
         description: notifyRequester 
@@ -302,26 +396,48 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
     });
   };
 
-  const handleMarkInProgress = (requestId: string) => {
+  const handleMarkOnHold = (requestId: string) => {
     setRequests(prevRequests => {
       const request = prevRequests.find(req => req.id === requestId);
       if (!request) return prevRequests;
 
       const updatedRequest: InventoryRequest = {
         ...request,
-        status: 'in-progress',
+        status: 'on-hold',
         responseDate: new Date().toISOString().split('T')[0],
         responseNote: 'Request is being processed',
-        emailSent: notifyRequester,
-        emailSentTo: notifyRequester ? request.requesterEmail : undefined,
-        emailSentAt: notifyRequester ? new Date().toLocaleString() : undefined
+      
       };
 
       const updatedRequests = prevRequests.map(req => 
         req.id === requestId ? updatedRequest : req
       );
+
+      // Send automatic notification
+      if (notifyRequester) {
+        const newNotification: Notification = {
+          id: `notif-${Date.now()}`,
+          userId: request.requesterId,
+          title: 'Request On Hold',
+          message: `Your request for ${request.quantity} x ${request.itemName} is being processed. We will update you soon.`,
+          type: 'info',
+          timestamp: new Date().toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          read: false,
+          requestId: request.id,
+          senderName: userName,
+          senderRole: userRole === 'principal' ? 'Principal' : userRole === 'lab-manager' ? 'Lab Manager' : 'Administrator'
+        };
+
+        setNotifications(prev => [newNotification, ...prev]);
+      }
       
-      toast.info('Marked as In Progress', {
+      toast.info('Marked as On Hold', {
         description: `Processing request for ${request.itemName}`,
         duration: 3000,
       });
@@ -329,31 +445,13 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
       return updatedRequests;
     });
   };
-
-  const handleDownloadAttachment = (attachment: { name: string; url: string; size: string }) => {
-    toast.info('Download Started', {
-      description: `Downloading ${attachment.name}`,
-      duration: 2000,
-    });
-    
-    // In a real app, this would download the file
-    console.log(`Downloading: ${attachment.name} from ${attachment.url}`);
-    
-    // Simulate download
-    const link = document.createElement('a');
-    link.href = attachment.url;
-    link.download = attachment.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
+  
   const handleCreateRequest = (e: React.FormEvent) => {
     e.preventDefault();
     const newRequestObj: InventoryRequest = {
       id: `req-${Date.now()}`,
       requesterName: userName,
-      requesterRole: userRole === 'teacher' ? 'Teacher' : userRole === 'lab-assistant' ? 'Lab Assistant' : 'Admin',
+      requesterRole: 'Lab Assistant', // Always set to Lab Assistant since only they can create requests
       requesterId: userId,
       requesterEmail: userEmail,
       itemName: newRequest.itemName,
@@ -366,6 +464,27 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
 
     setRequests(prevRequests => [newRequestObj, ...prevRequests]);
     
+    // Create notification for approvers
+    const approverRoles = ['principal', 'lab-manager', 'admin'];
+    const approverNotification: Notification = {
+      id: `notif-${Date.now()}-approver`,
+      userId: 'all-approvers', // In real app, would send to actual approver IDs
+      title: 'New Inventory Request',
+      message: `New request for ${newRequest.quantity} x ${newRequest.itemName} from ${userName}.`,
+      type: 'info',
+      timestamp: new Date().toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      read: false,
+      requestId: newRequestObj.id,
+      senderName: userName,
+      senderRole: 'Lab Assistant'
+    };
+
     setIsDialogOpen(false);
     setNewRequest({ 
       itemName: '', 
@@ -374,7 +493,7 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
       urgency: 'medium',
       priority: 'normal',
       expectedDate: '',
-      attachments: []
+   
     });
 
     toast.success('Request Sent Successfully', {
@@ -389,7 +508,7 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
         return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'in-progress':
+      case 'on-hold':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -402,8 +521,8 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
         return <CheckCircle className="w-3 h-3" />;
       case 'rejected':
         return <XCircle className="w-3 h-3" />;
-      case 'in-progress':
-        return <Clock className="w-3 h-3" />;
+      case 'on-hold':
+        return <PauseCircle className="w-3 h-3" />;
       default:
         return <AlertCircle className="w-3 h-3" />;
     }
@@ -431,13 +550,68 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
     }
   };
 
+  const getNotificationTypeColor = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-100 text-green-800';
+      case 'error':
+        return 'bg-red-100 text-red-800';
+      case 'warning':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  const getNotificationTypeIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'error':
+        return <XCircle className="w-4 h-4" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4" />;
+      default:
+        return <Bell className="w-4 h-4" />;
+    }
+  };
+
+  // Get user's notifications
+  const userNotifications = notifications.filter(notif => 
+    notif.userId === userId || notif.userId === 'all-approvers'
+  );
+
+  // Get unread notification count
+  const unreadCount = userNotifications.filter(notif => !notif.read).length;
+
+  // Mark notification as read
+  const markAsRead = (notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  // Mark all as read
+  const markAllAsRead = () => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        userNotifications.some(userNotif => userNotif.id === notif.id) 
+          ? { ...notif, read: true } 
+          : notif
+      )
+    );
+    toast.info('All notifications marked as read');
+  };
+
   // Filter requests based on selected tab
   const filteredRequests = requests.filter(request => {
     if (selectedTab === 'all') return true;
     if (selectedTab === 'pending') return request.status === 'pending';
     if (selectedTab === 'approved') return request.status === 'approved';
     if (selectedTab === 'rejected') return request.status === 'rejected';
-    if (selectedTab === 'in-progress') return request.status === 'in-progress';
+    if (selectedTab === 'on-hold') return request.status === 'on-hold';
     return true;
   }).filter(request => {
     if (filterUrgency === 'all') return true;
@@ -451,16 +625,16 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
 
   return (
     <div className="space-y-6">
-      {/* Email Dialog */}
-      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white border-2 border-gray-300 shadow-2xl">
+      {/* Send Notification Dialog */}
+      <Dialog open={isNotifyDialogOpen} onOpenChange={setIsNotifyDialogOpen}>
+        <DialogContent className="sm:max-w-[550px] bg-white border-2 border-gray-300 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
-              <Mail className="w-5 h-5 text-blue-600" />
-              Send Email Notification
+              <Bell className="w-5 h-5" />
+              Send Notification
             </DialogTitle>
             <DialogDescription className="text-gray-600">
-              Send an email update to the requester about their inventory request
+              Send an in-app notification to the requester about their inventory request
             </DialogDescription>
           </DialogHeader>
           
@@ -477,7 +651,7 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
                     <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                       <span className="bg-blue-50 px-2 py-1 rounded">{selectedRequest.requesterRole}</span>
                       <span>•</span>
-                      <span className="text-blue-600">{selectedRequest.requesterEmail}</span>
+                      <span className="text-blue-600">ID: {selectedRequest.requesterId}</span>
                     </div>
                   </div>
                 </div>
@@ -513,57 +687,33 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
                 </div>
               </div>
 
-              {/* Email Form */}
+              {/* Notification Form */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="emailSubject" className="text-sm font-medium text-gray-700">
-                    Subject
-                  </Label>
-                  <Input
-                    id="emailSubject"
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    className="bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Email subject"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="emailContent" className="text-sm font-medium text-gray-700">
-                    Message
+                  <Label htmlFor="notificationMessage" className="text-sm font-medium text-gray-700">
+                    Notification Message
                   </Label>
                   <Textarea
-                    id="emailContent"
-                    rows={10}
-                    value={emailContent}
-                    onChange={(e) => setEmailContent(e.target.value)}
+                    id="notificationMessage"
+                    rows={6}
+                    value={notificationMessage}
+                    onChange={(e) => setNotificationMessage(e.target.value)}
                     className="font-sans text-sm bg-white border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="Type your email message here..."
+                    placeholder="Type your notification message here..."
                   />
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail className="w-4 h-4" />
-                    <span>Email will be sent to: <strong>{selectedRequest.requesterEmail}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch 
-                      id="email-copy" 
-                      defaultChecked 
-                      className="data-[state=checked]:bg-blue-600"
-                    />
-                    <Label htmlFor="email-copy" className="text-sm text-gray-600">
-                      Send copy to me
-                    </Label>
-                  </div>
+              
                 </div>
 
                 <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-1">Email Template</h4>
+                  <h4 className="text-sm font-semibold text-blue-900 mb-1">Template Variables</h4>
                   <p className="text-xs text-blue-700">
-                    You can use: {"{name}"}, {"{item}"}, {"{quantity}"}, {"{status}"}, {"{date}"}
+                    You can use: {"{requester}"}, {"{item}"}, {"{quantity}"}, {"{status}"}, {"{date}"}
                   </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Bell className="w-4 h-4" />
+                  <span>Notification will appear in the requester's notification panel</span>
                 </div>
               </div>
             </div>
@@ -575,103 +725,18 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
                 Cancel
               </Button>
             </DialogClose>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => {
-                  // Preview email
-                  setSelectedRequest(selectedRequest);
-                  setIsEmailDialogOpen(false);
-                  setIsViewEmailDialogOpen(true);
-                }}
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
-              <Button 
-                onClick={sendEmail}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Send Email
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Email Dialog */}
-      <Dialog open={isViewEmailDialogOpen} onOpenChange={setIsViewEmailDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-white border-2 border-gray-300 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-green-600" />
-              Email Preview
-            </DialogTitle>
-            <DialogDescription>
-              Preview of the email to be sent
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">To:</p>
-                    <p className="text-gray-900">{selectedRequest.requesterName} &lt;{selectedRequest.requesterEmail}&gt;</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Subject:</p>
-                    <p className="text-gray-900">{emailSubject || `Update on Your Inventory Request: ${selectedRequest.itemName}`}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-white border border-gray-200 rounded-lg">
-                <div className="whitespace-pre-line text-gray-700 text-sm leading-relaxed">
-                  {emailContent || `Dear ${selectedRequest.requesterName},
-
-This is an update regarding your inventory request for ${selectedRequest.quantity} x ${selectedRequest.itemName}.
-
-Current Status: ${selectedRequest.status}
-
-We will notify you once there's an update.
-
-Best regards,
-${userName}`}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>{new Date().toLocaleDateString()}</span>
-                </div>
-                <span>Sent via Science Lab Portal</span>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
             <Button 
-              variant="outline"
-              onClick={() => {
-                setIsViewEmailDialogOpen(false);
-                setIsEmailDialogOpen(true);
-              }}
+              onClick={sendNotification}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
             >
-              Edit Email
+              <Bell className="w-4 h-4 mr-2" />
+              Send Notification
             </Button>
-            <DialogClose asChild>
-              <Button>Close</Button>
-            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* New Request Dialog */}
+      {/* New Request Dialog - Only shown for lab assistants */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[550px] bg-white border-2 border-gray-300 shadow-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -743,27 +808,7 @@ ${userName}`}
                   className="bg-white"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2 pt-4 border-t">
-              <Label>Attachments (Optional)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50"
-                   onClick={() => document.getElementById('attachments')?.click()}>
-                <FileText className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm text-gray-600 mb-1">Click to upload supporting documents</p>
-                <p className="text-xs text-gray-500">PDF, DOC, XLS up to 10MB each</p>
-                <Input 
-                  id="attachments" 
-                  type="file" 
-                  multiple 
-                  className="hidden" 
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    setNewRequest({ ...newRequest, attachments: files });
-                  }}
-                />
-              </div>
+         
             </div>
 
             <DialogFooter className="pt-4">
@@ -785,7 +830,7 @@ ${userName}`}
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
+      {/* Header with Notification Bell */}
       <motion.div
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
         initial={{ opacity: 0, y: -20 }}
@@ -795,12 +840,14 @@ ${userName}`}
           <h1 className="text-2xl font-bold text-blue-900 mb-2">Inventory Requests</h1>
           <p className="text-gray-600">
             {canApproveRequest 
-              ? 'Review and manage inventory requests from staff'
-              : 'Submit and track your inventory requests'}
+              ? 'Review and manage inventory requests from lab assistants'
+              : canCreateRequest
+              ? 'Submit and track your inventory requests'
+              : 'View inventory requests (read-only)'}
           </p>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-4">
           {canApproveRequest && (
             <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
               <Bell className="w-4 h-4 text-gray-600" />
@@ -812,6 +859,116 @@ ${userName}`}
               />
             </div>
           )}
+          
+          {/* Notification Bell */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="relative border-gray-300 hover:border-gray-400">
+                <Bell className="w-4 h-4 mr-2" />
+                Notifications
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96 p-0 bg-white border-gray-300 shadow-xl">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Notifications</h3>
+                  {userNotifications.length > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={markAllAsRead}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Mark all as read
+                    </Button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto">
+                {userNotifications.length === 0 ? (
+                  <div className="p-6 text-center">
+                    <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {userNotifications.map((notification) => (
+                      <div 
+                        key={notification.id} 
+                        className={`p-4 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50/50' : ''}`}
+                        onClick={() => markAsRead(notification.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getNotificationTypeColor(notification.type)}`}>
+                            {getNotificationTypeIcon(notification.type)}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                              {!notification.read && (
+                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-gray-500">
+                                From: {notification.senderName} ({notification.senderRole})
+                              </span>
+                              <span className="text-xs text-gray-500">{notification.timestamp}</span>
+                            </div>
+                            {notification.requestId && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="mt-2 text-xs text-blue-600 hover:text-blue-800"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // In a real app, this would navigate to the request
+                                  const request = requests.find(r => r.id === notification.requestId);
+                                  if (request) {
+                                    setSelectedRequest(request);
+                                  }
+                                }}
+                              >
+                                View Request
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {userNotifications.length > 0 && (
+                <div className="p-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">
+                      {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}
+                    </span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => {
+                        // In a real app, this would navigate to a full notifications page
+                        toast.info('All notifications loaded in this panel');
+                      }}
+                    >
+                      See all
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
           
           {canCreateRequest && (
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -848,10 +1005,10 @@ ${userName}`}
             icon: XCircle 
           },
           { 
-            label: 'In Progress', 
-            value: requests.filter(r => r.status === 'in-progress').length,
+            label: 'On Hold', 
+            value: requests.filter(r => r.status === 'on-hold').length,
             color: 'blue',
-            icon: TrendingUp 
+            icon: PauseCircle 
           },
         ].map((stat, index) => (
           <motion.div
@@ -890,8 +1047,8 @@ ${userName}`}
               <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700">
                 Pending
               </TabsTrigger>
-              <TabsTrigger value="in-progress" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                In Progress
+              <TabsTrigger value="on-hold" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+                On Hold
               </TabsTrigger>
               <TabsTrigger value="approved" className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700">
                 Approved
@@ -924,7 +1081,11 @@ ${userName}`}
           <Card className="border-gray-200">
             <CardContent className="py-12 text-center">
               <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No inventory requests found</p>
+              <p className="text-gray-600">
+                {canCreateRequest 
+                  ? 'You have no inventory requests yet. Create your first request!'
+                  : 'No inventory requests found'}
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -950,12 +1111,7 @@ ${userName}`}
                               {getUrgencyIcon(request.urgency)}
                               <span className="ml-1">{request.urgency} Priority</span>
                             </Badge>
-                            {request.emailSent && (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                <Mail className="w-3 h-3 mr-1" />
-                                Emailed
-                              </Badge>
-                            )}
+                   
                           </div>
                           <CardDescription className="flex flex-wrap items-center gap-2">
                             <span className="flex items-center gap-1">
@@ -1012,41 +1168,16 @@ ${userName}`}
                       </div>
                     )}
 
-                    {request.attachments && request.attachments.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Attachments:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {request.attachments.map((attachment, idx) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              size="sm"
-                              className="border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                              onClick={() => handleDownloadAttachment(attachment)}
-                            >
-                              <FileText className="w-4 h-4 mr-2" />
-                              {attachment.name}
-                              <Badge variant="secondary" className="ml-2 text-xs">
-                                {attachment.size}
-                              </Badge>
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    
-                    
-                   <div className="flex flex-wrap gap-2 pt-2">
+                    <div className="flex flex-wrap gap-2 pt-2">
                       {canApproveRequest && request.status === 'pending' && (
                         <>
                           <Button
-                            onClick={() => handleMarkInProgress(request.id)}
+                            onClick={() => handleMarkOnHold(request.id)}
                             variant="outline"
                             className="border-blue-300 text-blue-700 hover:bg-blue-50"
                           >
-                            <Clock className="w-4 h-4 mr-2" />
-                            Mark In Progress
+                            <PauseCircle className="w-4 h-4 mr-2" />
+                            Mark On Hold
                           </Button>
                           <Button
                             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
@@ -1066,35 +1197,25 @@ ${userName}`}
                         </>
                       )}
 
-
-                      {canSendEmail && (
+                      {canSendNotification && (
                         <Button
-                          variant={request.emailSent ? "outline" : "default"}
-                          className={request.emailSent 
-                            ? "bg-green-50 text-green-700 hover:bg-green-100 border-green-300" 
-                            : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                          }
-                          onClick={() => handleSendEmail(request)}
+                          variant="default"
+                          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                          onClick={() => handleSendNotification(request)}
                         >
-                          <Mail className="w-4 h-4 mr-2" />
-                          {request.emailSent ? 'Resend Email' : 'Send Email'}
-                          {request.emailSent && <Check className="w-3 h-3 ml-1" />}
+                          <Bell className="w-4 h-4 mr-2" />
+                          Send Notification
                         </Button>
                       )}
 
-                      {request.emailSent && request.emailSentAt && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setIsViewEmailDialogOpen(true);
-                          }}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Email
-                        </Button>
+                      {/* Show notification badge if user has unread notifications for this request */}
+                      {userNotifications.some(n => 
+                        n.requestId === request.id && !n.read && n.userId === request.requesterId
+                      ) && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <BellRing className="w-3 h-3 mr-1" />
+                          New Notification
+                        </Badge>
                       )}
                     </div>
                   </div>

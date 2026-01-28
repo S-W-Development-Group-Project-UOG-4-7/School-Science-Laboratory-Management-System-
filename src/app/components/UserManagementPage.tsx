@@ -47,7 +47,7 @@ interface SystemUser {
   id: string;
   name: string;
   email: string;
-  role: 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin';
+  role: 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin' | 'deputy-principal';
   status: 'active' | 'inactive';
   createdDate: string;
   lastLogin?: string;
@@ -64,6 +64,7 @@ const mockUsers: SystemUser[] = [
   { id: 'student-002', name: 'Student Sahan', email: 'student2@school.lk', role: 'student', status: 'active', createdDate: '2024-04-01', lastLogin: '2025-11-27' },
   { id: 'student-003', name: 'Student Nethmi', email: 'student3@school.lk', role: 'student', status: 'active', createdDate: '2024-04-05', lastLogin: '2025-11-26' },
   { id: 'student-004', name: 'Student Kasun', email: 'student4@school.lk', role: 'student', status: 'inactive', createdDate: '2024-04-10' },
+  { id: 'deputy-001', name: 'Deputy Principal Wijesinghe', email: 'deputyprincipal@school.lk', role: 'deputy-principal', status: 'active', createdDate: '2024-04-15' },
 ];
 
 export function UserManagementPage() {
@@ -85,6 +86,8 @@ export function UserManagementPage() {
         return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'principal':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'deputy-principal':
+        return 'bg-cyan-100 text-cyan-800 border-cyan-200';
       case 'teacher':
         return 'bg-green-100 text-green-800 border-green-200';
       case 'lab-assistant':
@@ -396,7 +399,11 @@ export function UserManagementPage() {
                       </TableCell>
                       <TableCell>
                         <Badge className={getRoleBadgeColor(user.role)} variant="outline">
-                          {user.role === 'lab-assistant' ? 'Lab Assistant' : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          {user.role === 'lab-assistant'
+                            ? 'Lab Assistant'
+                            : user.role === 'deputy-principal'
+                            ? 'Deputy Principal'
+                            : user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>

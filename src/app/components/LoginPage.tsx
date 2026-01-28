@@ -76,6 +76,12 @@ const CREDENTIALS: Record<string, Credential> = {
     name: 'Student Sahan',
     id: 'student-002',
   },
+  'deputyprincipal@school.lk': {
+    password: 'deputy123',
+    role: 'deputy-principal',
+    name: 'Deputy Principal Wijesinghe',
+    id: 'deputy-001',
+  },
 };
 
 
