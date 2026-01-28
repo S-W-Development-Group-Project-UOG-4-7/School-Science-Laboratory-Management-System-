@@ -14,6 +14,7 @@ import {
   FileText,
   Users as UsersIcon,
   ShieldCheck,
+  CalendarDays,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -52,77 +53,81 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentPage, setCurrentPage] =
     useState<Page>("home");
 
-  // Define navigation items based on user role
-  const getNavigationItems = () => {
-    const baseNavigation = [
-      {
-        id: "practicals" as Page,
-        label: "Practicals & Videos",
-        icon: Video,
-        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
-      },
-      {
-        id: "inventory" as Page,
-        label: "Laboratory Inventory",
-        icon: Package,
-        roles: ['teacher', 'lab-assistant', 'principal', 'admin'],
-      },
-      {
-        id: "schedule" as Page,
-        label: "Schedule & Calendar",
-        icon: Calendar,
-        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
-      },
-      {
-        id: "requests" as Page,
-        label: "Inventory Requests",
-        icon: FileText,
-        roles: ['teacher', 'lab-assistant', 'principal'],
-      },
-      {
-        id: "users" as Page,
-        label: "User Management",
-        icon: UsersIcon,
-        roles: ['admin'],
-      },
-    ];
+// Update the getNavigationItems function in Dashboard.tsx
+const getNavigationItems = () => {
+  const baseNavigation = [
+    {
+      id: "practicals" as Page,
+      label: "Practicals & Videos",
+      icon: Video,
+      roles: ['student', 'teacher', 'lab-assistant', 'admin', ], 
+    },
+    {
+      id: "inventory" as Page,
+      label: "Laboratory Inventory",
+      icon: Package,
+      roles: ['teacher', 'lab-assistant', 'principal', 'admin', ], 
+    },
+    {
+      id: "schedule" as Page,
+      label: "Schedule & Calendar",
+      icon: Calendar,
+      roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin', 'deputy-principal'], 
+    },
+    {
+      id: "requests" as Page,
+      label: "Inventory Requests",
+      icon: FileText,
+      roles: ['teacher', 'lab-assistant', 'principal', ], 
+    },
+    {
+      id: "users" as Page,
+      label: "User Management",
+      icon: UsersIcon,
+      roles: ['admin'], // Only admin can manage users
+    },
+  ];
 
-    return baseNavigation.filter(item => item.roles.includes(user.role));
-  };
+  return baseNavigation.filter(item => item.roles.includes(user.role));
+};
 
   const navigation = getNavigationItems();
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'lab-assistant':
-        return 'Lab Assistant';
-      case 'principal':
-        return 'Principal';
-      case 'admin':
-        return 'Administrator';
-      case 'teacher':
-        return 'Teacher';
-      case 'student':
-        return 'Student';
-      default:
-        return role;
-    }
-  };
+const getRoleDisplayName = (role: string) => {
+  switch (role) {
+    case 'lab-assistant':
+      return 'Lab Assistant';
+    case 'principal':
+      return 'Principal';
+    case 'deputy-principal': 
+      return 'Deputy Principal';
+    case 'admin':
+      return 'Administrator';
+    case 'teacher':
+      return 'Teacher';
+    case 'student':
+      return 'Student';
+    default:
+      return role;
+  }
+};
 
-  const getRoleBadgeColor = () => {
-    switch (user.role) {
-      case 'admin':
-        return 'from-purple-500 to-purple-600';
-      case 'principal':
-        return 'from-blue-500 to-blue-600';
-      case 'teacher':
-        return 'from-green-500 to-green-600';
-      case 'lab-assistant':
-        return 'from-yellow-500 to-yellow-600';
-      default:
-        return 'from-gray-500 to-gray-600';
-    }
-  };
+const getRoleBadgeColor = () => {
+  switch (user.role) {
+    case 'admin':
+      return 'from-purple-500 to-purple-600';
+    case 'principal':
+      return 'from-blue-500 to-blue-600';
+    case 'deputy-principal': 
+      return 'from-indigo-500 to-indigo-600';
+    case 'teacher':
+      return 'from-green-500 to-green-600';
+    case 'lab-assistant':
+      return 'from-yellow-500 to-yellow-600';
+    default:
+      return 'from-gray-500 to-gray-600';
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50/50 via-white to-yellow-50/30">
@@ -288,6 +293,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                 userRole={user.role}
                 userId={user.id}
                 userName={user.name}
+                userEmail={user.email}
               />
             )}
             {currentPage === "users" && user.role === "admin" && (

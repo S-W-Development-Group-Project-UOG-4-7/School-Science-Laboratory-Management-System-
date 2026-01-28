@@ -50,6 +50,7 @@ interface SchedulePageProps {
   userRole: UserRole;
 }
 
+// Update interface to include 'Science' as a subject
 interface ScheduledPractical {
   id: string;
   title: string;
@@ -57,7 +58,7 @@ interface ScheduledPractical {
   time: string;
   duration: string;
   grade: string;
-  subject: 'Physics' | 'Chemistry' | 'Biology';
+  subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
   teacher: string;
   teacherEmail?: string;
   location: string;
@@ -71,6 +72,7 @@ interface ScheduledPractical {
   equipmentRequired?: string[];
 }
 
+// Update sample data to include Science for grades 6-9 and limit to grades 6-13
 const scheduledPracticals: ScheduledPractical[] = [
   {
     id: '1',
@@ -100,11 +102,11 @@ const scheduledPracticals: ScheduledPractical[] = [
     date: '2025-11-14',
     time: '10:30',
     duration: '1.5 hours',
-    grade: 'Grade 9',
-    subject: 'Biology',
+    grade: 'Grade 8',
+    subject: 'Science',
     teacher: 'Mr. Silva',
     teacherEmail: 'silva@school.edu',
-    location: 'Biology Lab',
+    location: 'General Science Lab',
     notes: 'Introduction to compound microscope usage. Students will observe prepared slides of plant and animal cells.',
     attachments: [
       { name: 'microscope_guide.pdf', url: '/downloads/microscope_guide.pdf', size: '3.2 MB' }
@@ -143,11 +145,11 @@ const scheduledPracticals: ScheduledPractical[] = [
     date: '2025-11-12',
     time: '09:00',
     duration: '2 hours',
-    grade: 'Grade 10',
-    subject: 'Biology',
+    grade: 'Grade 7',
+    subject: 'Science',
     teacher: 'Mr. Silva',
     teacherEmail: 'silva@school.edu',
-    location: 'Biology Lab',
+    location: 'General Science Lab',
     notes: 'Investigating factors affecting photosynthesis rate using aquatic plants. Completed successfully.',
     attachments: [],
     maxStudents: 30,
@@ -200,6 +202,46 @@ const scheduledPracticals: ScheduledPractical[] = [
     roomSetup: 'Circuit boards and power supplies',
     equipmentRequired: ['Power Supplies', 'Resistors', 'Ammeters', 'Voltmeters']
   },
+  {
+    id: '7',
+    title: 'Basic Chemical Reactions',
+    date: '2025-11-16',
+    time: '09:00',
+    duration: '1.5 hours',
+    grade: 'Grade 9',
+    subject: 'Science',
+    teacher: 'Ms. Jayasuriya',
+    teacherEmail: 'jayasuriya@school.edu',
+    location: 'General Science Lab',
+    notes: 'Introduction to basic chemical reactions. Safety demonstration included.',
+    attachments: [],
+    maxStudents: 25,
+    enrolledStudents: 22,
+    status: 'upcoming',
+    roomSetup: 'Basic lab equipment for simple reactions',
+    equipmentRequired: ['Test Tubes', 'Beakers', 'Safety Equipment']
+  },
+  {
+    id: '8',
+    title: 'Human Anatomy Dissection',
+    date: '2025-11-19',
+    time: '14:00',
+    duration: '2 hours',
+    grade: 'Grade 13',
+    subject: 'Biology',
+    teacher: 'Dr. Rajapaksa',
+    teacherEmail: 'rajapaksa@school.edu',
+    location: 'Biology Lab',
+    notes: 'Study of human anatomy using models. No actual dissection for Grade 13.',
+    attachments: [
+      { name: 'anatomy_guide.pdf', url: '/downloads/anatomy_guide.pdf', size: '3.5 MB' }
+    ],
+    maxStudents: 20,
+    enrolledStudents: 18,
+    status: 'upcoming',
+    roomSetup: 'Anatomy models and charts',
+    equipmentRequired: ['Anatomy Models', 'Charts', 'Manuals']
+  },
 ];
 
 export function SchedulePage({ userRole }: SchedulePageProps) {
@@ -218,14 +260,14 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
   const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
   const canEdit = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
-  // New practical form state
+  // Update state to include 'Science' as a subject option
   const [newPractical, setNewPractical] = useState({
     title: '',
     date: '',
     time: '',
     duration: '',
     grade: '',
-    subject: '' as 'Physics' | 'Chemistry' | 'Biology' | '',
+    subject: '' as 'Physics' | 'Chemistry' | 'Biology' | 'Science' | '',
     teacher: '',
     teacherEmail: '',
     location: '',
@@ -236,6 +278,27 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
     equipmentRequired: '',
     attachments: [] as { name: string; file: File }[],
   });
+
+  // State to track available subjects based on grade
+  const [availableSubjects, setAvailableSubjects] = useState<Array<'Physics' | 'Chemistry' | 'Biology' | 'Science'>>([]);
+
+  // Update available subjects when grade changes
+  useEffect(() => {
+    if (newPractical.grade) {
+      const gradeNum = parseInt(newPractical.grade.replace('Grade ', ''));
+      if (gradeNum >= 10 && gradeNum <= 13) {
+        setAvailableSubjects(['Physics', 'Chemistry', 'Biology']);
+        // If current subject is 'Science', reset it
+        if (newPractical.subject === 'Science') {
+          setNewPractical({...newPractical, subject: ''});
+        }
+      } else if (gradeNum >= 6 && gradeNum <= 9) {
+        setAvailableSubjects(['Science']);
+        // Automatically set subject to Science for grades 6-9
+        setNewPractical({...newPractical, subject: 'Science'});
+      }
+    }
+  }, [newPractical.grade]);
 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
@@ -279,6 +342,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Update getSubjectColor to include Science
   const getSubjectColor = (subject: string) => {
     switch (subject) {
       case 'Chemistry':
@@ -287,6 +351,8 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Biology':
         return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'Science':
+        return 'bg-green-100 text-green-700 border-green-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -387,10 +453,9 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
   const totalUpcoming = scheduledPracticals.filter(p => p.status === 'upcoming').length;
   const totalCompleted = scheduledPracticals.filter(p => p.status === 'completed').length;
   const totalCancelled = scheduledPracticals.filter(p => p.status === 'cancelled').length;
-  const occupancyRate = Math.round(
-    scheduledPracticals.reduce((acc, p) => acc + (p.enrolledStudents || 0), 0) /
-    scheduledPracticals.reduce((acc, p) => acc + p.maxStudents, 0) * 100
-  );
+
+  // List of all grades 6-13
+  const allGrades = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'Grade 13'];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -460,22 +525,8 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                         required
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="subject">Subject *</Label>
-                      <Select 
-                        value={newPractical.subject} 
-                        onValueChange={(value) => setNewPractical({...newPractical, subject: value as any})}
-                      >
-                        <SelectTrigger id="subject" className="bg-white">
-                          <SelectValue placeholder="Select subject" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                          <SelectItem value="Physics">Physics</SelectItem>
-                          <SelectItem value="Chemistry">Chemistry</SelectItem>
-                          <SelectItem value="Biology">Biology</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    
+                    {/* Grade Field - Updated to include grades 6-13 */}
                     <div>
                       <Label htmlFor="grade">Grade *</Label>
                       <Select 
@@ -486,14 +537,45 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
                         <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                          <SelectItem value="Grade 9">Grade 9</SelectItem>
-                          <SelectItem value="Grade 10">Grade 10</SelectItem>
-                          <SelectItem value="Grade 11">Grade 11</SelectItem>
-                          <SelectItem value="Grade 12">Grade 12</SelectItem>
-                          <SelectItem value="Grade 13">Grade 13</SelectItem>
+                          {allGrades.map((grade) => (
+                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    {/* Subject Field - Updated to show appropriate subjects based on grade */}
+                    <div>
+                      <Label htmlFor="subject">Subject *</Label>
+                      {newPractical.grade && availableSubjects.length === 1 ? (
+                        // For grades 6-9, show Science as read-only
+                        <div className="flex items-center gap-2 p-2 border border-gray-200 rounded-md bg-gray-50">
+                          <Input
+                            id="subject"
+                            value="Science"
+                            readOnly
+                            className="bg-gray-50 border-0"
+                          />
+                          <span className="text-sm text-gray-500">(Only Science for Grades 6-9)</span>
+                        </div>
+                      ) : (
+                        <Select 
+                          value={newPractical.subject} 
+                          onValueChange={(value) => setNewPractical({...newPractical, subject: value as any})}
+                          disabled={!newPractical.grade}
+                        >
+                          <SelectTrigger id="subject" className="bg-white">
+                            <SelectValue placeholder={newPractical.grade ? "Select subject" : "Select grade first"} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                            {availableSubjects.map((subject) => (
+                              <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    
                     <div>
                       <Label htmlFor="date">Date *</Label>
                       <Input 
@@ -653,8 +735,8 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Statistics Cards - Removed Occupancy Rate */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border border-gray-200 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -682,20 +764,8 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
             </div>
           </CardContent>
         </Card>
+
         
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Occupancy Rate</p>
-                <p className="text-2xl font-bold text-purple-600">{occupancyRate}%</p>
-              </div>
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <Users className="w-5 h-5 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         
         <Card className="border border-gray-200 shadow-sm">
           <CardContent className="p-4">
@@ -857,6 +927,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                 </div>
                 
                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                  {/* Subject Filter - Updated to include Science */}
                   <Select value={filterSubject} onValueChange={setFilterSubject}>
                     <SelectTrigger className="w-full md:w-40 bg-white">
                       <SelectValue placeholder="Subject" />
@@ -866,19 +937,20 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                       <SelectItem value="Physics">Physics</SelectItem>
                       <SelectItem value="Chemistry">Chemistry</SelectItem>
                       <SelectItem value="Biology">Biology</SelectItem>
+                      <SelectItem value="Science">Science</SelectItem>
                     </SelectContent>
                   </Select>
                   
+                  {/* Grade Filter - Updated to include grades 6-13 */}
                   <Select value={filterGrade} onValueChange={setFilterGrade}>
                     <SelectTrigger className="w-full md:w-40 bg-white">
                       <SelectValue placeholder="Grade" />
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-gray-200 shadow-lg">
                       <SelectItem value="all">All Grades</SelectItem>
-                      <SelectItem value="Grade 9">Grade 9</SelectItem>
-                      <SelectItem value="Grade 10">Grade 10</SelectItem>
-                      <SelectItem value="Grade 11">Grade 11</SelectItem>
-                      <SelectItem value="Grade 12">Grade 12</SelectItem>
+                      {allGrades.map((grade) => (
+                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   
@@ -931,8 +1003,9 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                       </div>
                       
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">{practical.title}</h3>
+           
                       <div className="text-sm text-gray-600 mb-2">
-                        {/* FIXED: Removed CardDescription wrapper and used a div instead */}
+           
                         <div className="flex items-center gap-1">
                           <User className="w-4 h-4 text-gray-500" />
                           <span>Teacher: {practical.teacher} • {practical.location}</span>
@@ -1052,32 +1125,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                               <p className="text-sm text-gray-700">{practical.notes}</p>
                             </div>
                             
-                            {practical.attachments && practical.attachments.length > 0 && (
-                              <div>
-                                <h4 className="text-gray-900 mb-2">Attachments</h4>
-                                <div className="space-y-2">
-                                  {practical.attachments.map((attachment, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                      <div className="flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-gray-500" />
-                                        <div>
-                                          <p className="text-sm text-gray-900">{attachment.name}</p>
-                                          <p className="text-xs text-gray-500">{attachment.size}</p>
-                                        </div>
-                                      </div>
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        onClick={() => handleDownloadAttachment(attachment)}
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Download
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                            {/* Attachments section removed as per requirement */}
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -1136,8 +1184,9 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                           </Badge>
                         )}
                       </div>
+           
                       <CardTitle>{practical.title}</CardTitle>
-                      {/* FIXED: Replaced CardDescription with a regular div */}
+                 
                       <div className="text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <User className="w-4 h-4" />
@@ -1229,32 +1278,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                               </div>
                             )}
 
-                            {practical.attachments && practical.attachments.length > 0 && (
-                              <div>
-                                <h4 className="text-gray-900 mb-2">Attachments</h4>
-                                <div className="space-y-2">
-                                  {practical.attachments.map((attachment, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                      <div className="flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-gray-500" />
-                                        <div>
-                                          <p className="text-sm text-gray-900">{attachment.name}</p>
-                                          <p className="text-xs text-gray-500">{attachment.size}</p>
-                                        </div>
-                                      </div>
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        onClick={() => handleDownloadAttachment(attachment)}
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Download
-                                      </Button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                            {/* Attachments section removed as per requirement */}
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -1262,37 +1286,7 @@ export function SchedulePage({ userRole }: SchedulePageProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {practical.attachments && practical.attachments.length > 0 && (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-gray-900">Attachments</h4>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => {
-                            practical.attachments?.forEach(handleDownloadAttachment);
-                          }}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download All
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {practical.attachments.map((attachment, index) => (
-                          <Button 
-                            key={index} 
-                            variant="outline" 
-                            size="sm"
-                            className="hover:border-blue-300 hover:bg-blue-50"
-                            onClick={() => handleDownloadAttachment(attachment)}
-                          >
-                            <FileText className="w-4 h-4 mr-2" />
-                            {attachment.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Attachments section removed as per requirement */}
                 </CardContent>
               </Card>
             ))}
