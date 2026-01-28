@@ -8,6 +8,8 @@ import { Badge } from './ui/badge';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Edit, Trash2 } from 'lucide-react';
+import useSWR from 'swr';
 import { 
   PackagePlus, 
   Send, 
@@ -28,12 +30,13 @@ import {
 } from './ui/dialog';
 import { toast } from 'sonner';
 
+
 interface InventoryRequest {
   id: string;
   requesterName: string;
-  requesterRole: string;
+   requesterRole: 'LAB_ASSISTANT' | 'ADMIN';
   requesterId: string;
-  itemName: string;
+  itemId: string;
   quantity: number;
   reason: string;
   urgency: 'low' | 'medium' | 'high';
@@ -42,6 +45,16 @@ interface InventoryRequest {
   responseDate?: string;
   responseNote?: string;
 }
+interface InventoryRequestCreate {
+  requesterName: string;
+  requesterId: string;
+  itemId: string;
+  quantity: number;
+  reason: string;
+  urgency: 'low' | 'medium' | 'high';
+  status: 'pending';
+  requestDate: string;
+}
 
 interface InventoryRequestsPageProps {
   userRole: string;
@@ -49,89 +62,119 @@ interface InventoryRequestsPageProps {
   userName: string;
 }
 
-// Mock data
-const mockRequests: InventoryRequest[] = [
-  {
-    id: 'req-001',
-    requesterName: 'Mr. Perera',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-001',
-    itemName: 'Beakers (250ml)',
-    quantity: 20,
-    reason: 'Chemistry practical session for Grade 10 students scheduled next week',
-    urgency: 'high',
-    status: 'pending',
-    requestDate: '2025-11-26',
-  },
-  {
-    id: 'req-002',
-    requesterName: 'Lab Assistant Kumar',
-    requesterRole: 'Lab Assistant',
-    requesterId: 'lab-001',
-    itemName: 'Microscope Slides',
-    quantity: 50,
-    reason: 'Current stock running low, needed for Biology practicals',
-    urgency: 'medium',
-    status: 'approved',
-    requestDate: '2025-11-25',
-    responseDate: '2025-11-25',
-    responseNote: 'Approved. Purchase order initiated.',
-  },
-  {
-    id: 'req-003',
-    requesterName: 'Mrs. Fernando',
-    requesterRole: 'Teacher',
-    requesterId: 'teacher-002',
-    itemName: 'Safety Goggles',
-    quantity: 30,
-    reason: 'Additional safety equipment needed for expanded class size',
-    urgency: 'high',
-    status: 'approved',
-    requestDate: '2025-11-24',
-    responseDate: '2025-11-24',
-    responseNote: 'Approved. Safety is priority.',
-  },
-];
+interface NewRequestState {
+  itemId: string;
+  quantity: number;
+  reason: string;
+  urgency: 'low' | 'medium' | 'high';
+}
+
+
 
 export function InventoryRequestsPage({ userRole, userId, userName }: InventoryRequestsPageProps) {
-  const [requests, setRequests] = useState<InventoryRequest[]>(mockRequests);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newRequest, setNewRequest] = useState({
-    itemName: '',
+    const [newRequest, setNewRequest] = useState<NewRequestState>({
+    itemId: '',
     quantity: 1,
     reason: '',
-    urgency: 'medium' as const,
-  });
+    urgency: 'medium',
+});
+  const [editForm, setEditForm] = useState<NewRequestState>({
+  itemId: '',
+  quantity: 1,
+  reason: '',
+  urgency: 'medium',
+ });
 
-  const canCreateRequest = userRole === 'teacher' || userRole === 'lab-assistant';
-  const canApproveRequest = userRole === 'principal';
+const role = userRole
+  .toUpperCase()
+  .replace('-', '_')
+  .replace(' ', '_');
 
-  const handleCreateRequest = () => {
-    const request: InventoryRequest = {
-      id: `req-${Date.now()}`,
-      requesterName: userName,
-      requesterRole: userRole === 'teacher' ? 'Teacher' : 'Lab Assistant',
-      requesterId: userId,
-      itemName: newRequest.itemName,
-      quantity: newRequest.quantity,
-      reason: newRequest.reason,
-      urgency: newRequest.urgency,
-      status: 'pending',
-      requestDate: new Date().toISOString().split('T')[0],
-    };
+const canCreateRequest =
+  role === 'LAB_ASSISTANT';
 
-    setRequests([request, ...requests]);
-    setIsDialogOpen(false);
-    setNewRequest({ itemName: '', quantity: 1, reason: '', urgency: 'medium' });
-    
-    // Mock email notification
-    toast.success('Request Sent Successfully', {
-      description: 'Your inventory request has been sent to the principal via email and portal.',
-    });
+const canApproveRequest =
+  role === 'ADMIN';
+console.log('userRole:', userRole);
+console.log('normalized role:', role);
+
+
+const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
+const [openEditDialog, setOpenEditDialog] = useState(false);
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
+
+  return res.json();
+};
+
+const { data: requests, error, mutate } = useSWR<InventoryRequest[]>(
+  '/api/inventory-requests',
+  fetcher
+);
+if (error) return <div>Failed to load requests</div>;
+if (!requests) return <div>Loading requests...</div>;
+  
+
+
+
+const handleCreateRequest = async () => {
+  // Build payload
+  const request: InventoryRequestCreate = {
+    requesterName: userName,       // string
+    requesterId: userId,           // string
+    itemId: newRequest.itemId.trim(), // remove extra spaces
+    quantity: Number(newRequest.quantity), // ensure it's a number
+    reason: newRequest.reason.trim(),
+    urgency: newRequest.urgency as 'low' | 'medium' | 'high',
+    status: 'pending',
+    requestDate: new Date().toISOString(),
   };
 
+  // Basic front-end validation
+  if (!request.itemId || !request.reason || request.quantity <= 0) {
+    toast.error('Please fill all fields correctly.');
+    return;
+  }
+
+  try {
+    console.log('Sending inventory request:', request);
+
+    const res = await fetch('/api/inventory-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+
+    // If API returns error, log full response for debugging
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('API failed with status', res.status, 'and response:', text);
+      throw new Error('Failed to create request');
+    }
+
+    // Success: refresh the list
+    await mutate(); // re-fetch data
+
+    // Reset form
+    setNewRequest({ itemId: '', quantity: 1, reason: '', urgency: 'medium' });
+    setIsDialogOpen(false);
+
+    toast.success('Request created successfully');
+  } catch (error: any) {
+    console.error('Error creating inventory request:', error);
+    toast.error('Failed to create request');
+  }
+};
+
+
   const handleApproveRequest = (requestId: string) => {
-    setRequests(requests.map(req => 
+    mutate(requests.map(req => 
       req.id === requestId 
         ? { 
             ...req, 
@@ -139,6 +182,7 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
             responseDate: new Date().toISOString().split('T')[0],
             responseNote: 'Approved by Principal'
           } 
+ 
         : req
     ));
     
@@ -147,22 +191,76 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
     });
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    setRequests(requests.map(req => 
-      req.id === requestId 
-        ? { 
-            ...req, 
-            status: 'rejected', 
+const handleRejectRequest = (requestId: string) => {
+  mutate(
+    requests.map(req =>
+      req.id === requestId
+        ? {
+            ...req,
+            status: 'rejected',
             responseDate: new Date().toISOString().split('T')[0],
-            responseNote: 'Not approved at this time'
-          } 
+            responseNote: 'Not approved at this time',
+          }
         : req
-    ));
+    ),
+    false
+  );
     
     toast.error('Request Rejected', {
       description: 'Email notification sent to the requester.',
     });
   };
+  const handleEditRequest = (request: InventoryRequest) => {
+  setSelectedRequest(request);
+  setEditForm({
+    itemId: request.itemId,
+    quantity: request.quantity,
+    reason: request.reason,
+    urgency: request.urgency,
+  });
+  setOpenEditDialog(true);
+};
+
+const handleUpdate = async (id: string, updatedData: any) => {
+  try {
+    const res = await fetch(`/api/inventory-requests/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updatedData),
+    });
+     if (!res.ok) {
+      throw new Error('Update failed');
+    }
+
+    setOpenEditDialog(false);
+    setSelectedRequest(null);
+    // Refresh list after update
+  
+  } catch (error) {
+    console.error(error);
+    alert('Failed to update request');
+  }
+};
+
+const handleDelete = async (id: string) => {
+  try {
+    const res = await fetch(`/api/inventory-requests/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      throw new Error('Delete failed');
+    }
+
+    await mutate(); // re-fetch
+    toast.success('Request deleted successfully');
+  } catch (err) {
+    toast.error('Failed to delete request');
+    console.error(err);
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -187,10 +285,11 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
   };
 
   // Filter requests based on user role
-  const displayRequests = canApproveRequest 
-    ? requests 
-    : requests.filter(req => req.requesterId === userId);
+  //const displayRequests = canApproveRequest 
+    //? requests 
+    //: requests.filter(req => req.requesterId === userId);
 
+  const displayRequests = requests;
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -225,13 +324,13 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="itemName">Item Name</Label>
+                 <Label htmlFor="itemId">Item</Label>
                   <Input
-                    id="itemName"
-                    placeholder="e.g., Beakers (250ml)"
-                    value={newRequest.itemName}
-                    onChange={(e) => setNewRequest({ ...newRequest, itemName: e.target.value })}
-                  />
+                    id="itemId"
+                    placeholder="Enter Item ID"
+                    value={newRequest.itemId}
+                    onChange={(e) => setNewRequest({ ...newRequest, itemId: e.target.value })}
+                />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quantity">Quantity</Label>
@@ -273,7 +372,7 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
                 </Button>
                 <Button 
                   onClick={handleCreateRequest}
-                  disabled={!newRequest.itemName || !newRequest.reason}
+                  disabled={!newRequest.itemId || !newRequest.reason}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                 >
                   <Send className="w-4 h-4 mr-2" />
@@ -359,7 +458,8 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
           </Card>
         ) : (
           displayRequests.map((request, index) => (
-            <motion.div
+ 
+          <motion.div
               key={request.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -370,7 +470,7 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                     <div className="flex-1">
                       <div className="flex items-start gap-3 mb-2">
-                        <CardTitle className="text-blue-900">{request.itemName}</CardTitle>
+                        <CardTitle className="text-blue-900">{request.itemId}</CardTitle>
                         <Badge className={getStatusColor(request.status)}>
                           {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                         </Badge>
@@ -413,35 +513,55 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
                       </div>
                     )}
 
-                    {canApproveRequest && request.status === 'pending' && (
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                          onClick={() => handleApproveRequest(request.id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-                          onClick={() => handleRejectRequest(request.id)}
-                        >
-                          <XCircle className="w-4 h-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="ml-auto"
-                        >
-                          <Mail className="w-4 h-4 mr-1" />
-                          Send Email
-                        </Button>
-                      </div>
-                    )}
+                    {request.status === 'pending' && (canApproveRequest || request.requesterId === userId) && (
+  <div className="flex gap-2 pt-2">
+    {canApproveRequest && (
+      <>
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+          onClick={() => handleApproveRequest(request.id)}
+        >
+          <CheckCircle className="w-4 h-4 mr-1" />
+          Approve
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+          onClick={() => handleRejectRequest(request.id)}
+        >
+          <XCircle className="w-4 h-4 mr-1" />
+          Reject
+        </Button>
+      </>
+    )}
+
+    {request.requesterId === userId && (
+      <>
+        <Button size="sm" onClick={() => handleEditRequest(request)}>
+          <Edit className="w-4 h-4 mr-1" />
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => handleDelete(request.id)}
+        >
+          <Trash2 className="w-4 h-4 mr-1" />
+          Delete
+        </Button>
+      </>
+    )}
+
+    <Button size="sm" variant="outline" className="ml-auto">
+      <Mail className="w-4 h-4 mr-1" />
+      Send Email
+    </Button>
+  </div>
+)}
+
+
                   </div>
                 </CardContent>
               </Card>
@@ -449,6 +569,71 @@ export function InventoryRequestsPage({ userRole, userId, userName }: InventoryR
           ))
         )}
       </div>
+      <Dialog open={openEditDialog} onOpenChange={(open) => {
+  if (!open) setSelectedRequest(null);
+}}>
+  <DialogContent className="sm:max-w-[500px]">
+    <DialogHeader>
+      <DialogTitle>Edit Inventory Request</DialogTitle>
+      <DialogDescription>Modify your request details before submission</DialogDescription>
+    </DialogHeader>
+    <div className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="editItemId">Item ID</Label>
+        <Input
+          id="editItemId"
+          value={editForm.itemId}
+          onChange={(e) => setEditForm({ ...editForm, itemId: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editQuantity">Quantity</Label>
+        <Input
+          id="editQuantity"
+          type="number"
+          min="1"
+          value={editForm.quantity}
+          onChange={(e) => setEditForm({ ...editForm, quantity: parseInt(e.target.value) || 1 })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editUrgency">Urgency</Label>
+        <select
+          id="editUrgency"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          value={editForm.urgency}
+          onChange={(e) => setEditForm({ ...editForm, urgency: e.target.value as any })}
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="editReason">Reason</Label>
+        <Textarea
+          id="editReason"
+          rows={4}
+          value={editForm.reason}
+          onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+        />
+      </div>
     </div>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+      <Button
+        onClick={() =>
+         selectedRequest &&
+         handleUpdate(selectedRequest.id, editForm)
+        }
+          className="bg-blue-600 text-white"
+       >
+           Update
+        </Button>
+        </DialogFooter>
+    </DialogContent>
+  </Dialog>
+
+</div>
   );
 }
