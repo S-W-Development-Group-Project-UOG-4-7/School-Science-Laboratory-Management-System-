@@ -50,3 +50,55 @@ enum Status {
   ACTIVE
   INACTIVE
 }
+model Inventory {
+  id                  Int                @id @default(autoincrement())
+  name                String
+  category            Category
+  stockLevel          Int
+  minStockLevel       Int
+  unit                String
+  location            String
+  photo               String?
+  storageInstructions String?
+  handlingProcedure   String?
+  safetyNotes         String?
+  lastUpdated         DateTime           @updatedAt
+  requests            InventoryRequest[]
+}
+model InventoryRequest {
+  id            Int           @id @default(autoincrement())
+  requesterName String
+  requesterRole String
+  requesterId   String
+  itemId        Int
+  item          Inventory     @relation(fields: [itemId], references: [id])
+  quantity      Int
+  reason        String
+  urgency       Urgency
+  status        RequestStatus @default(pending)
+  requestDate   DateTime      @default(now())
+  responseDate  DateTime?
+  responseNote  String?
+
+  approvalToken  String   @unique
+  tokenExpiresAt DateTime
+}
+
+enum Category {
+  Glassware
+  Equipment
+  Chemicals
+  Safety
+  Instruments
+}
+
+enum Urgency {
+  low
+  medium
+  high
+}
+enum RequestStatus {
+  pending
+  approved
+  rejected
+}

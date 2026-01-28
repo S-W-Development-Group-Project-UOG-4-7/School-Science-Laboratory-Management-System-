@@ -142,3 +142,17 @@ export const PRIVILEGE_METADATA: Record<Privilege, { label: string; description:
     category: 'Labs'
   }
 };
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety Materials' | 'Instruments';
+  stockLevel: number;
+  minStockLevel: number;
+  unit: string;
+  location: string;
+  photo: string;
+  storageInstructions: string;
+  handlingProcedure: string;
+  safetyNotes: string;
+  lastUpdated: string;
+}
