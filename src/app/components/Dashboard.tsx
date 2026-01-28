@@ -34,6 +34,8 @@ import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
 import type { User } from "@/lib/types";
+import { DeputyPrincipalTimetablesPage } from "./DeputyPrincipalTimetablesPage";
+
 
 interface DashboardProps {
   user: User;
@@ -72,7 +74,7 @@ const getNavigationItems = () => {
       id: "schedule" as Page,
       label: "Schedule & Calendar",
       icon: Calendar,
-      roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin', 'deputy-principal'], 
+      roles: [,'admin', 'deputy-principal'], 
     },
     {
       id: "requests" as Page,
@@ -286,7 +288,11 @@ const getRoleBadgeColor = () => {
               <InventoryPage userRole={user.role} />
             )}
             {currentPage === "schedule" && (
-              <SchedulePage userRole={user.role} />
+            user.role === "deputy-principal" ? (
+            <DeputyPrincipalTimetablesPage userRole={user.role} />
+            ) : (
+            <SchedulePage userRole={user.role as "teacher" | "lab-assistant" | "admin"} />
+            )
             )}
             {currentPage === "requests" && (
               <InventoryRequestsPage 

@@ -8,84 +8,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-
-  phone     String?
-  role      String
-  createdAt DateTime @default(now())
-
-  activityLogs     ActivityLog[]
-  labSchedules     LabSchedule[]
-  practicals       Practical[]        @relation("CreatedPracticals")
-  InventoryRequest InventoryRequest[]
+enum Role {
+  ADMIN
+  TEACHER
+  LAB_ASSISTANT
 }
 
-model LabSchedule {
-  id       Int      @id @default(autoincrement())
-  title    String
-  subject  String
-  date     DateTime
-  time     String
-  location String
-  status   String
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
 
-  teacherId Int
-  teacher   User @relation(fields: [teacherId], references: [id])
+enum PracticalStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
 
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
   createdAt DateTime @default(now())
+
+  teacherTimetables TeacherTimetable[]
+  practicals        Practical[]
+}
+
+model Lab {
+  id        String   @id @default(cuid())
+  name      String   @unique   // Physics Lab, Chemistry Lab
+  createdAt DateTime @default(now())
+
+  labTimetables LabTimetable[]
+  practicals    Practical[]
+}
+
+model TeacherTimetable {
+  id        String    @id @default(cuid())
+  teacherId String
+  day       DayOfWeek
+  period    Int       // 1–8
+  subject   String
+  grade     Int
+  available Boolean   @default(true)
+
+  teacher User @relation(fields: [teacherId], references: [id])
+
+  @@unique([teacherId, day, period])
+}
+
+model LabTimetable {
+  id      String    @id @default(cuid())
+  labId   String
+  day     DayOfWeek
+  period  Int
+  available Boolean @default(true)
+
+  lab Lab @relation(fields: [labId], references: [id])
+
+  @@unique([labId, day, period])
 }
 
 model Practical {
-  id          Int     @id @default(autoincrement())
+  id          String           @id @default(cuid())
   title       String
-  description String
+  date        DateTime
+  day         DayOfWeek
+  period      Int
+  grade       Int
   subject     String
-  grade       String
-  duration    Int
-  difficulty  String
-  videoUrl    String?
-  labSheetUrl String?
+  maxStudents Int
+  status      PracticalStatus @default(UPCOMING)
+  notes       String?
 
-  createdBy Int
-  creator   User @relation("CreatedPracticals", fields: [createdBy], references: [id])
+  teacherId String
+  labId     String
 
-  createdAt DateTime @default(now())
-}
-
-model InventoryItem {
-  id          Int    @id @default(autoincrement())
-  name        String
-  category    String
-  quantity    Int
-  minQuantity Int
-  location    String
-  status      String
-}
-
-model InventoryRequest {
-  id       Int     @id @default(autoincrement())
-  itemName String
-  quantity Int
-  priority String
-  status   String
-  reason   String
-  response String?
-
-  requestedBy Int
-  requester   User @relation(fields: [requestedBy], references: [id])
-}
-
-model ActivityLog {
-  id      Int    @id @default(autoincrement())
-  action  String
-  details String
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  teacher User @relation(fields: [teacherId], references: [id])
+  lab     Lab  @relation(fields: [labId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@unique([labId, day, period, date])
 }
+

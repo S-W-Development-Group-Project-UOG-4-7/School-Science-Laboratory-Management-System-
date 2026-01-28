@@ -1,9 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import React, { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -12,1306 +15,649 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogClose,
-} from './ui/dialog';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { 
-  Calendar, 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Clock, 
-  Users, 
-  FileText, 
-  Download,
-  AlertCircle, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  XCircle,
-  CalendarDays,
-  Search,
-  Filter,
-  Eye,
-  EyeOff,
-  User,
-  Building,
-  Bell,
-  Check
-} from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Switch } from './ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import type { UserRole } from '@/lib/types';
+} from "./ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Switch } from "./ui/switch";
+import { Calendar, Plus, Search, Clock, Users, Building2, User, CheckCircle, XCircle } from "lucide-react";
 
-interface SchedulePageProps {
-  userRole: UserRole;
-}
+// Types
+type UserRole = "admin" | "teacher" | "lab-assistant" | "deputy-principal";
+// ---------------- Types that match backend ----------------
+type DayOfWeek = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY";
+type PracticalStatus = "UPCOMING" | "COMPLETED" | "CANCELLED";
 
-// Update interface to include 'Science' as a subject
-interface ScheduledPractical {
+type Teacher = { id: string; name: string; email: string; role: string };
+type Lab = { id: string; name: string };
+
+type Practical = {
   id: string;
   title: string;
-  date: string;
-  time: string;
-  duration: string;
-  grade: string;
-  subject: 'Physics' | 'Chemistry' | 'Biology' | 'Science';
-  teacher: string;
-  teacherEmail?: string;
-  location: string;
-  notes: string;
-  attachments?: { name: string; url: string; size: string }[];
+  date: string; // ISO
+  day: DayOfWeek;
+  period: number;
+  grade: number;
+  subject: string;
   maxStudents: number;
-  enrolledStudents?: number;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  recurring?: 'none' | 'weekly' | 'biweekly' | 'monthly';
-  roomSetup?: string;
-  equipmentRequired?: string[];
+  status: PracticalStatus;
+  notes?: string | null;
+  teacherId: string;
+  labId: string;
+  teacher?: { id: string; name: string; email: string; role: string };
+  lab?: { id: string; name: string };
+};
+
+interface SchedulePageProps {
+  userRole: UserRole; // "admin" | "teacher" | "lab-assistant" etc (your app type)
 }
 
-// Update sample data to include Science for grades 6-9 and limit to grades 6-13
-const scheduledPracticals: ScheduledPractical[] = [
-  {
-    id: '1',
-    title: 'Acid-Base Titration',
-    date: '2025-11-13',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 11',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    teacherEmail: 'perera@school.edu',
-    location: 'Chemistry Lab A',
-    notes: 'Students must bring their lab coats and safety goggles. Pre-read Chapter 8 on acid-base reactions. Lab sheets will be provided.',
-    attachments: [
-      { name: 'titration_procedure.pdf', url: '/downloads/titration_procedure.pdf', size: '2.4 MB' },
-      { name: 'safety_guidelines.pdf', url: '/downloads/safety_guidelines.pdf', size: '1.1 MB' }
-    ],
-    maxStudents: 25,
-    enrolledStudents: 24,
-    status: 'upcoming',
-    roomSetup: 'Lab benches with burettes, pipettes, and titration setups',
-    equipmentRequired: ['Burettes', 'Pipettes', 'Conical Flasks', 'Indicators']
-  },
-  {
-    id: '2',
-    title: 'Microscope Practical',
-    date: '2025-11-14',
-    time: '10:30',
-    duration: '1.5 hours',
-    grade: 'Grade 8',
-    subject: 'Science',
-    teacher: 'Mr. Silva',
-    teacherEmail: 'silva@school.edu',
-    location: 'General Science Lab',
-    notes: 'Introduction to compound microscope usage. Students will observe prepared slides of plant and animal cells.',
-    attachments: [
-      { name: 'microscope_guide.pdf', url: '/downloads/microscope_guide.pdf', size: '3.2 MB' }
-    ],
-    maxStudents: 30,
-    enrolledStudents: 28,
-    status: 'upcoming',
-    roomSetup: 'Microscopes arranged in stations with prepared slides',
-    equipmentRequired: ['Compound Microscopes', 'Prepared Slides', 'Lens Paper']
-  },
-  {
-    id: '3',
-    title: 'Simple Pendulum Experiment',
-    date: '2025-11-15',
-    time: '14:00',
-    duration: '1 hour',
-    grade: 'Grade 10',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    teacherEmail: 'fernando@school.edu',
-    location: 'Physics Lab',
-    notes: 'Study of simple harmonic motion. Bring calculators for data analysis. Work in pairs.',
-    attachments: [
-      { name: 'pendulum_theory.pdf', url: '/downloads/pendulum_theory.pdf', size: '1.8 MB' },
-      { name: 'data_sheet.xlsx', url: '/downloads/data_sheet.xlsx', size: '0.8 MB' }
-    ],
-    maxStudents: 20,
-    enrolledStudents: 18,
-    status: 'upcoming',
-    roomSetup: 'Stand and clamp setups with pendulum bobs',
-    equipmentRequired: ['Pendulum Stands', 'Stopwatches', 'Meter Rules']
-  },
-  {
-    id: '4',
-    title: 'Photosynthesis Experiment',
-    date: '2025-11-12',
-    time: '09:00',
-    duration: '2 hours',
-    grade: 'Grade 7',
-    subject: 'Science',
-    teacher: 'Mr. Silva',
-    teacherEmail: 'silva@school.edu',
-    location: 'General Science Lab',
-    notes: 'Investigating factors affecting photosynthesis rate using aquatic plants. Completed successfully.',
-    attachments: [],
-    maxStudents: 30,
-    enrolledStudents: 30,
-    status: 'completed',
-    roomSetup: 'Light sources and aquatic plant setups',
-    equipmentRequired: ['Elodea Plants', 'Test Tubes', 'Lamps']
-  },
-  {
-    id: '5',
-    title: 'Qualitative Salt Analysis',
-    date: '2025-11-18',
-    time: '13:00',
-    duration: '3 hours',
-    grade: 'Grade 12',
-    subject: 'Chemistry',
-    teacher: 'Mrs. Perera',
-    teacherEmail: 'perera@school.edu',
-    location: 'Chemistry Lab B',
-    notes: 'Advanced practical for A/L students. Systematic identification of cations and anions. Essential for exam preparation.',
-    attachments: [
-      { name: 'salt_analysis_flowchart.pdf', url: '/downloads/salt_analysis_flowchart.pdf', size: '4.5 MB' },
-      { name: 'reagent_list.pdf', url: '/downloads/reagent_list.pdf', size: '1.2 MB' }
-    ],
-    maxStudents: 20,
-    enrolledStudents: 19,
-    status: 'upcoming',
-    recurring: 'weekly',
-    roomSetup: 'Individual workstations with reagent bottles',
-    equipmentRequired: ['Test Tubes', 'Reagent Bottles', 'Bunsen Burners']
-  },
-  {
-    id: '6',
-    title: 'Ohm\'s Law Verification',
-    date: '2025-11-20',
-    time: '11:00',
-    duration: '1.5 hours',
-    grade: 'Grade 11',
-    subject: 'Physics',
-    teacher: 'Mr. Fernando',
-    teacherEmail: 'fernando@school.edu',
-    location: 'Physics Lab',
-    notes: 'Verification of Ohm\'s law using resistors and ammeters. Graph plotting required.',
-    attachments: [
-      { name: 'circuit_diagram.pdf', url: '/downloads/circuit_diagram.pdf', size: '1.5 MB' }
-    ],
-    maxStudents: 24,
-    enrolledStudents: 22,
-    status: 'upcoming',
-    roomSetup: 'Circuit boards and power supplies',
-    equipmentRequired: ['Power Supplies', 'Resistors', 'Ammeters', 'Voltmeters']
-  },
-  {
-    id: '7',
-    title: 'Basic Chemical Reactions',
-    date: '2025-11-16',
-    time: '09:00',
-    duration: '1.5 hours',
-    grade: 'Grade 9',
-    subject: 'Science',
-    teacher: 'Ms. Jayasuriya',
-    teacherEmail: 'jayasuriya@school.edu',
-    location: 'General Science Lab',
-    notes: 'Introduction to basic chemical reactions. Safety demonstration included.',
-    attachments: [],
-    maxStudents: 25,
-    enrolledStudents: 22,
-    status: 'upcoming',
-    roomSetup: 'Basic lab equipment for simple reactions',
-    equipmentRequired: ['Test Tubes', 'Beakers', 'Safety Equipment']
-  },
-  {
-    id: '8',
-    title: 'Human Anatomy Dissection',
-    date: '2025-11-19',
-    time: '14:00',
-    duration: '2 hours',
-    grade: 'Grade 13',
-    subject: 'Biology',
-    teacher: 'Dr. Rajapaksa',
-    teacherEmail: 'rajapaksa@school.edu',
-    location: 'Biology Lab',
-    notes: 'Study of human anatomy using models. No actual dissection for Grade 13.',
-    attachments: [
-      { name: 'anatomy_guide.pdf', url: '/downloads/anatomy_guide.pdf', size: '3.5 MB' }
-    ],
-    maxStudents: 20,
-    enrolledStudents: 18,
-    status: 'upcoming',
-    roomSetup: 'Anatomy models and charts',
-    equipmentRequired: ['Anatomy Models', 'Charts', 'Manuals']
-  },
+// ---------------- Helpers ----------------
+const DAYS: { label: string; value: DayOfWeek }[] = [
+  { label: "Monday", value: "MONDAY" },
+  { label: "Tuesday", value: "TUESDAY" },
+  { label: "Wednesday", value: "WEDNESDAY" },
+  { label: "Thursday", value: "THURSDAY" },
+  { label: "Friday", value: "FRIDAY" },
 ];
 
+// Map periods to time labels (edit to your school periods)
+const PERIODS: { period: number; label: string }[] = [
+  { period: 1, label: "Period 1" },
+  { period: 2, label: "Period 2" },
+  { period: 3, label: "Period 3" },
+  { period: 4, label: "Period 4" },
+  { period: 5, label: "Period 5" },
+  { period: 6, label: "Period 6" },
+  { period: 7, label: "Period 7" },
+  { period: 8, label: "Period 8" },
+];
+
+function subjectBadge(subject: string) {
+  switch (subject) {
+    case "Chemistry":
+      return "bg-purple-100 text-purple-700 border-purple-200";
+    case "Physics":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "Biology":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "Science":
+      return "bg-green-100 text-green-700 border-green-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+}
+
+function statusBadge(status: PracticalStatus) {
+  switch (status) {
+    case "UPCOMING":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "COMPLETED":
+      return "bg-green-100 text-green-700 border-green-200";
+    case "CANCELLED":
+      return "bg-red-100 text-red-700 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+}
+
+function isoToYMD(iso: string) {
+  const d = new Date(iso);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function SchedulePage({ userRole }: SchedulePageProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12)); // November 2025
-  const [selectedDate, setSelectedDate] = useState<string | null>('2025-11-13');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedPractical, setSelectedPractical] = useState<ScheduledPractical | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterSubject, setFilterSubject] = useState<string>('all');
-  const [filterGrade, setFilterGrade] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
-  const [showPastSessions, setShowPastSessions] = useState(false);
+  const canSchedule = userRole === "teacher" || userRole === "admin" || userRole === "lab-assistant";
+  const canAdmin = userRole === "admin" || userRole === "deputy-principal"; // if you have this role name, keep; otherwise remove
 
-  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
-  const canEdit = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+  // data
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [labs, setLabs] = useState<Lab[]>([]);
+  const [practicals, setPracticals] = useState<Practical[]>([]);
 
-  // Update state to include 'Science' as a subject option
-  const [newPractical, setNewPractical] = useState({
-    title: '',
-    date: '',
-    time: '',
-    duration: '',
-    grade: '',
-    subject: '' as 'Physics' | 'Chemistry' | 'Biology' | 'Science' | '',
-    teacher: '',
-    teacherEmail: '',
-    location: '',
-    notes: '',
-    maxStudents: 25,
-    recurring: 'none' as 'none' | 'weekly' | 'biweekly' | 'monthly',
-    roomSetup: '',
-    equipmentRequired: '',
-    attachments: [] as { name: string; file: File }[],
+  // UI state
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | PracticalStatus>("all");
+  const [showPast, setShowPast] = useState(false);
+
+  // Schedule form (slot based)
+  const [form, setForm] = useState({
+    title: "",
+    grade: "",
+    subject: "" as "" | "Physics" | "Chemistry" | "Biology" | "Science",
+    teacherId: "",
+    labId: "",
+    day: "" as "" | DayOfWeek,
+    date: "", // yyyy-mm-dd
+    period: "" as "" | string, // store string then Number()
+    maxStudents: 30,
+    notes: "",
   });
 
-  // State to track available subjects based on grade
-  const [availableSubjects, setAvailableSubjects] = useState<Array<'Physics' | 'Chemistry' | 'Biology' | 'Science'>>([]);
+  const [availablePeriods, setAvailablePeriods] = useState<number[]>([]);
+  const [slotLoading, setSlotLoading] = useState(false);
 
-  // Update available subjects when grade changes
+  // Available subjects by grade (your rule)
+  const availableSubjects = useMemo(() => {
+    const g = Number(form.grade);
+    if (!g) return [];
+    if (g >= 6 && g <= 9) return ["Science"] as const;
+    if (g >= 10 && g <= 13) return ["Physics", "Chemistry", "Biology"] as const;
+    return [];
+  }, [form.grade]);
+
+  // Auto-fix subject based on grade
   useEffect(() => {
-    if (newPractical.grade) {
-      const gradeNum = parseInt(newPractical.grade.replace('Grade ', ''));
-      if (gradeNum >= 10 && gradeNum <= 13) {
-        setAvailableSubjects(['Physics', 'Chemistry', 'Biology']);
-        // If current subject is 'Science', reset it
-        if (newPractical.subject === 'Science') {
-          setNewPractical({...newPractical, subject: ''});
-        }
-      } else if (gradeNum >= 6 && gradeNum <= 9) {
-        setAvailableSubjects(['Science']);
-        // Automatically set subject to Science for grades 6-9
-        setNewPractical({...newPractical, subject: 'Science'});
-      }
+    const g = Number(form.grade);
+    if (!g) return;
+
+    if (g >= 6 && g <= 9) {
+      if (form.subject !== "Science") setForm((p) => ({ ...p, subject: "Science" }));
+    } else if (g >= 10 && g <= 13) {
+      if (form.subject === "Science") setForm((p) => ({ ...p, subject: "" }));
     }
-  }, [newPractical.grade]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.grade]);
 
-  // Calendar functions
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+  async function fetchAll() {
+    setLoading(true);
+    try {
+      const [tRes, lRes, pRes] = await Promise.all([
+        fetch("/api/teachers"),
+        fetch("/api/labs"),
+        fetch("/api/practicals"),
+      ]);
 
-    return { daysInMonth, startingDayOfWeek };
-  };
+      const [t, l, p] = await Promise.all([tRes.json(), lRes.json(), pRes.json()]);
 
-  const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentDate);
-
-  const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
-  };
-
-  const goToToday = () => {
-    setCurrentDate(new Date(2025, 10, 12));
-    setSelectedDate('2025-11-12');
-  };
-
-  const formatDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  };
-
-  const getPracticalsForDate = (dateString: string) => {
-    return scheduledPracticals.filter((p) => p.date === dateString);
-  };
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  // Update getSubjectColor to include Science
-  const getSubjectColor = (subject: string) => {
-    switch (subject) {
-      case 'Chemistry':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'Physics':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Biology':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Science':
-        return 'bg-green-100 text-green-700 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+      setTeachers(Array.isArray(t) ? t : []);
+      setLabs(Array.isArray(l) ? l : []);
+      setPracticals(Array.isArray(p) ? p : []);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return 'bg-blue-100 text-blue-700';
-      case 'completed':
-        return 'bg-green-100 text-green-700';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  // Slot availability call
+  async function loadAvailablePeriods() {
+    if (!form.teacherId || !form.labId || !form.day) {
+      setAvailablePeriods([]);
+      return;
     }
-  };
+    setSlotLoading(true);
+    try {
+      const res = await fetch("/api/available-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          teacherId: form.teacherId,
+          labId: form.labId,
+          day: form.day,
+        }),
+      });
 
-  const handleDownloadAttachment = (attachment: { name: string; url: string; size: string }) => {
-    const link = document.createElement('a');
-    link.href = attachment.url;
-    link.download = attachment.name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+      const data = await res.json();
+      setAvailablePeriods(Array.isArray(data?.availablePeriods) ? data.availablePeriods : []);
+    } finally {
+      setSlotLoading(false);
+    }
+  }
 
-  const handleAddPractical = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Adding new practical:', newPractical);
-    setIsAddDialogOpen(false);
-    setNewPractical({
-      title: '',
-      date: '',
-      time: '',
-      duration: '',
-      grade: '',
-      subject: '',
-      teacher: '',
-      teacherEmail: '',
-      location: '',
-      notes: '',
-      maxStudents: 25,
-      recurring: 'none',
-      roomSetup: '',
-      equipmentRequired: '',
-      attachments: [],
+  // reload periods when teacher/lab/day changes
+  useEffect(() => {
+    loadAvailablePeriods();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.teacherId, form.labId, form.day]);
+
+  const filtered = useMemo(() => {
+    return practicals.filter((p) => {
+      const matchesSearch =
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.teacher?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.lab?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus = filterStatus === "all" || p.status === filterStatus;
+
+      // showPast false => hide completed/cancelled
+      const matchesPast = showPast ? true : p.status === "UPCOMING";
+
+      return matchesSearch && matchesStatus && matchesPast;
     });
-  };
+  }, [practicals, searchQuery, filterStatus, showPast]);
 
-  const handleEditPractical = (e: React.FormEvent) => {
+  const totalUpcoming = useMemo(() => practicals.filter((p) => p.status === "UPCOMING").length, [practicals]);
+  const totalCompleted = useMemo(() => practicals.filter((p) => p.status === "COMPLETED").length, [practicals]);
+  const totalCancelled = useMemo(() => practicals.filter((p) => p.status === "CANCELLED").length, [practicals]);
+
+  async function createPractical(e: React.FormEvent) {
     e.preventDefault();
-    console.log('Editing practical:', selectedPractical);
-    setIsEditDialogOpen(false);
-  };
 
-  const handleDeletePractical = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this practical?')) {
-      console.log('Deleting practical:', id);
+    // Basic front validation
+    if (!form.title || !form.grade || !form.subject || !form.teacherId || !form.labId || !form.day || !form.date || !form.period) {
+      alert("Please fill all required fields");
+      return;
     }
-  };
 
-  const handleMarkAsCompleted = (id: string) => {
-    console.log('Marking as completed:', id);
-  };
+    const payload = {
+      title: form.title,
+      grade: Number(form.grade),
+      subject: form.subject,
+      teacherId: form.teacherId,
+      labId: form.labId,
+      day: form.day,
+      date: form.date, // yyyy-mm-dd (backend converts)
+      period: Number(form.period),
+      maxStudents: Number(form.maxStudents),
+      notes: form.notes,
+    };
 
-  const handleCancelPractical = (id: string) => {
-    if (window.confirm('Are you sure you want to cancel this practical?')) {
-      console.log('Canceling practical:', id);
+    const res = await fetch("/api/practicals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data?.error || "Failed to schedule");
+      return;
     }
-  };
 
-  const handleEnrollStudent = (id: string) => {
-    console.log('Enrolling student in:', id);
-  };
+    // Refresh list
+    await fetchAll();
 
-  const handleViewAttendance = (id: string) => {
-    console.log('Viewing attendance for:', id);
-  };
-
-  const selectedDatePracticals = selectedDate ? getPracticalsForDate(selectedDate) : [];
-
-  const filteredPracticals = scheduledPracticals.filter((practical) => {
-    const matchesSearch = practical.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         practical.teacher.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || practical.status === filterStatus;
-    const matchesSubject = filterSubject === 'all' || practical.subject === filterSubject;
-    const matchesGrade = filterGrade === 'all' || practical.grade === filterGrade;
-    const matchesDate = showPastSessions || practical.status === 'upcoming';
-    
-    return matchesSearch && matchesStatus && matchesSubject && matchesGrade && matchesDate;
-  });
-
-  const upcomingPracticals = scheduledPracticals
-    .filter((p) => p.status === 'upcoming')
-    .slice(0, 6);
-
-  const totalUpcoming = scheduledPracticals.filter(p => p.status === 'upcoming').length;
-  const totalCompleted = scheduledPracticals.filter(p => p.status === 'completed').length;
-  const totalCancelled = scheduledPracticals.filter(p => p.status === 'cancelled').length;
-
-  // List of all grades 6-13
-  const allGrades = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'Grade 13'];
+    // Reset
+    setForm({
+      title: "",
+      grade: "",
+      subject: "",
+      teacherId: "",
+      labId: "",
+      day: "",
+      date: "",
+      period: "",
+      maxStudents: 30,
+      notes: "",
+    });
+    setAvailablePeriods([]);
+    setIsAddOpen(false);
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 className="text-gray-900 mb-2">Schedule & Calendar</h2>
+          <h2 className="text-gray-900 text-2xl font-semibold">Lab Scheduling</h2>
           <p className="text-gray-600">
-            {canSchedule
-              ? 'Schedule and manage practical sessions'
-              : 'View scheduled practical sessions'}
+            Teachers can schedule lab sessions only in slots allowed by the main lab timetable + teacher timetable.
           </p>
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="outline" 
-            onClick={goToToday}
-            className="border-gray-300 hover:border-blue-400"
-          >
-            Today
-          </Button>
-          
-          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-            <Button 
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'} 
-              onClick={() => setViewMode('calendar')}
-              className="rounded-none"
-            >
-              <Calendar className="w-4 h-4 mr-2" />
-              Calendar
-            </Button>
-            <Button 
-              variant={viewMode === 'list' ? 'default' : 'ghost'} 
-              onClick={() => setViewMode('list')}
-              className="rounded-none"
-            >
-              <CalendarDays className="w-4 h-4 mr-2" />
-              List
-            </Button>
-          </div>
-          
-          {canSchedule && (
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Schedule Practical
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl">
-                <DialogHeader>
-                  <DialogTitle>Schedule New Practical</DialogTitle>
-                  <DialogDescription>
-                    Add a new practical session to the calendar
-                  </DialogDescription>
-                </DialogHeader>
-                <form className="space-y-4" onSubmit={handleAddPractical}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="title">Practical Title *</Label>
-                      <Input 
-                        id="title" 
-                        placeholder="e.g., Acid-Base Titration" 
-                        value={newPractical.title}
-                        onChange={(e) => setNewPractical({...newPractical, title: e.target.value})}
-                        required
-                      />
-                    </div>
-                    
-                    {/* Grade Field - Updated to include grades 6-13 */}
-                    <div>
-                      <Label htmlFor="grade">Grade *</Label>
-                      <Select 
-                        value={newPractical.grade} 
-                        onValueChange={(value) => setNewPractical({...newPractical, grade: value})}
+
+        {canSchedule && (
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Schedule Practical
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl">
+              <DialogHeader>
+                <DialogTitle>Schedule a Practical</DialogTitle>
+                <DialogDescription>
+                  Select grade, teacher, lab and day. The system will show only valid periods.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={createPractical} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Title */}
+                  <div className="md:col-span-2">
+                    <Label>Title *</Label>
+                    <Input
+                      value={form.title}
+                      onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                      placeholder="e.g. Microscope Practical"
+                    />
+                  </div>
+
+                  {/* Grade */}
+                  <div>
+                    <Label>Grade *</Label>
+                    <Select value={form.grade} onValueChange={(v) => setForm((p) => ({ ...p, grade: v }))}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select grade" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                        {[6, 7, 8, 9, 10, 11, 12, 13].map((g) => (
+                          <SelectItem key={g} value={String(g)}>
+                            Grade {g}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Subject */}
+                  <div>
+                    <Label>Subject *</Label>
+                    {availableSubjects.length === 1 ? (
+                      <Input value={availableSubjects[0]} readOnly className="bg-gray-50" />
+                    ) : (
+                      <Select
+                        value={form.subject}
+                        onValueChange={(v) => setForm((p) => ({ ...p, subject: v as any }))}
+                        disabled={!form.grade}
                       >
-                        <SelectTrigger id="grade" className="bg-white">
-                          <SelectValue placeholder="Select grade" />
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder={!form.grade ? "Select grade first" : "Select subject"} />
                         </SelectTrigger>
                         <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                          {allGrades.map((grade) => (
-                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                          {availableSubjects.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    
-                    {/* Subject Field - Updated to show appropriate subjects based on grade */}
-                    <div>
-                      <Label htmlFor="subject">Subject *</Label>
-                      {newPractical.grade && availableSubjects.length === 1 ? (
-                        // For grades 6-9, show Science as read-only
-                        <div className="flex items-center gap-2 p-2 border border-gray-200 rounded-md bg-gray-50">
-                          <Input
-                            id="subject"
-                            value="Science"
-                            readOnly
-                            className="bg-gray-50 border-0"
-                          />
-                          <span className="text-sm text-gray-500">(Only Science for Grades 6-9)</span>
-                        </div>
-                      ) : (
-                        <Select 
-                          value={newPractical.subject} 
-                          onValueChange={(value) => setNewPractical({...newPractical, subject: value as any})}
-                          disabled={!newPractical.grade}
-                        >
-                          <SelectTrigger id="subject" className="bg-white">
-                            <SelectValue placeholder={newPractical.grade ? "Select subject" : "Select grade first"} />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {availableSubjects.map((subject) => (
-                              <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="date">Date *</Label>
-                      <Input 
-                        id="date" 
-                        type="date" 
-                        value={newPractical.date}
-                        onChange={(e) => setNewPractical({...newPractical, date: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="time">Time *</Label>
-                      <Input 
-                        id="time" 
-                        type="time" 
-                        value={newPractical.time}
-                        onChange={(e) => setNewPractical({...newPractical, time: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="duration">Duration *</Label>
-                      <Input 
-                        id="duration" 
-                        placeholder="e.g., 2 hours" 
-                        value={newPractical.duration}
-                        onChange={(e) => setNewPractical({...newPractical, duration: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="recurring">Recurring</Label>
-                      <Select 
-                        value={newPractical.recurring} 
-                        onValueChange={(value) => setNewPractical({...newPractical, recurring: value as any})}
-                      >
-                        <SelectTrigger id="recurring" className="bg-white">
-                          <SelectValue placeholder="Select frequency" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                          <SelectItem value="none">None</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="location">Location *</Label>
-                      <Input 
-                        id="location" 
-                        placeholder="e.g., Chemistry Lab A" 
-                        value={newPractical.location}
-                        onChange={(e) => setNewPractical({...newPractical, location: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="maxStudents">Max Students *</Label>
-                      <Input 
-                        id="maxStudents" 
-                        type="number" 
-                        placeholder="30" 
-                        value={newPractical.maxStudents}
-                        onChange={(e) => setNewPractical({...newPractical, maxStudents: parseInt(e.target.value)})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="teacher">Teacher *</Label>
-                      <Input 
-                        id="teacher" 
-                        placeholder="Teacher name" 
-                        value={newPractical.teacher}
-                        onChange={(e) => setNewPractical({...newPractical, teacher: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="teacherEmail">Teacher Email</Label>
-                      <Input 
-                        id="teacherEmail" 
-                        type="email" 
-                        placeholder="teacher@school.edu"
-                        value={newPractical.teacherEmail}
-                        onChange={(e) => setNewPractical({...newPractical, teacherEmail: e.target.value})}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="roomSetup">Room Setup Requirements</Label>
-                      <Input 
-                        id="roomSetup" 
-                        placeholder="Describe the room setup needed..."
-                        value={newPractical.roomSetup}
-                        onChange={(e) => setNewPractical({...newPractical, roomSetup: e.target.value})}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="equipmentRequired">Equipment Required</Label>
-                      <Input 
-                        id="equipmentRequired" 
-                        placeholder="List required equipment separated by commas..."
-                        value={newPractical.equipmentRequired}
-                        onChange={(e) => setNewPractical({...newPractical, equipmentRequired: e.target.value})}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="notes">Notes & Instructions</Label>
-                      <Textarea
-                        id="notes"
-                        placeholder="Add any important notes, prerequisites, or instructions for students..."
-                        rows={4}
-                        value={newPractical.notes}
-                        onChange={(e) => setNewPractical({...newPractical, notes: e.target.value})}
-                      />
-                    </div>
+                    )}
                   </div>
-                  
-                  <div className="space-y-2 pt-4 border-t">
-                    <Label>Upload Attachments</Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                         onClick={() => document.getElementById('attachments')?.click()}>
-                      <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 mb-1">Click to upload files or drag and drop</p>
-                      <p className="text-xs text-gray-500">PDF, DOC, XLS up to 10MB each</p>
-                      <Input 
-                        id="attachments" 
-                        type="file" 
-                        multiple 
-                        className="hidden" 
-                        accept=".pdf,.doc,.docx,.xls,.xlsx"
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          setNewPractical({
-                            ...newPractical,
-                            attachments: files.map(file => ({ name: file.name, file }))
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end gap-2 pt-4">
-                    <DialogClose asChild>
-                      <Button type="button" variant="outline">
-                        Cancel
-                      </Button>
-                    </DialogClose>
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                      Schedule Practical
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </div>
 
-      {/* Statistics Cards - Removed Occupancy Rate */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Upcoming</p>
-                <p className="text-2xl font-bold text-blue-600">{totalUpcoming}</p>
-              </div>
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{totalCompleted}</p>
-              </div>
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        
-        
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Cancelled</p>
-                <p className="text-2xl font-bold text-red-600">{totalCancelled}</p>
-              </div>
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {viewMode === 'calendar' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <Card className="lg:col-span-2 border border-gray-200 shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={previousMonth}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={nextMonth}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-1">
-                {/* Day headers */}
-                {dayNames.map((day) => (
-                  <div key={day} className="text-center p-2 text-sm font-medium text-gray-700">
-                    {day}
-                  </div>
-                ))}
-
-                {/* Empty cells */}
-                {Array.from({ length: startingDayOfWeek }).map((_, index) => (
-                  <div key={`empty-${index}`} className="p-2" />
-                ))}
-
-                {/* Calendar days */}
-                {Array.from({ length: daysInMonth }).map((_, index) => {
-                  const day = index + 1;
-                  const dateString = formatDate(
-                    currentDate.getFullYear(),
-                    currentDate.getMonth(),
-                    day
-                  );
-                  const practicals = getPracticalsForDate(dateString);
-                  const isToday = dateString === '2025-11-12';
-                  const isSelected = dateString === selectedDate;
-
-                  return (
-                    <button
-                      key={day}
-                      onClick={() => setSelectedDate(dateString)}
-                      className={`p-2 min-h-[80px] border rounded-lg text-left transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isToday ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                      } ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}
-                    >
-                      <div className={`flex justify-between items-center mb-1 ${
-                        isToday ? 'text-blue-600 font-semibold' : 'text-gray-900'
-                      }`}>
-                        <span className="text-sm">{day}</span>
-                        {isToday && (
-                          <span className="text-xs bg-blue-100 text-blue-600 px-1 rounded">Today</span>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        {practicals.slice(0, 2).map((practical) => (
-                          <div
-                            key={practical.id}
-                            className={`text-xs px-1 py-0.5 rounded truncate ${getSubjectColor(
-                              practical.subject
-                            )}`}
-                          >
-                            {practical.time.slice(0, 5)} {practical.subject.slice(0, 3)}
-                          </div>
+                  {/* Teacher */}
+                  <div>
+                    <Label>Teacher *</Label>
+                    <Select value={form.teacherId} onValueChange={(v) => setForm((p) => ({ ...p, teacherId: v }))}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select teacher" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                        {teachers.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name} ({t.email})
+                          </SelectItem>
                         ))}
-                        {practicals.length > 2 && (
-                          <div className="text-xs text-gray-600">+{practicals.length - 2} more</div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Practicals Sidebar */}
-          <div className="space-y-6">
-            <Card className="border border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle>Upcoming Practicals</CardTitle>
-                <CardDescription>Next scheduled sessions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {upcomingPracticals.map((practical) => (
-                  <div
-                    key={practical.id}
-                    className="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors cursor-pointer bg-white hover:shadow-sm"
-                    onClick={() => {
-                      setSelectedDate(practical.date);
-                      setSelectedPractical(practical);
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge className={getSubjectColor(practical.subject)} variant="outline">
-                        {practical.subject}
-                      </Badge>
-                      <span className="text-xs text-gray-600">{practical.grade}</span>
-                    </div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-1 line-clamp-1">{practical.title}</h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-600">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        {practical.date} at {practical.time}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-gray-500">
-                        {practical.enrolledStudents}/{practical.maxStudents} students
-                      </span>
-                      <span className="text-xs font-medium">
-                        {practical.location}
-                      </span>
-                    </div>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      ) : (
-        /* List View */
-        <div className="space-y-4">
-          <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-auto md:flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    placeholder="Search practicals..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-white"
-                  />
-                </div>
-                
-                <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                  {/* Subject Filter - Updated to include Science */}
-                  <Select value={filterSubject} onValueChange={setFilterSubject}>
-                    <SelectTrigger className="w-full md:w-40 bg-white">
-                      <SelectValue placeholder="Subject" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                      <SelectItem value="all">All Subjects</SelectItem>
-                      <SelectItem value="Physics">Physics</SelectItem>
-                      <SelectItem value="Chemistry">Chemistry</SelectItem>
-                      <SelectItem value="Biology">Biology</SelectItem>
-                      <SelectItem value="Science">Science</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Grade Filter - Updated to include grades 6-13 */}
-                  <Select value={filterGrade} onValueChange={setFilterGrade}>
-                    <SelectTrigger className="w-full md:w-40 bg-white">
-                      <SelectValue placeholder="Grade" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                      <SelectItem value="all">All Grades</SelectItem>
-                      {allGrades.map((grade) => (
-                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full md:w-40 bg-white">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="upcoming">Upcoming</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <div className="flex items-center gap-2">
-                    <Switch 
-                      id="show-past" 
-                      checked={showPastSessions}
-                      onCheckedChange={setShowPastSessions}
+
+                  {/* Lab */}
+                  <div>
+                    <Label>Lab *</Label>
+                    <Select value={form.labId} onValueChange={(v) => setForm((p) => ({ ...p, labId: v }))}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select lab" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                        {labs.map((l) => (
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Day */}
+                  <div>
+                    <Label>Day *</Label>
+                    <Select value={form.day} onValueChange={(v) => setForm((p) => ({ ...p, day: v as DayOfWeek, period: "" }))}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue placeholder="Select day" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                        {DAYS.map((d) => (
+                          <SelectItem key={d.value} value={d.value}>
+                            {d.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <Label>Date *</Label>
+                    <Input
+                      type="date"
+                      value={form.date}
+                      onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
                     />
-                    <Label htmlFor="show-past" className="text-sm whitespace-nowrap">
-                      Show Past Sessions
-                    </Label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tip: choose a date that matches the selected day (e.g. Monday date for MONDAY).
+                    </p>
+                  </div>
+
+                  {/* Available Period */}
+                  <div className="md:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Available Periods *</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={loadAvailablePeriods}
+                        disabled={slotLoading || !form.teacherId || !form.labId || !form.day}
+                      >
+                        {slotLoading ? "Checking..." : "Refresh"}
+                      </Button>
+                    </div>
+
+                    {!form.teacherId || !form.labId || !form.day ? (
+                      <div className="mt-2 text-sm text-gray-600 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                        Select <b>Teacher</b>, <b>Lab</b> and <b>Day</b> to see available periods.
+                      </div>
+                    ) : availablePeriods.length === 0 ? (
+                      <div className="mt-2 text-sm text-red-700 border border-red-200 rounded-lg p-3 bg-red-50">
+                        No valid periods available for this Teacher + Lab + Day.
+                      </div>
+                    ) : (
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {PERIODS.filter((p) => availablePeriods.includes(p.period)).map((p) => (
+                          <button
+                            key={p.period}
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, period: String(p.period) }))}
+                            className={[
+                              "border rounded-lg px-3 py-2 text-left transition",
+                              form.period === String(p.period)
+                                ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200"
+                                : "border-gray-200 hover:border-blue-300 hover:bg-gray-50",
+                            ].join(" ")}
+                          >
+                            <div className="font-medium text-gray-900">{p.label}</div>
+                            <div className="text-xs text-gray-600">Click to select</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Max Students */}
+                  <div>
+                    <Label>Max Students *</Label>
+                    <Input
+                      type="number"
+                      value={form.maxStudents}
+                      onChange={(e) => setForm((p) => ({ ...p, maxStudents: Number(e.target.value || 0) }))}
+                      min={1}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="md:col-span-2">
+                    <Label>Notes</Label>
+                    <Textarea
+                      rows={3}
+                      value={form.notes}
+                      onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+                      placeholder="Any instructions for students..."
+                    />
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 gap-4">
-            {filteredPracticals.map((practical) => (
-              <Card key={practical.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-start gap-2 mb-2">
-                        <Badge className={getSubjectColor(practical.subject)}>
-                          {practical.subject}
-                        </Badge>
-                        <Badge variant="outline">{practical.grade}</Badge>
-                        <Badge className={getStatusColor(practical.status)} variant="outline">
-                          {practical.status}
-                        </Badge>
-                        {practical.recurring && practical.recurring !== 'none' && (
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                            Recurring: {practical.recurring}
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{practical.title}</h3>
-           
-                      <div className="text-sm text-gray-600 mb-2">
-           
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4 text-gray-500" />
-                          <span>Teacher: {practical.teacher} • {practical.location}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-700">{practical.date} at {practical.time}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-700">{practical.duration}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-700">
-                            {practical.enrolledStudents}/{practical.maxStudents} students
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {practical.status === 'upcoming' && canEdit && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedPractical(practical);
-                              setIsEditDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleMarkAsCompleted(practical.id)}
-                          >
-                            <CheckCircle className="w-4 h-4 mr-2" />
-                            Complete
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                            onClick={() => handleCancelPractical(practical.id)}
-                          >
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Cancel
-                          </Button>
-                        </>
-                      )}
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl">
-                          <DialogHeader>
-                            <DialogTitle>{practical.title}</DialogTitle>
-                            <DialogDescription>
-                              Complete details and information
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-sm text-gray-600">Subject</p>
-                                <p className="text-gray-900">{practical.subject}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Grade</p>
-                                <p className="text-gray-900">{practical.grade}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Teacher</p>
-                                <p className="text-gray-900">{practical.teacher}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-600">Email</p>
-                                <p className="text-gray-900">{practical.teacherEmail}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                              <h4 className="text-gray-900 mb-2">Schedule Information</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                  <p className="text-sm text-gray-600">Date</p>
-                                  <p className="text-gray-900">{practical.date}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600">Time</p>
-                                  <p className="text-gray-900">{practical.time}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600">Duration</p>
-                                  <p className="text-gray-900">{practical.duration}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600">Location</p>
-                                  <p className="text-gray-900">{practical.location}</p>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                              <h4 className="text-blue-900 mb-2">Notes & Instructions</h4>
-                              <p className="text-sm text-gray-700">{practical.notes}</p>
-                            </div>
-                            
-                            {/* Attachments section removed as per requirement */}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            
-            {filteredPracticals.length === 0 && (
-              <Card className="py-12 border border-gray-200 shadow-sm">
-                <CardContent className="text-center">
-                  <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-gray-900 mb-2 font-semibold">No practicals found</h3>
-                  <p className="text-gray-600">Try adjusting your filters or schedule a new practical</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      )}
 
-      {/* Selected Date Details */}
-      {selectedDate && selectedDatePracticals.length > 0 && viewMode === 'calendar' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-900">
-              Practicals on {selectedDate}
-            </h3>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setSelectedDate(null)}
-            >
-              Clear Selection
+                <div className="flex justify-end gap-2 pt-2 border-t">
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Cancel
+                    </Button>
+                  </DialogClose>
+                  <Button className="bg-blue-600 hover:bg-blue-700" type="submit">
+                    Schedule
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Upcoming</p>
+              <p className="text-2xl font-bold text-blue-600">{totalUpcoming}</p>
+            </div>
+            <Calendar className="w-6 h-6 text-blue-600" />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Completed</p>
+              <p className="text-2xl font-bold text-green-600">{totalCompleted}</p>
+            </div>
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </CardContent>
+        </Card>
+
+        <Card className="border border-gray-200 shadow-sm">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Cancelled</p>
+              <p className="text-2xl font-bold text-red-600">{totalCancelled}</p>
+            </div>
+            <XCircle className="w-6 h-6 text-red-600" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardContent className="p-4 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+          <div className="relative flex-1">
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              className="pl-10 bg-white"
+              placeholder="Search by title, teacher, lab..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2 items-center">
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+              <SelectTrigger className="w-44 bg-white">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="UPCOMING">Upcoming</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Switch checked={showPast} onCheckedChange={setShowPast} />
+              <Label className="text-sm">Show past</Label>
+            </div>
+
+            <Button variant="outline" onClick={fetchAll} disabled={loading}>
+              {loading ? "Refreshing..." : "Refresh"}
             </Button>
           </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            {selectedDatePracticals.map((practical) => (
-              <Card key={practical.id} className="border border-gray-200 shadow-sm">
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={getSubjectColor(practical.subject)}>
-                          {practical.subject}
-                        </Badge>
-                        <Badge variant="outline">{practical.grade}</Badge>
-                        <Badge className={getStatusColor(practical.status)} variant="outline">
-                          {practical.status}
-                        </Badge>
-                        {practical.enrolledStudents !== undefined && (
-                          <Badge variant="outline" className="bg-gray-50">
-                            {practical.enrolledStudents}/{practical.maxStudents} enrolled
-                          </Badge>
-                        )}
+        </CardContent>
+      </Card>
+
+      {/* Practicals list */}
+      <div className="space-y-3">
+        {filtered.length === 0 ? (
+          <Card className="border border-gray-200 shadow-sm">
+            <CardContent className="p-10 text-center text-gray-600">
+              No practicals found.
+            </CardContent>
+          </Card>
+        ) : (
+          filtered.map((p) => (
+            <Card key={p.id} className="border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap gap-2 items-center mb-2">
+                      <Badge variant="outline" className={subjectBadge(p.subject)}>
+                        {p.subject}
+                      </Badge>
+                      <Badge variant="outline">Grade {p.grade}</Badge>
+                      <Badge variant="outline" className={statusBadge(p.status)}>
+                        {p.status}
+                      </Badge>
+                      <Badge variant="outline" className="bg-gray-50">
+                        Period {p.period}
+                      </Badge>
+                    </div>
+
+                    <div className="text-lg font-semibold text-gray-900">{p.title}</div>
+
+                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <span>{isoToYMD(p.date)} • {p.day}</span>
                       </div>
-           
-                      <CardTitle>{practical.title}</CardTitle>
-                 
-                      <div className="text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          Teacher: {practical.teacher}
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span>Period {p.period}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-500" />
+                        <span>{p.teacher?.name || "Teacher"}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-gray-500" />
+                        <span>{p.lab?.name || "Lab"}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-gray-500" />
+                        <span>Max {p.maxStudents}</span>
                       </div>
                     </div>
-                    
-                    <div className="flex gap-2">
-                      {canEdit && practical.status === 'upcoming' && (
-                        <>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedPractical(practical);
-                              setIsEditDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </Button>
-                          {userRole === 'teacher' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleViewAttendance(practical.id)}
-                            >
-                              <Users className="w-4 h-4 mr-2" />
-                              Attendance
-                            </Button>
-                          )}
-                        </>
-                      )}
-                      
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl">
-                          <DialogHeader>
-                            <DialogTitle>{practical.title}</DialogTitle>
-                            <DialogDescription>
-                              Detailed information and instructions
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-gray-600" />
-                                <div>
-                                  <p className="text-sm text-gray-600">Time</p>
-                                  <p className="text-gray-900">{practical.time}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-gray-600" />
-                                <div>
-                                  <p className="text-sm text-gray-600">Duration</p>
-                                  <p className="text-gray-900">{practical.duration}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Users className="w-4 h-4 text-gray-600" />
-                                <div>
-                                  <p className="text-sm text-gray-600">Max Students</p>
-                                  <p className="text-gray-900">{practical.maxStudents}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Building className="w-4 h-4 text-gray-600" />
-                                <div>
-                                  <p className="text-sm text-gray-600">Location</p>
-                                  <p className="text-gray-900">{practical.location}</p>
-                                </div>
-                              </div>
-                            </div>
 
-                            {practical.notes && (
-                              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                                <h4 className="text-blue-900 mb-2 flex items-center gap-2">
-                                  <FileText className="w-4 h-4" />
-                                  Notes & Instructions
-                                </h4>
-                                <p className="text-sm text-gray-700">{practical.notes}</p>
-                              </div>
-                            )}
-
-                            {/* Attachments section removed as per requirement */}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
+                    {p.notes ? (
+                      <div className="mt-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        {p.notes}
+                      </div>
+                    ) : null}
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Attachments section removed as per requirement */}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {selectedDate && selectedDatePracticals.length === 0 && viewMode === 'calendar' && (
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="py-12 text-center">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-gray-900 mb-2 font-semibold">No practicals scheduled</h3>
-            <p className="text-gray-600 mb-4">No practical sessions scheduled for {selectedDate}</p>
-            {canSchedule && (
-              <Button
-                onClick={() => setIsAddDialogOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule a Practical
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
