@@ -446,46 +446,32 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                         <Play className="w-4 h-4 mr-2" />
                         Watch Video
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Lab Sheet
-                      </Button>
+
+                      {userRole === 'student' && userId && (
+                        <DownloadLabSheetButton
+                          practicalId={parseInt(practical.id)}
+                          studentId={userId}
+                          buttonText="Lab Sheet"
+                          variant="outline"
+                          size="sm"
+                          className="hover:bg-blue-50 hover:border-blue-300"
+                          filename={
+                            practical.labSheetUrl && practical.labSheetUrl !== '#'
+                              ? practical.labSheetUrl
+                              : practical.title === 'Acid-Base Titration'
+                                ? 'Grade_11_Acid_Base_Titration_Lab_Sheet.pdf'
+                                : undefined
+                          }
+                        />
+                      )}
+
                       {userRole === 'student' && userId ? (
                         <QuizButtonWithIcon
                           studentId={userId}
                           practicalId={parseInt(practical.id)}
                         />
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="hover:bg-blue-50 hover:border-blue-300"
-                          disabled
-                        >
-                          <HelpCircle className="w-4 h-4 mr-2" />
-                          Quiz
-                        </Button>
-                      )}
-                      {userRole === 'student' && userId && (
-                        <>
-                          <AccessNotesButton practicalId={parseInt(practical.id)} />
-
-                          <DownloadLabSheetButton
-                            practicalId={parseInt(practical.id)}
-                            studentId={userId}
-                            buttonText="Download Lab Sheet"
-                            variant="outline"
-                            size="sm"
-                            className="hover:bg-blue-50 hover:border-blue-300"
-                            filename={
-                              practical.labSheetUrl && practical.labSheetUrl !== '#'
-                                ? practical.labSheetUrl
-                                : practical.title === 'Acid-Base Titration'
-                                  ? 'Grade_11_Acid_Base_Titration_Lab_Sheet.pdf'
-                                  : undefined
-                            }
-                          />
-                        </>
+                        <div />
                       )}
                     </div>
                   </CardContent>
@@ -493,25 +479,28 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
               </div>
             </Card>
           </motion.div>
-        ))}
-      </div>
+        ))
+        }
+      </div >
 
       {/* Empty State */}
-      {filteredPracticals.length === 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <Card className="py-12 border-blue-100">
-            <CardContent className="text-center">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-gray-900 mb-2">No practicals found</h3>
-              <p className="text-gray-600">Try adjusting your filters or search query</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-    </div>
+      {
+        filteredPracticals.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card className="py-12 border-blue-100">
+              <CardContent className="text-center">
+                <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-gray-900 mb-2">No practicals found</h3>
+                <p className="text-gray-600">Try adjusting your filters or search query</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )
+      }
+    </div >
   );
 }

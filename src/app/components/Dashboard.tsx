@@ -32,17 +32,8 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import { StudentNotesPage } from "./student/StudentNotesPage";
-
-import { StudentQuizzesPage } from "./student/StudentQuizzesPage";
-import { StudentQuizAttemptsPage } from "./student/StudentQuizAttemptsPage";
 import { ViewInventoriesPage } from "./student/ViewInventoriesPage";
-import type { User } from "@/lib/types";
-
-interface DashboardProps {
-  user: User;
-  onLogout: () => void;
-}
+import { DashboardProps } from "../../../scripts/ensure-all-practicals-have-quizzes";
 
 type Page =
   | "home"
@@ -52,9 +43,6 @@ type Page =
   | "settings"
   | "requests"
   | "users"
-  | "notes"
-  | "quizzes"
-  | "quiz-attempts"
   | "view-inventory" // New page for students
   ;
 
@@ -68,7 +56,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         id: "home" as Page,
         label: "Home",
         icon: FlaskConical,
-        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
+        // Hide the Home navigation button for student users
+        roles: ['teacher', 'lab-assistant', 'principal', 'admin'],
       },
       {
         id: "practicals" as Page,
@@ -78,27 +67,8 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
       },
       // Student-specific pages
       {
-        id: "notes" as Page,
-        label: "View Notes",
-        icon: FileText,
-        roles: ['student'],
-      },
-
-      {
-        id: "quizzes" as Page,
-        label: "Available Quizzes",
-        icon: FlaskConical,
-        roles: ['student'],
-      },
-      {
-        id: "quiz-attempts" as Page,
-        label: "Quiz Scores",
-        icon: FileText,
-        roles: ['student'],
-      },
-      {
         id: "view-inventory" as Page,
-        label: "View Inventories",
+        label: "Browse Equipment",
         icon: Package,
         roles: ['student'],
       },
@@ -355,17 +325,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               <SettingsPage user={user} />
             )}
             {/* Student-specific pages */}
-
-            {currentPage === "notes" && user.role === "student" && (
-              <StudentNotesPage studentId={parseInt(user.id)} />
-            )}
-
-            {currentPage === "quizzes" && user.role === "student" && (
-              <StudentQuizzesPage studentId={parseInt(user.id)} />
-            )}
-            {currentPage === "quiz-attempts" && user.role === "student" && (
-              <StudentQuizAttemptsPage studentId={parseInt(user.id)} />
-            )}
             {currentPage === "view-inventory" && user.role === "student" && (
               <ViewInventoriesPage />
             )}

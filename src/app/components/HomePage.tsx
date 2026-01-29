@@ -10,15 +10,10 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Clock,
-  FileText
+  Clock
 } from 'lucide-react';
 import { Button } from './ui/button';
 import type { UserRole } from '@/lib/types';
-import { ViewNotes } from './student/ViewNotes';
-
-import { ViewQuizzes } from './student/ViewQuizzes';
-import { ViewQuizAttempts } from './student/ViewQuizAttempts';
 
 interface HomePageProps {
   userName: string;
@@ -80,9 +75,7 @@ export function HomePage({ userName, userRole, userId, onNavigate }: HomePagePro
       case 'student':
         return [
           { label: 'Available Practicals', value: '12', icon: FlaskConical, color: 'blue', page: 'practicals' },
-          { label: 'Completed', value: '8', icon: CheckCircle, color: 'green', page: 'practicals' },
           { label: 'Upcoming Sessions', value: '3', icon: Calendar, color: 'yellow', page: 'schedule' },
-          { label: 'Video Lessons', value: '24', icon: TrendingUp, color: 'purple', page: 'practicals' },
         ];
       default:
         return [];
@@ -238,49 +231,6 @@ export function HomePage({ userName, userRole, userId, onNavigate }: HomePagePro
           </CardContent>
         </Card>
       </motion.div>
-
-      {/* Student Features Section */}
-      {userRole === 'student' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-blue-900">Student Features</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                  onClick={() => onNavigate('notes')}
-                >
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <span>View Notes</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                  onClick={() => onNavigate('quizzes')}
-                >
-                  <FlaskConical className="w-5 h-5 text-blue-600" />
-                  <span>Available Quizzes</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex items-center gap-3 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                  onClick={() => onNavigate('quiz-attempts')}
-                >
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                  <span>Quiz Scores</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
 
       {/* Recent Activity or Announcements */}
       <motion.div

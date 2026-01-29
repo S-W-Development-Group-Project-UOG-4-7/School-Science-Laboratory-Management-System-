@@ -5,6 +5,7 @@
  * Usage: npx tsx scripts/ensure-all-practicals-have-quizzes.ts
  */
 
+import type { User } from '@/lib/types';
 import { PrismaClient } from '../src/generated/prisma';
 
 const prisma = new PrismaClient();
@@ -176,4 +177,8 @@ ensureAllPracticalsHaveQuizzes()
     console.error('\n💥 Script failed:', error);
     process.exit(1);
   });
+export interface DashboardProps {
+  user: User;
+  onLogout: () => void;
+}
 

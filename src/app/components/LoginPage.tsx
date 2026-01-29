@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 import type { User, UserRole } from '@/lib/types';
 
 interface LoginPageProps {
-  onLogin: (user: User, sessionId?: string) => void;
+  onLogin: (user: User) => void;
 }
 
 // Predefined credentials for different roles
@@ -19,35 +19,33 @@ interface LoginPageProps {
 const CREDENTIALS = {
   // Admin
   'admin@school.lk': { password: 'admin123', role: 'admin' as const, name: 'System Administrator', id: 'admin-001' },
-  
+
   // Principal
   'principal@school.lk': { password: 'principal123', role: 'principal' as const, name: 'Principal Silva', id: 'principal-001' },
-  
+
   // Teachers
   'teacher1@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mr. Perera', id: 'teacher-001' },
   'teacher2@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mrs. Fernando', id: 'teacher-002' },
-  
+
   // Lab Assistants
   'labassist1@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Kumar', id: 'lab-001' },
   'labassist2@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Nimal', id: 'lab-002' },
-  
+
   // Students (default role for any other email)
   'student1@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Amal', id: 'student-001' },
   'student2@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Sahan', id: 'student-002' },
-  
+
   // Seeded Database Users (from seed script)
   'john.doe@school.edu': { password: 'password123', role: 'student' as const, name: 'John Doe', id: '1' },
   'jane.smith@school.edu': { password: 'password123', role: 'student' as const, name: 'Jane Smith', id: '2' },
   'bob.johnson@school.edu': { password: 'password123', role: 'student' as const, name: 'Bob Johnson', id: '3' },
-  // Seeded teacher and lab assistant credentials removed
-  'mike.assistant@school.edu': { password: 'password123', role: 'lab-assistant' as const, name: 'Lab Assistant Mike', id: '5' },
-};
+}
 
 // DNA Helix Animation Component
 const DNAHelix = () => {
   const [rotation, setRotation] = React.useState(0);
   const [mounted, setMounted] = React.useState(false);
-  
+
   React.useEffect(() => {
     setMounted(true);
     const animate = () => {
@@ -58,14 +56,14 @@ const DNAHelix = () => {
   }, []);
   // Don't render on server to avoid hydration mismatch
   if (!mounted) return null;
-  
+
   const numPoints = 50;
   const points = Array.from({ length: numPoints });
   const centerX = 250;
   const centerY = 300;
   const amplitude = 150; // Increased width
   const verticalSpacing = 18; //increase height
-  
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <svg viewBox="0 0 500 600" className="w-full h-full opacity-50">
@@ -79,25 +77,25 @@ const DNAHelix = () => {
             <stop offset="100%" stopColor="#d97706" />
           </radialGradient>
         </defs>
-        
+
         {points.map((_, i) => {
           const y = i * verticalSpacing;
           const angle = (i * 20 + rotation) * (Math.PI / 180);
-          
+
           const blueX = centerX + Math.sin(angle) * amplitude;
           const blueZ = Math.cos(angle);
-          
+
           const yellowX = centerX - Math.sin(angle) * amplitude;
           const yellowZ = -Math.cos(angle);
-          
+
           const blueOpacity = blueZ > 0 ? 0.9 : 0.3;
           const yellowOpacity = yellowZ > 0 ? 0.9 : 0.3;
-          
+
           const blueSize = blueZ > 0 ? 8 : 5;
           const yellowSize = yellowZ > 0 ? 8 : 5;
-          
+
           const showBar = Math.abs(blueX - yellowX) < amplitude * 0.5;
-          
+
           return (
             <g key={i}>
               {showBar && (
@@ -111,7 +109,7 @@ const DNAHelix = () => {
                   opacity="0.5"
                 />
               )}
-              
+
               <circle
                 cx={blueX}
                 cy={y}
@@ -119,7 +117,7 @@ const DNAHelix = () => {
                 fill="url(#blueGrad)"
                 opacity={blueOpacity}
               />
-              
+
               <circle
                 cx={yellowX}
                 cy={y}
@@ -130,9 +128,9 @@ const DNAHelix = () => {
             </g>
           );
         })}
-        
+
         <text x="430" y="580" fill="#94a3b8" fontSize="14" fontWeight="bold">
-          
+
         </text>
       </svg>
     </div>
@@ -147,13 +145,36 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [authenticatedUser, setAuthenticatedUser] = useState<User | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setStep('2fa');
+
+    try {
+      // Call backend API for real authentication
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAuthenticatedUser(data.user);
+        setStep('2fa');
+      } else {
+        alert(data.message || 'Invalid email or password');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -179,31 +200,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    try {
-      // Call login API to validate credentials and insert/update user in database
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
 
-      const data = await response.json();
+    // Simulate OTP verification delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (response.ok && data.success) {
-        // Login successful, user data is automatically saved to database
-        // Pass sessionId to parent component
-        onLogin(data.user, data.sessionId);
-      } else {
-        alert(data.message || 'Invalid OTP or credentials');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('An error occurred during login. Please try again.');
-    } finally {
-      setIsLoading(false);
+    setIsLoading(false);
+
+    // If we have an authenticated user from step 1, log them in
+    if (authenticatedUser) {
+      onLogin(authenticatedUser);
+    } else {
+      // Fallback or error if somehow we are here without a user
+      alert('Authentication session expired. Please try again.');
+      setStep('login');
+      setPassword('');
     }
   };
 
@@ -211,7 +221,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50/30 flex items-center justify-center p-4 relative overflow-hidden">
       {/* DNA Helix Animation */}
       <DNAHelix />
-      
+
       {/* Animated Background Elements */}
       <motion.div
         className="absolute top-20 left-10 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"

@@ -129,10 +129,12 @@ export function AttemptQuizButton({
     setIsSubmitting(true);
 
     try {
-      // Convert answers to the format expected by the API
+      // Build answers payload from quiz questions to ensure correct keys and ordering
       const answersPayload: Record<string, string> = {};
-      Object.keys(answers).forEach((key) => {
-        answersPayload[key] = answers[parseInt(key)];
+      quiz.questions.forEach((q) => {
+        const key = q.id.toString();
+        const ans = answers[q.id];
+        answersPayload[key] = ans ?? '';
       });
 
       const response = await post('/api/quizzes/attempt', {
