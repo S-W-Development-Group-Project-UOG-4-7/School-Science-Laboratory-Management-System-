@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import type { InventoryItem, UserRole } from "@/lib/types";
+import type { InventoryItem, UserRole } from "@src/app/lib/types";
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface InventoryPageProps {
@@ -45,6 +45,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [openDetails, setOpenDetails] = useState(false);
   const [form, setForm] = useState({
     name: '',
@@ -89,27 +90,43 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
 
-  const handleAddItem = async () => {
-    await fetch('/api/inventory', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    setOpenAdd(false);
-    setForm({
-      name: '',
-      category: 'Equipment',
-      stockLevel: 0,
-      minStockLevel: 0,
-      unit: '',
-      location: 'Junior Lab',
-      storageInstructions: '',
-      handlingProcedure: '',
-      safetyNotes: '',
-      photo: '',
-    });
-    mutate('/api/inventory');
-  };
+ const handleAddItem = async () => {
+  const formData = new FormData();
+  formData.append('name', form.name);
+  formData.append('category', form.category);
+  formData.append('stockLevel', form.stockLevel.toString());
+  formData.append('minStockLevel', form.minStockLevel.toString());
+  formData.append('unit', form.unit);
+  formData.append('location', form.location);
+  formData.append('storageInstructions', form.storageInstructions);
+  formData.append('handlingProcedure', form.handlingProcedure);
+  formData.append('safetyNotes', form.safetyNotes);
+
+  if (photoFile) {
+    formData.append('photo', photoFile); // attach the file
+  }
+
+  await fetch('/api/inventory', {
+    method: 'POST',
+    body: formData, // send as FormData
+  });
+
+  setOpenAdd(false);
+  setForm({
+    name: '',
+    category: 'Equipment',
+    stockLevel: 0,
+    minStockLevel: 0,
+    unit: '',
+    location: 'Junior Lab',
+    storageInstructions: '',
+    handlingProcedure: '',
+    safetyNotes: '',
+    photo: '',
+  });
+  setPhotoFile(null);
+  mutate('/api/inventory');
+};
 
   const handleUpdateItem = async () => {
     if (!selectedItem) return;
@@ -249,12 +266,14 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1 block">Photo URL</label>
-              <Input
-                placeholder="Enter photo URL"
-                value={form.photo}
-                onChange={(e) => setForm({ ...form, photo: e.target.value })}
-              />
+            <label className="text-sm font-medium mb-1 block">Upload Photo</label>
+            <input
+               type="file"
+               accept="image/*"
+               onChange={(e) => setPhotoFile(e.target.files?.[0] || null)}
+               className="block w-full text-sm text-gray-600"
+             />
+             {photoFile && <p className="text-sm mt-1">{photoFile.name}</p>}
             </div>
 
             <div>
