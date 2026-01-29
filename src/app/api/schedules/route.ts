@@ -3,83 +3,93 @@ import { PrismaClient, ScheduleStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
-
 const prisma = new PrismaClient();
 
-// POST /api/practical-schedules
 export async function POST(request: NextRequest) {
+  console.log('📨 POST /api/schedules - Start');
+  
   try {
-    // Get session from next-auth
     const session = await getServerSession(authOptions);
     
-    // Check if user is authenticated
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized. Please log in.' },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      console.log('❌ No session found');
+      return NextResponse.json({ 
+        success: false,
+        error: 'Not authenticated' 
+      }, { status: 401 });
     }
-
-    const body = await request.json();
-
-    // Check if user is a teacher
-    if (session.user.role !== 'teacher') {
-      return NextResponse.json(
-        { error: 'Only teachers can create schedules' },
-        { status: 403 }
-      );
-    }
-
-    // Get teacher record for this user
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: parseInt(session.user.id) },
+    
+    console.log('👤 Session user:', {
+      id: session.user.id,
+      role: session.user.role,
+      teacherId: session.user.teacherId
     });
-
+    
+    // Check if user is a teacher
+    if (session.user.role !== 'TEACHER' && session.user.role !== 'teacher') {
+      console.log('❌ User is not a teacher:', session.user.role);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Only teachers can schedule practicals' 
+      }, { status: 403 });
+    }
+    
+    // Get teacher record
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: Number(session.user.id) }
+    });
+    
     if (!teacher) {
-      return NextResponse.json(
-        { error: 'Teacher profile not found' },
-        { status: 404 }
-      );
+      console.log('❌ No teacher record found for user:', session.user.id);
+      return NextResponse.json({ 
+        success: false,
+        error: 'Teacher profile not found. Please contact administrator.' 
+      }, { status: 404 });
     }
-
-    // ✅ Validate required fields
+    
+    console.log('✅ Teacher found:', { id: teacher.id, userId: teacher.userId });
+    
+    const body = await request.json();
+    console.log('📋 Request body:', body);
+    
+    // Validate required fields
     const requiredFields = ['title', 'date', 'period', 'grade', 'className', 'subject'];
-    for (const field of requiredFields) {
-      if (!body[field]) {
-        return NextResponse.json(
-          { error: `Missing required field: ${field}` },
-          { status: 400 }
-        );
-      }
+    const missingFields = requiredFields.filter(field => !body[field]);
+    
+    if (missingFields.length > 0) {
+      return NextResponse.json({ 
+        success: false,
+        error: `Missing required fields: ${missingFields.join(', ')}` 
+      }, { status: 400 });
     }
-
-    // ✅ Validate date
+    
+    // Validate date
     const scheduleDate = new Date(body.date);
     if (isNaN(scheduleDate.getTime())) {
-      return NextResponse.json(
-        { error: 'Invalid date format' },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid date format' 
+      }, { status: 400 });
     }
-
-    // ❌ Prevent conflicts
-    const conflict = await prisma.practicalSchedule.findFirst({
+    
+    // Check for existing schedule at same time
+    const existingSchedule = await prisma.practicalSchedule.findFirst({
       where: {
         teacherId: teacher.id,
         date: scheduleDate,
         period: body.period,
-        status: { not: 'CANCELLED' }
+        status: ScheduleStatus.UPCOMING
       }
     });
-
-    if (conflict) {
-      return NextResponse.json(
-        { error: 'You already have a schedule at this time' },
-        { status: 409 }
-      );
+    
+    if (existingSchedule) {
+      return NextResponse.json({ 
+        success: false,
+        error: `You already have a scheduled practical at period ${body.period} on ${body.date}` 
+      }, { status: 409 });
     }
-
-    // ✅ Create schedule using the teacher's ID
+    
+    // Create the schedule
     const schedule = await prisma.practicalSchedule.create({
       data: {
         title: body.title,
@@ -87,12 +97,12 @@ export async function POST(request: NextRequest) {
         period: body.period,
         grade: body.grade,
         className: body.className,
-        fullClassName: body.fullClassName || `${body.grade} - ${body.className}`,
+        fullClassName: `${body.grade} - ${body.className}`,
         subject: body.subject,
-        teacherId: teacher.id, // Use the teacher's ID from database
+        teacherId: teacher.id,
         location: body.location || 'Primary Lab',
         notes: body.notes || '',
-        status: body.status || ScheduleStatus.UPCOMING,
+        status: ScheduleStatus.UPCOMING,
       },
       include: {
         teacher: {
@@ -102,115 +112,115 @@ export async function POST(request: NextRequest) {
         }
       }
     });
-
+    
+    console.log('✅ Schedule created successfully:', schedule.id);
+    
     return NextResponse.json({ 
       success: true, 
-      schedule 
+      schedule,
+      message: 'Practical scheduled successfully'
     }, { status: 201 });
-
+    
   } catch (error: any) {
-    console.error('Create schedule error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to create schedule' },
-      { status: 500 }
-    );
+    console.error('❌ Error in POST /api/schedules:', error);
+    
+    // Handle Prisma errors
+    if (error.code === 'P2002') {
+      return NextResponse.json({ 
+        success: false,
+        error: 'A schedule with similar details already exists' 
+      }, { status: 409 });
+    }
+    
+    if (error.code === 'P2003') {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid teacher or user reference' 
+      }, { status: 404 });
+    }
+    
+    return NextResponse.json({ 
+      success: false,
+      error: 'Internal server error. Please try again.' 
+    }, { status: 500 });
   }
 }
 
-// GET /api/practical-schedules
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!session?.user?.id) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Not authenticated' 
+      }, { status: 401 });
     }
-
+    
     const { searchParams } = new URL(request.url);
     const teacherId = searchParams.get('teacherId');
-
-    let schedules;
     
-    if (session.user.role === 'teacher') {
-      // Get teacher record for this user
+    // Build where clause
+    const where: any = {};
+    
+    // If teacherId is provided and user is admin, use it
+    if (teacherId && (session.user.role === 'ADMIN' || session.user.role === 'admin')) {
+      where.teacherId = parseInt(teacherId);
+    } else if (session.user.role === 'TEACHER' || session.user.role === 'teacher') {
+      // Get teacher's ID
       const teacher = await prisma.teacher.findUnique({
-        where: { userId: parseInt(session.user.id) },
+        where: { userId: Number(session.user.id) }
       });
-
-      if (!teacher) {
-        return NextResponse.json(
-          { error: 'Teacher profile not found' },
-          { status: 404 }
-        );
+      
+      if (teacher) {
+        where.teacherId = teacher.id;
+      } else {
+        return NextResponse.json({ 
+          success: false,
+          error: 'Teacher profile not found' 
+        }, { status: 404 });
       }
-
-      // Get schedules for this teacher
-      schedules = await prisma.practicalSchedule.findMany({
-        where: {
-          teacherId: teacher.id
-        },
-        include: {
-          teacher: {
-            include: {
-              user: true
-            }
-          },
-          attachments: true,
-          equipmentRequests: {
-            include: {
-              equipmentItems: true,
-              labAssistant: {
-                include: {
-                  user: true
-                }
-              }
-            }
-          }
-        },
-        orderBy: {
-          date: 'asc'
-        }
-      });
     } else {
-      // For non-teachers (admin, lab assistant), get all schedules
-      schedules = await prisma.practicalSchedule.findMany({
-        include: {
-          teacher: {
-            include: {
-              user: true
-            }
-          },
-          attachments: true,
-          equipmentRequests: {
-            include: {
-              equipmentItems: true,
-              labAssistant: {
-                include: {
-                  user: true
-                }
+      return NextResponse.json({ 
+        success: false,
+        error: 'Unauthorized access' 
+      }, { status: 403 });
+    }
+    
+    // Get schedules
+    const schedules = await prisma.practicalSchedule.findMany({
+      where,
+      include: {
+        teacher: {
+          include: {
+            user: true
+          }
+        },
+        equipmentRequests: {
+          include: {
+            equipmentItems: true,
+            labAssistant: {
+              include: {
+                user: true
               }
             }
           }
-        },
-        orderBy: {
-          date: 'asc'
         }
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      schedules
+      },
+      orderBy: { date: 'asc' },
     });
-
+    
+    return NextResponse.json({ 
+      success: true, 
+      schedules,
+      count: schedules.length
+    });
+    
   } catch (error: any) {
-    console.error('Error fetching practical schedules:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch schedules' },
-      { status: 500 }
-    );
+    console.error('Error in GET /api/schedules:', error);
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to fetch schedules' 
+    }, { status: 500 });
   }
 }

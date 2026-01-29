@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -392,27 +392,51 @@ export function SchedulePage({
   const [activeRequestTab, setActiveRequestTab] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [sessionValid, setSessionValid] = useState<boolean>(false);
+  const [userTeacherId, setUserTeacherId] = useState<number>(0);
 
-  // Calculate currentTeacherId based on props - FIXED VERSION
+  // Calculate currentTeacherId - FIXED VERSION
   const currentTeacherId = useMemo(() => {
-    console.log('Calculating teacher ID:', { teacherId, userId, userRole });
+    console.log('🔍 Calculating teacher ID:', { 
+      teacherId, 
+      userId, 
+      userRole,
+      userTeacherId 
+    });
     
-    // If teacherId is provided directly, use it
+    // Priority 1: Direct teacherId prop
     if (teacherId !== undefined && teacherId !== null) {
       const id = Number(teacherId);
-      return isNaN(id) ? 0 : id;
+      if (!isNaN(id) && id > 0) {
+        console.log('✅ Using teacherId from props:', id);
+        return id;
+      }
     }
     
-    // If user is a teacher and has userId, use it
+    // Priority 2: UserTeacherId from session
+    if (userTeacherId && userTeacherId > 0) {
+      console.log('✅ Using userTeacherId from session:', userTeacherId);
+      return userTeacherId;
+    }
+    
+    // Priority 3: If user is a teacher and has userId
     if (userRole === 'teacher' && userId) {
       const id = Number(userId);
-      return isNaN(id) ? 0 : id;
+      if (!isNaN(id) && id > 0) {
+        console.log('⚠️ Using userId as fallback (might not match teacher.id):', id);
+        return id;
+      }
     }
     
-    // For non-teachers, return 0
+    console.log('❌ No valid teacher ID found');
     return 0;
-  }, [teacherId, userId, userRole]);
+  }, [teacherId, userId, userRole, userTeacherId]);
 
+  // Check permissions
+  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
+  const isTeacher = userRole === 'teacher';
+  const isLabAssistant = userRole === 'lab-assistant';
+
+  // Initialize form data
   const [formData, setFormData] = useState({
     // Schedule step
     title: '',
@@ -422,7 +446,6 @@ export function SchedulePage({
     className: 'A',
     fullClassName: '',
     subject: 'Science' as SubjectType,
-    teacherId: currentTeacherId,
     location: 'Primary Lab',
     notes: '',
     status: ScheduleStatus.UPCOMING,
@@ -451,77 +474,121 @@ export function SchedulePage({
   const days: DayType[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const periods = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
-  // Check permissions
-  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
-  const isTeacher = userRole === 'teacher';
-  const isLabAssistant = userRole === 'lab-assistant';
-
   // Check session validity on mount
   useEffect(() => {
-    const validateSession = () => {
-      if (isTeacher) {
-        const isValid = currentTeacherId > 0;
-        setSessionValid(isValid);
+    const validateSession = async () => {
+      if (!isTeacher) return;
+      
+      try {
+        console.log('🔍 Validating teacher session...');
         
-        if (!isValid) {
-          console.warn('Invalid teacher session detected:', { 
-            currentTeacherId, 
-            teacherId, 
-            userId, 
-            userRole 
-          });
-          addToast('Please log in as a teacher to schedule practicals', 'error');
+        // First, try to get teacher info from API
+        const response = await fetch('/api/auth/teacher-info', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Teacher info from API:', data);
+          
+          if (data.teacherId) {
+            setUserTeacherId(data.teacherId);
+            setSessionValid(true);
+            console.log('✅ Session validated, teacherId:', data.teacherId);
+          } else {
+            console.warn('⚠️ API returned no teacherId');
+            setSessionValid(false);
+          }
+        } else {
+          console.warn('⚠️ Failed to fetch teacher info:', response.status);
+          setSessionValid(false);
         }
+      } catch (error) {
+        console.error('❌ Error validating session:', error);
+        setSessionValid(false);
+        addToast('Failed to validate teacher session', 'error');
       }
     };
     
     validateSession();
-  }, [currentTeacherId, isTeacher]);
+  }, [isTeacher]);
 
   // Fetch initial data
   useEffect(() => {
-    fetchInitialData();
-  }, [userRole, currentTeacherId]);
-
-  const fetchInitialData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch practical schedules
-      if (currentTeacherId > 0) {
-        const scheduleResponse = await fetch(`/api/practical-schedules?teacherId=${currentTeacherId}`);
+    const fetchInitialData = async () => {
+      setIsLoading(true);
+      try {
+        console.log('📦 Fetching initial data...');
+        
+        // Fetch practical schedules
+        let scheduleUrl = '/api/schedules';
+        if (isTeacher && currentTeacherId > 0) {
+          scheduleUrl += `?teacherId=${currentTeacherId}`;
+        }
+        
+        console.log('📅 Fetching schedules from:', scheduleUrl);
+        const scheduleResponse = await fetch(scheduleUrl, {
+          credentials: 'include'
+        });
+        
         if (scheduleResponse.ok) {
           const data = await scheduleResponse.json();
+          console.log('✅ Schedules fetched:', data.schedules?.length || data.length || 0);
           setPracticalSchedules(data.schedules || data || []);
+        } else {
+          console.error('❌ Failed to fetch schedules:', scheduleResponse.status);
         }
-      }
 
-      // Fetch equipment requests based on user role
-      let requestUrl = '/api/equipment-requests';
-      if (isTeacher && currentTeacherId > 0) {
-        requestUrl += `?teacherId=${currentTeacherId}`;
-      } else if (isLabAssistant && currentTeacherId > 0) {
-        requestUrl += `?labAssistantId=${currentTeacherId}`;
-      }
+        // Fetch equipment requests
+        let requestUrl = '/api/equipment-requests';
+        if (isTeacher && currentTeacherId > 0) {
+          requestUrl += `?teacherId=${currentTeacherId}`;
+        } else if (isLabAssistant && currentTeacherId > 0) {
+          requestUrl += `?labAssistantId=${currentTeacherId}`;
+        }
 
-      const requestResponse = await fetch(requestUrl);
-      if (requestResponse.ok) {
-        const data = await requestResponse.json();
-        setEquipmentRequests(data.requests || data || []);
-      }
+        console.log('📦 Fetching equipment requests from:', requestUrl);
+        const requestResponse = await fetch(requestUrl, {
+          credentials: 'include'
+        });
+        
+        if (requestResponse.ok) {
+          const data = await requestResponse.json();
+          console.log('✅ Equipment requests fetched:', data.requests?.length || data.length || 0);
+          setEquipmentRequests(data.requests || data || []);
+        } else {
+          console.error('❌ Failed to fetch equipment requests:', requestResponse.status);
+        }
 
-      // Fetch lab assistants
-      const assistantsResponse = await fetch('/api/lab-assistants');
-      if (assistantsResponse.ok) {
-        const data = await assistantsResponse.json();
-        setLabAssistants(data.assistants || data || []);
+        // Fetch lab assistants
+        console.log('👨‍🔬 Fetching lab assistants...');
+        const assistantsResponse = await fetch('/api/lab-assistants', {
+          credentials: 'include'
+        });
+        
+        if (assistantsResponse.ok) {
+          const data = await assistantsResponse.json();
+          console.log('✅ Lab assistants fetched:', data.assistants?.length || data.length || 0);
+          setLabAssistants(data.assistants || data || []);
+        } else {
+          console.error('❌ Failed to fetch lab assistants:', assistantsResponse.status);
+        }
+        
+        console.log('✅ All initial data loaded');
+      } catch (error) {
+        console.error('❌ Error fetching initial data:', error);
+        addToast('Failed to load data', 'error');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching initial data:', error);
-      addToast('Failed to load data', 'error');
-    } finally {
+    };
+
+    if (isTeacher || isLabAssistant || userRole === 'admin') {
+      fetchInitialData();
+    } else {
       setIsLoading(false);
     }
-  };
+  }, [userRole, currentTeacherId, isTeacher, isLabAssistant]);
 
   // Helper functions
   const getSubjectOptions = (grade: string): SubjectType[] => {
@@ -715,7 +782,6 @@ export function SchedulePage({
         period,
         subject: grade === 'Grade 9' ? 'Science' : (prev.subject || 'Science'),
         practicalTime: timeSlot,
-        teacherId: currentTeacherId // Ensure teacherId is set
       }));
     }
     
@@ -837,35 +903,29 @@ export function SchedulePage({
     [RequestStatus.REJECTED]: equipmentRequests.filter(r => r.status === RequestStatus.REJECTED).length,
   };
 
-  const handleSubmitAll = async () => {
-    // ---------------- VALIDATION ----------------
-    if (!sessionValid && isTeacher) {
+  // THE FIXED SCHEDULE FUNCTION
+  const handleScheduleOnly = async () => {
+    console.log('🚀 handleScheduleOnly called');
+    
+    // Validation
+    if (!formData.title || !formData.date || !formData.period || !formData.subject || !formData.grade || !formData.className) {
+      addToast('Please fill in all schedule fields', 'error');
+      return;
+    }
+
+    if (isTeacher && !sessionValid) {
       addToast('Invalid teacher session. Please log in again.', 'error');
       return;
     }
 
-    if (
-      !formData.title ||
-      !formData.date ||
-      !formData.period ||
-      !formData.subject ||
-      !formData.grade ||
-      !formData.className
-    ) {
-      addToast('Please fill in all schedule fields', 'error');
-      setCurrentStep('schedule');
-      return;
-    }
-
-    if (formData.equipmentItems.length > 0 && !formData.labAssistantId) {
-      addToast('Please select a lab assistant for equipment requests', 'error');
-      return;
-    }
-
     setIsCreatingRequest(true);
-
+    
     try {
-      // ---------------- SCHEDULE PAYLOAD ----------------
+      console.log('📋 Creating schedule payload...');
+      console.log('Current teacherId:', currentTeacherId);
+      console.log('Session valid:', sessionValid);
+      
+      // Create schedule payload - DON'T send teacherId in body, let API handle it
       const schedulePayload = {
         title: formData.title,
         date: new Date(formData.date).toISOString(),
@@ -874,99 +934,126 @@ export function SchedulePage({
         className: formData.className,
         fullClassName: formData.fullClassName,
         subject: formData.subject,
-        teacherId: currentTeacherId,
         location: formData.location,
         notes: formData.notes || '',
         status: ScheduleStatus.UPCOMING,
       };
 
-      console.log('Creating PracticalSchedule with payload:', schedulePayload);
-
-      // ---------------- CREATE PRACTICAL SCHEDULE ----------------
-      const scheduleResponse = await fetch('/api/practical-schedules', {
+      console.log('📤 Schedule payload:', schedulePayload);
+      console.log('🌐 Sending to /api/schedules...');
+      
+      const response = await fetch('/api/schedules', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
         body: JSON.stringify(schedulePayload),
       });
 
-      if (!scheduleResponse.ok) {
-        const errorText = await scheduleResponse.text();
-        console.error('Practical Schedule API error:', errorText);
-        
-        if (scheduleResponse.status === 401 || scheduleResponse.status === 403) {
-          throw new Error('Authentication failed. Please log in again.');
+      const responseText = await response.text();
+      console.log('📥 API Response status:', response.status);
+      console.log('📥 API Response text:', responseText);
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to create schedule';
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+          console.error('❌ API Error:', errorData);
+        } catch (e) {
+          errorMessage = responseText || errorMessage;
         }
         
-        throw new Error(errorText || 'Failed to create practical schedule');
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in as a teacher.');
+        } else if (response.status === 403) {
+          throw new Error('Permission denied. Only teachers can schedule practicals.');
+        } else if (response.status === 404) {
+          throw new Error('Teacher profile not found. Please contact administrator.');
+        } else if (response.status === 409) {
+          throw new Error('Schedule conflict. You already have a practical scheduled at this time.');
+        } else if (response.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const scheduleData = await scheduleResponse.json();
+      const scheduleData = JSON.parse(responseText);
+      console.log('✅ Schedule created successfully:', scheduleData);
+      
       const createdSchedule = scheduleData.schedule || scheduleData;
-
-      console.log('PracticalSchedule created:', createdSchedule);
-
-      // ---------------- EQUIPMENT REQUEST (OPTIONAL) ----------------
-      if (formData.equipmentItems.length > 0) {
-        const requestPayload = {
-          teacherId: currentTeacherId,
-          labAssistantId: Number(formData.labAssistantId),
-          practicalScheduleId: createdSchedule.id,
-          className: formData.className,
-          grade: formData.grade,
-          subject: formData.subject,
-          practicalDate: new Date(formData.date).toISOString(),
-          practicalTime: formData.practicalTime,
-          additionalNotes: formData.additionalNotes || '',
-          status: RequestStatus.PENDING,
-          equipmentItems: formData.equipmentItems.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            category: item.category,
-          })),
-        };
-
-        console.log('Creating equipment request:', requestPayload);
-
-        const requestResponse = await fetch('/api/equipment-requests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestPayload),
-        });
-
-        if (!requestResponse.ok) {
-          const errorText = await requestResponse.text();
-          console.error('Equipment request error:', errorText);
-
-          // Schedule still successful, but equipment request failed
-          setPracticalSchedules(prev => [createdSchedule, ...prev]);
-          addToast(
-            'Schedule created. Equipment request failed. Please contact lab assistant.',
-            'warning'
-          );
-        } else {
-          const requestData = await requestResponse.json();
-          const createdRequest = requestData.request || requestData;
-
-          setPracticalSchedules(prev => [createdSchedule, ...prev]);
-          setEquipmentRequests(prev => [createdRequest, ...prev]);
-
-          addToast('Schedule and equipment request created successfully!', 'success');
-        }
-      } else {
-        // ---------------- ONLY SCHEDULE ----------------
-        setPracticalSchedules(prev => [createdSchedule, ...prev]);
-        addToast('Schedule created successfully!', 'success');
-      }
-
-      // ---------------- CLEANUP ----------------
+      
+      // Update local state
+      setPracticalSchedules(prev => [createdSchedule, ...prev]);
+      
+      // Close dialog and show success
       setIsDialogOpen(false);
+      addToast('Schedule created successfully!', 'success');
+      
+      // Reset form
       resetForm();
-
     } catch (error: any) {
-      console.error('handleSubmitAll error:', error);
-      addToast(error.message || 'Something went wrong. Please try again.', 'error');
+      console.error('❌ Error creating schedule:', error);
+      addToast(error.message || 'Failed to create schedule. Please try again.', 'error');
     } finally {
       setIsCreatingRequest(false);
+    }
+  };
+
+  const handleSubmitAll = async () => {
+    // First create the schedule
+    await handleScheduleOnly();
+    
+    // If schedule created successfully and we have equipment items
+    if (formData.equipmentItems.length > 0 && formData.labAssistantId) {
+      // Wait a moment for the schedule to be created
+      setTimeout(async () => {
+        try {
+          // Find the latest schedule (the one we just created)
+          const latestSchedule = practicalSchedules[0];
+          
+          const requestPayload = {
+            teacherId: currentTeacherId,
+            labAssistantId: Number(formData.labAssistantId),
+            practicalScheduleId: latestSchedule?.id,
+            className: formData.className,
+            grade: formData.grade,
+            subject: formData.subject,
+            practicalDate: new Date(formData.date).toISOString(),
+            practicalTime: formData.practicalTime,
+            additionalNotes: formData.additionalNotes || '',
+            status: RequestStatus.PENDING,
+            equipmentItems: formData.equipmentItems.map(item => ({
+              name: item.name,
+              quantity: item.quantity,
+              category: item.category,
+            })),
+          };
+
+          console.log('Creating equipment request:', requestPayload);
+
+          const requestResponse = await fetch('/api/equipment-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(requestPayload),
+          });
+
+          if (requestResponse.ok) {
+            const requestData = await requestResponse.json();
+            const createdRequest = requestData.request || requestData;
+            setEquipmentRequests(prev => [createdRequest, ...prev]);
+            addToast('Equipment request submitted successfully!', 'success');
+          } else {
+            addToast('Schedule created but equipment request failed', 'warning');
+          }
+        } catch (error) {
+          console.error('Error creating equipment request:', error);
+          addToast('Equipment request failed', 'error');
+        }
+      }, 1000);
     }
   };
 
@@ -1022,11 +1109,12 @@ export function SchedulePage({
     }
 
     try {
-      const response = await fetch(`/api/practical-schedules/${editFormData.id}`, {
+      const response = await fetch(`/api/schedules/${editFormData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...editFormData,
           date: new Date(editFormData.date).toISOString(),
@@ -1054,11 +1142,12 @@ export function SchedulePage({
 
   const handleCancelSchedule = async (scheduleId: number) => {
     try {
-      const response = await fetch(`/api/practical-schedules/${scheduleId}`, {
+      const response = await fetch(`/api/schedules/${scheduleId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           status: ScheduleStatus.CANCELLED
         }),
@@ -1081,11 +1170,12 @@ export function SchedulePage({
 
   const handleCompleteSchedule = async (scheduleId: number) => {
     try {
-      const response = await fetch(`/api/practical-schedules/${scheduleId}`, {
+      const response = await fetch(`/api/schedules/${scheduleId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           status: ScheduleStatus.COMPLETED
         }),
@@ -1108,8 +1198,9 @@ export function SchedulePage({
 
   const handleDeleteSchedule = async (scheduleId: number) => {
     try {
-      const response = await fetch(`/api/practical-schedules/${scheduleId}`, {
+      const response = await fetch(`/api/schedules/${scheduleId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -1133,6 +1224,7 @@ export function SchedulePage({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           status: RequestStatus.APPROVED,
           responseNote: responseNote || 'Request approved',
@@ -1164,6 +1256,7 @@ export function SchedulePage({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           status: RequestStatus.REJECTED,
           responseNote: responseNote || 'Request rejected',
@@ -1197,7 +1290,6 @@ export function SchedulePage({
       className: 'A',
       fullClassName: '',
       subject: 'Science',
-      teacherId: currentTeacherId,
       location: 'Primary Lab',
       notes: '',
       status: ScheduleStatus.UPCOMING,
@@ -1214,108 +1306,6 @@ export function SchedulePage({
     setSelectedEquipmentCategory('all');
     setEquipmentSearch('');
   };
-
-  const handleScheduleOnly = async () => {
-  if (!formData.title || !formData.date || !formData.period || !formData.subject || !formData.grade || !formData.className) {
-    addToast('Please fill in all schedule fields', 'error');
-    return;
-  }
-
-  setIsCreatingRequest(true);
-  
-  try {
-    // First, check session
-    console.log('Checking session...');
-    const sessionCheck = await fetch('/api/auth/check');
-    const sessionData = await sessionCheck.json();
-    
-    console.log('Session check result:', sessionData);
-    
-    if (!sessionData.isAuthenticated) {
-      throw new Error('Not authenticated. Please log in.');
-    }
-    
-    if (sessionData.user.role !== 'teacher') {
-      throw new Error(`You are logged in as ${sessionData.user.role}, not as a teacher.`);
-    }
-
-    // Create schedule payload
-    const schedulePayload = {
-      title: formData.title,
-      date: new Date(formData.date).toISOString(),
-      period: formData.period,
-      grade: formData.grade,
-      className: formData.className,
-      fullClassName: formData.fullClassName,
-      subject: formData.subject,
-      location: formData.location,
-      notes: formData.notes || '',
-      status: ScheduleStatus.UPCOMING,
-    };
-
-    console.log('Creating schedule with payload:', schedulePayload);
-    console.log('User from session:', {
-      userId: sessionData.user.id,
-      role: sessionData.user.role,
-      teacherId: sessionData.user.teacherId
-    });
-    
-    const response = await fetch('/api/practical-schedules', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(schedulePayload),
-    });
-
-    const responseText = await response.text();
-    console.log('API Response status:', response.status);
-    console.log('API Response text:', responseText);
-
-    if (!response.ok) {
-      let errorMessage = 'Failed to create schedule';
-      try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error || errorMessage;
-      } catch (e) {
-        errorMessage = responseText || errorMessage;
-      }
-      
-      // Handle specific error cases
-      if (response.status === 401) {
-        throw new Error('Authentication failed. ' + errorMessage);
-      } else if (response.status === 403) {
-        throw new Error('Permission denied. ' + errorMessage);
-      } else if (response.status === 404) {
-        throw new Error('Teacher profile not found. ' + errorMessage);
-      } else if (response.status === 409) {
-        throw new Error('Schedule conflict. ' + errorMessage);
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const scheduleData = JSON.parse(responseText);
-    console.log('Schedule created successfully:', scheduleData);
-    
-    const createdSchedule = scheduleData.schedule || scheduleData;
-    
-    // Update local state
-    setPracticalSchedules(prev => [createdSchedule, ...prev]);
-    
-    // Close dialog and show success
-    setIsDialogOpen(false);
-    addToast('Schedule created successfully!', 'success');
-    
-    // Reset form
-    resetForm();
-  } catch (error: any) {
-    console.error('Error creating schedule:', error);
-    addToast(error.message || 'Failed to create schedule', 'error');
-  } finally {
-    setIsCreatingRequest(false);
-  }
-};
 
   if (isLoading) {
     return (
@@ -1385,6 +1375,11 @@ export function SchedulePage({
               <div className="flex items-center gap-1">
                 <Briefcase className="w-4 h-4" />
                 <span>Teacher ID: {currentTeacherId}</span>
+                {!sessionValid && (
+                  <Badge variant="destructive" className="ml-2">
+                    Session Invalid
+                  </Badge>
+                )}
               </div>
             )}
             {userEmail && (
@@ -1420,9 +1415,17 @@ export function SchedulePage({
             <CardTitle className="flex items-center gap-2 text-xl">
               <CalendarIcon className="w-6 h-6" />
               Science Laboratory Timetable (Grades 6-11)
+              {!sessionValid && (
+                <Badge variant="destructive" className="ml-2">
+                  Login Required
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
-              Click on any period to schedule a practical for that time slot
+              {sessionValid 
+                ? 'Click on any period to schedule a practical for that time slot'
+                : 'Please log in as a teacher to schedule practicals'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
@@ -1494,18 +1497,14 @@ export function SchedulePage({
             <h4 className="text-lg font-medium text-gray-900 mb-2">No scheduled practicals</h4>
             <p className="text-gray-600 mb-4">
               {isTeacher 
-                ? 'Start by scheduling your first practical session'
+                ? sessionValid 
+                  ? 'Start by scheduling your first practical session'
+                  : 'Please log in as a teacher to schedule practicals'
                 : 'No practical sessions have been scheduled yet'
               }
             </p>
-            {isTeacher && (
-              <Button onClick={() => {
-                if (!sessionValid) {
-                  addToast('Please log in as a teacher to schedule practicals', 'error');
-                  return;
-                }
-                setIsDialogOpen(true);
-              }}>
+            {isTeacher && sessionValid && (
+              <Button onClick={() => setIsDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Schedule First Practical
               </Button>
@@ -2048,13 +2047,15 @@ export function SchedulePage({
                 </div>
               </div>
 
-              {/* Debug Information (Development Only) */}
+              {/* Debug Information */}
               {process.env.NODE_ENV === 'development' && (
                 <div className="p-3 bg-gray-100 rounded-lg text-xs">
                   <h4 className="font-semibold mb-1">Debug Info:</h4>
                   <div className="grid grid-cols-2 gap-1">
                     <span>Teacher ID:</span><span>{currentTeacherId}</span>
                     <span>Session Valid:</span><span>{sessionValid ? 'Yes' : 'No'}</span>
+                    <span>User Role:</span><span>{userRole}</span>
+                    <span>User ID:</span><span>{userId}</span>
                     <span>Form Data:</span>
                     <span className="truncate">{JSON.stringify({
                       title: formData.title,

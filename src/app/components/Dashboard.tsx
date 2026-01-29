@@ -29,7 +29,6 @@ import { PracticalsPage } from "./PracticalsPage";
 import { InventoryPage } from "./InventoryPage";
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
-import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
 import type { AuthUser } from "@/lib/types";
@@ -283,13 +282,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             )}
             {currentPage === "schedule" && (
               <SchedulePage userRole={user.role} />
-            )}
-            {currentPage === "requests" && (
-              <InventoryRequestsPage 
-                userRole={user.role}
-                userId={user.id}
-                userName={user.name}
-              />
             )}
             {currentPage === "users" && user.role === "admin" && (
               <UserManagementPage />

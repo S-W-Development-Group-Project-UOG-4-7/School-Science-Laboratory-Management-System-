@@ -344,26 +344,24 @@ model LabAssistant {
 model EquipmentRequest {
   id                 Int           @id @default(autoincrement())
   teacherId          Int
-  labAssistantId     Int
+  labAssistantId     Int?          // <-- make optional for teacher-only creation
   practicalScheduleId Int?
-  
-  className          String        @db.VarChar(50)
-  grade              String        @db.VarChar(20)
-  subject            String        @db.VarChar(100)
+
+  className          String
+  grade              String
+  subject            String
   practicalDate      DateTime
-  practicalTime      String        @db.VarChar(100)
-  
-  additionalNotes    String?       @db.Text
+  practicalTime      String
+  additionalNotes    String?
   status             RequestStatus @default(PENDING)
-  responseNote       String?       @db.Text
+  responseNote       String?
   responseDate       DateTime?
-  
+
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
-  // Relations
   teacher           Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  labAssistant      LabAssistant      @relation(fields: [labAssistantId], references: [id])
+  labAssistant      LabAssistant?     @relation(fields: [labAssistantId], references: [id])
   practicalSchedule PracticalSchedule? @relation(fields: [practicalScheduleId], references: [id])
   equipmentItems    EquipmentItem[]
 
@@ -374,6 +372,7 @@ model EquipmentRequest {
   @@index([practicalDate])
   @@map("equipment_requests")
 }
+
 
 model EquipmentItem {
   id                 Int               @id @default(autoincrement())

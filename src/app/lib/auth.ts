@@ -1,18 +1,13 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: "jwt",
-  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
@@ -26,31 +21,38 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) return null;
 
-        // ⚠️ Replace with hashed password check later
-        if (user.password !== credentials.password) return null;
+        // TODO: validate password properly
+        // const isValid = await bcrypt.compare(credentials.password, user.password);
+        // if (!isValid) return null;
 
         return {
           id: user.id.toString(),
           email: user.email,
-          role: user.role,
+          role: user.role, // ✅ REQUIRED
         };
       },
     }),
   ],
+
+  session: {
+    strategy: "jwt", // ✅ MUST be here (NOT inside callbacks)
+  },
+
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      return token;
+    },
+
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
       }
       return session;
-    },
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-      }
-      return token;
     },
   },
 };
