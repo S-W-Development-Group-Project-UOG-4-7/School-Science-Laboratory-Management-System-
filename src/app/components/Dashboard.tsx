@@ -29,13 +29,20 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { PracticalsPage } from "./PracticalsPage";
-import { InventoryPage } from "./InventoryPage";
+import { ViewInventoriesPage } from "./student/ViewInventoriesPage";
+
+// ... existing imports
+
+// ... inside Dashboard function ...
+
+
 import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
+import { InventoryPage } from "./InventoryPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import type { User } from "@/src/app/lib/types";
+import type { User } from "@src/app/lib/types";
 
 interface DashboardProps {
   user: User;
@@ -55,14 +62,14 @@ type Page =
 export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
   const router = useRouter();
   const [profileImageUrl, setProfileImageUrl] = useState<string>('');
-  
+
   // Initialize currentPage from initialView (URL) or localStorage
   const [currentPage, setCurrentPage] = useState<Page>(() => {
     // First priority: URL parameter
     if (initialView && isValidPage(initialView)) {
       return initialView as Page;
     }
-    
+
     // Second priority: localStorage
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('dashboard-view');
@@ -70,7 +77,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
         return saved as Page;
       }
     }
-    
+
     // Default: home
     return "home";
   });
@@ -84,10 +91,10 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
   // Handle page changes - save to both localStorage and URL
   const handlePageChange = (page: Page) => {
     setCurrentPage(page);
-    
+
     // Save to localStorage
     localStorage.setItem('dashboard-view', page);
-    
+
     // Update URL without page reload
     router.push(`/?view=${page}`, { scroll: false });
   };
@@ -138,7 +145,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
         id: "inventory" as Page,
         label: "Laboratory Inventory",
         icon: Package,
-        roles: ['teacher', 'lab-assistant', 'principal', 'admin'],
+        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
       },
       {
         id: "schedule" as Page,
@@ -229,11 +236,10 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
                 <motion.button
                   key={item.id}
                   onClick={() => handlePageChange(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    currentPage === item.id
-                      ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${currentPage === item.id
+                    ? "bg-white/20 text-white shadow-lg backdrop-blur-sm"
+                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -344,23 +350,27 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
             transition={{ duration: 0.3 }}
           >
             {currentPage === "home" && (
-              <HomePage 
+              <HomePage
                 userName={user.name}
-                userRole={user.role} 
+                userRole={user.role}
                 onNavigate={(page) => handlePageChange(page as Page)}
               />
             )}
             {currentPage === "practicals" && (
-              <PracticalsPage userRole={user.role} />
+              <PracticalsPage userRole={user.role} studentId={user.id} />
             )}
             {currentPage === "inventory" && (
-              <InventoryPage userRole={user.role} />
+              user.role === 'student' ? (
+                <ViewInventoriesPage />
+              ) : (
+                <InventoryPage userRole={user.role} />
+              )
             )}
             {currentPage === "schedule" && (
               <SchedulePage userRole={user.role} />
             )}
             {currentPage === "requests" && (
-              <InventoryRequestsPage 
+              <InventoryRequestsPage
                 userRole={user.role}
                 userId={user.id}
                 userName={user.name}
@@ -370,7 +380,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
               <UserManagementPage />
             )}
             {currentPage === "settings" && (
-              <SettingsPage 
+              <SettingsPage
                 user={user}
               />
             )}

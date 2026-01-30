@@ -17,7 +17,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, Users, FileText, AlertCircle } from 'lucide-react';
-import type { UserRole } from '@/src/app/lib/types';
+import type { UserRole } from "@src/app/lib/types";
 
 interface SchedulePageProps {
   userRole: UserRole;
@@ -131,13 +131,14 @@ const scheduledPracticals: ScheduledPractical[] = [
   },
 ];
 
+
 export function SchedulePage({ userRole }: SchedulePageProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 12)); // November 2025
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const canSchedule = userRole === 'teacher' || userRole === 'staff';
-
+ const canSchedule = (userRole as string) === 'teacher' || (userRole as string) === 'staff';
+ 
   // Calendar functions
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();

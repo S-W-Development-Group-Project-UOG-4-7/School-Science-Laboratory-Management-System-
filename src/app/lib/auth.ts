@@ -97,11 +97,27 @@ export async function deleteAuthCookie() {
 
 // Convert session payload to User object
 export function sessionToUser(session: SessionPayload): User {
+  // Normalize role to application format (lowercase, hyphenated for lab-assistant)
+  const roleMap: Record<string, User['role']> = {
+    STUDENT: 'student',
+    TEACHER: 'teacher',
+    LAB_ASSISTANT: 'lab-assistant',
+    PRINCIPAL: 'principal',
+    ADMIN: 'admin',
+    student: 'student',
+    teacher: 'teacher',
+    'lab-assistant': 'lab-assistant',
+    principal: 'principal',
+    admin: 'admin',
+  };
+
+  const normalizedRole = roleMap[session.role] || 'student';
+
   return {
     id: session.userId,
     email: session.email,
     name: session.name,
-    role: session.role as 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin',
+    role: normalizedRole,
     twoFactorEnabled: false, // This will be fetched from DB if needed
   };
 }

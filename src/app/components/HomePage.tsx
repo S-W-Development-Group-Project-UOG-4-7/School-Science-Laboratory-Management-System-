@@ -2,18 +2,18 @@
 
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { 
-  FlaskConical, 
-  Users, 
-  Calendar, 
-  Package, 
-  TrendingUp, 
+import {
+  FlaskConical,
+  Users,
+  Calendar,
+  Package,
+  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock
 } from 'lucide-react';
 import { Button } from './ui/button';
-import type { UserRole } from '@/src/app/lib/types';
+import type { UserRole } from '@src/app/lib/types';
 
 interface HomePageProps {
   userName: string;
@@ -74,9 +74,7 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
       case 'student':
         return [
           { label: 'Available Practicals', value: '12', icon: FlaskConical, color: 'blue' },
-          { label: 'Completed', value: '8', icon: CheckCircle, color: 'green' },
           { label: 'Upcoming Sessions', value: '3', icon: Calendar, color: 'yellow' },
-          { label: 'Video Lessons', value: '24', icon: TrendingUp, color: 'purple' },
         ];
       default:
         return [];
@@ -161,7 +159,7 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
       </motion.div>
 
       {/* Statistics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${userRole === 'student' ? 'lg:grid-cols-2' : 'lg:grid-cols-4'} gap-4`}>
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}

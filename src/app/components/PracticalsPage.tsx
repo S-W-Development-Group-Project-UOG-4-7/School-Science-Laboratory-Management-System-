@@ -18,10 +18,11 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from '@/src/app/lib/types';
+import type { UserRole } from '@src/app/lib/types';
 
 interface PracticalsPageProps {
   userRole: UserRole;
+  studentId?: string;
 }
 
 interface Practical {
@@ -76,7 +77,11 @@ const initialPracticals: Practical[] = [
   },
 ];
 
-export function PracticalsPage({ userRole }: PracticalsPageProps) {
+import { AttemptQuizButton } from './student/AttemptQuizButton';
+// import { ViewQuizzes } from './student/ViewQuizzes';
+// import { ViewQuizAttempts } from './student/ViewQuizAttempts';
+
+export function PracticalsPage({ userRole, studentId }: PracticalsPageProps) {
   const [practicals, setPracticals] = useState<Practical[]>(initialPracticals);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
@@ -86,7 +91,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [isVideoPlayerDialogOpen, setIsVideoPlayerDialogOpen] = useState(false);
   const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<string | null>(null);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
-  
+
   // Form states
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrlInput, setVideoUrlInput] = useState('');
@@ -156,7 +161,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const simulateUpload = () => {
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
@@ -185,12 +190,12 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
       if (data.success) {
         // Update local state with the embed URL
-        setPracticals(prev => prev.map(p => 
-          p.id === selectedPracticalForVideo 
+        setPracticals(prev => prev.map(p =>
+          p.id === selectedPracticalForVideo
             ? { ...p, videoUrl: data.videoUrl }
             : p
         ));
-        
+
         setVideoUrlInput('');
         setIsVideoUploadDialogOpen(false);
       } else {
@@ -226,7 +231,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
             </Badge>
           </div>
         </motion.div>
-        
+
         {canCreatePractical && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -310,7 +315,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
                   <div className="space-y-4 pt-4 border-t">
                     <h4 className="font-semibold text-gray-900">Upload Materials</h4>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
@@ -463,28 +468,33 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button 
-                        size="sm" 
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" 
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         disabled={!practical.videoUrl}
                         onClick={() => practical.videoUrl && handleWatchVideo(practical.videoUrl)}
                       >
                         <Play className="w-4 h-4 mr-2" />
                         Watch Video
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Lab Sheet
-                      </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                      
+                      <a href="/sample-lab-sheet.pdf" download="Lab_Sheet.pdf">
+                        <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                          <FileText className="w-4 h-4 mr-2" />
+                          Lab Sheet
+                        </Button>
+                      </a>
+
+                      {/* Student actions */}
+                      {userRole === 'student' && studentId && (
+                        <div className="flex items-center gap-2">
+                          <AttemptQuizButton studentId={studentId} practicalId={practical.id} />
+                        </div>
+                      )}
+
                       {canUploadVideo && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="border-purple-300 text-purple-700 hover:bg-purple-50"
                           onClick={() => handleVideoUpload(practical.id)}
                         >
@@ -599,7 +609,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                   <span className="text-gray-900 font-medium">{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
@@ -617,8 +627,8 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
               <Button variant="outline" onClick={() => setIsVideoUploadDialogOpen(false)} disabled={isUploading}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSubmitVideo} 
+              <Button
+                onClick={handleSubmitVideo}
                 className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
                 disabled={(!videoFile && !videoUrlInput) || isUploading}
               >

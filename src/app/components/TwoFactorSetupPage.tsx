@@ -17,7 +17,7 @@ import {
   Key
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User } from '@/src/app/lib/types';
+import type { User } from "@src/app/lib/types";
 
 interface TwoFactorSetupPageProps {
   user: User;
