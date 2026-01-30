@@ -22,6 +22,8 @@ export const practicalService = {
 
     const response = await fetch(`/api/practicals?${params.toString()}`, {
       cache: 'no-store',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
     });
 
     let result: any;
@@ -50,7 +52,8 @@ export const practicalService = {
   async create(data: CreatePracticalInput): Promise<Practical> {
     const response = await fetch('/api/practicals', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
 
@@ -76,7 +79,8 @@ export const practicalService = {
   try {
     const response = await fetch(`/api/practicals`, { // <-- fixed endpoint
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ id, ...data }),
     });
 
@@ -103,7 +107,7 @@ export const practicalService = {
 async delete(id: number): Promise<number> {
   try {
     const url = `/api/practicals?id=${id}`; // Correct endpoint
-    const response = await fetch(url, { method: 'DELETE' });
+    const response = await fetch(url, { method: 'DELETE', credentials: 'include', headers: { 'Accept': 'application/json' } });
 
     let result: any = {};
     const contentType = response.headers.get('content-type');

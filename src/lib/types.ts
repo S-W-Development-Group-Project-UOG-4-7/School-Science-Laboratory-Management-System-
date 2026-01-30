@@ -778,3 +778,17 @@ export interface PracticalFilters {
   grade?: string;
   teacherId?: number;
 }
+
+export interface SessionUser {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  role: string;
+  teacherId?: number;
+  labAssistantId?: number;
+}
+
+export interface AuthSession {
+  user: SessionUser;
+  expires: string;
+}

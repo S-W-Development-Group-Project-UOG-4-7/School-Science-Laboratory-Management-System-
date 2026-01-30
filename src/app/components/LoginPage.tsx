@@ -1,65 +1,39 @@
 'use client';
 
+import * as React from 'react';
 import { useState } from 'react';
-import * as React from 'react';;
+import { signIn } from 'next-auth/react';
+
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+
 import { FlaskConical, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { AuthUser } from '@/lib/types';
-
-interface LoginPageProps {
-  onLogin: (user: AuthUser) => void;
-}
-
-// Predefined credentials for different roles
-// In your LoginPage.tsx, update the CREDENTIALS object:
-const CREDENTIALS = {
-  // Admin
-  'admin@school.lk': { password: 'admin123', role: 'admin' as const, name: 'System Administrator', id: 1 },
-  
-  // Principal
-  'principal@school.lk': { password: 'principal123', role: 'principal' as const, name: 'Principal Silva', id: 2 },
-  
-  // Teachers - USE NUMERIC IDs
-  'teacher1@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mr. Perera', id: 1 },
-  'teacher2@school.lk': { password: 'teacher123', role: 'teacher' as const, name: 'Mrs. Fernando', id: 6 },
-
-  
-  // Lab Assistants
-  'labassist1@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Kumar', id: 9 },
-  'labassist2@school.lk': { password: 'labassist123', role: 'lab-assistant' as const, name: 'Lab Assistant Nimal', id: 4 },
-  
-  // Students
-  'student1@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Amal', id: 101 },
-  'student2@school.lk': { password: 'student123', role: 'student' as const, name: 'Student Sahan', id: 102 },
-};
 
 // DNA Helix Animation Component
 const DNAHelix = () => {
   const [rotation, setRotation] = React.useState(0);
   const [mounted, setMounted] = React.useState(false);
-  
+
   React.useEffect(() => {
     setMounted(true);
-    const animate = () => {
-      setRotation(prev => (prev + 0.5) % 360);
-    };
-    const interval = setInterval(animate, 30);
+    const interval = setInterval(() => {
+      setRotation((prev) => (prev + 0.5) % 360);
+    }, 30);
     return () => clearInterval(interval);
   }, []);
+
   // Don't render on server to avoid hydration mismatch
   if (!mounted) return null;
-  
+
   const numPoints = 50;
   const points = Array.from({ length: numPoints });
   const centerX = 250;
-  const centerY = 300;
-  const amplitude = 150; // Increased width
-  const verticalSpacing = 18; //increase height
-  
+  const amplitude = 150;
+  const verticalSpacing = 18;
+
   return (
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <svg viewBox="0 0 500 600" className="w-full h-full opacity-50">
@@ -73,25 +47,25 @@ const DNAHelix = () => {
             <stop offset="100%" stopColor="#d97706" />
           </radialGradient>
         </defs>
-        
+
         {points.map((_, i) => {
           const y = i * verticalSpacing;
           const angle = (i * 20 + rotation) * (Math.PI / 180);
-          
+
           const blueX = centerX + Math.sin(angle) * amplitude;
           const blueZ = Math.cos(angle);
-          
+
           const yellowX = centerX - Math.sin(angle) * amplitude;
           const yellowZ = -Math.cos(angle);
-          
+
           const blueOpacity = blueZ > 0 ? 0.9 : 0.3;
           const yellowOpacity = yellowZ > 0 ? 0.9 : 0.3;
-          
+
           const blueSize = blueZ > 0 ? 8 : 5;
           const yellowSize = yellowZ > 0 ? 8 : 5;
-          
+
           const showBar = Math.abs(blueX - yellowX) < amplitude * 0.5;
-          
+
           return (
             <g key={i}>
               {showBar && (
@@ -105,26 +79,13 @@ const DNAHelix = () => {
                   opacity="0.5"
                 />
               )}
-              
-              <circle
-                cx={blueX}
-                cy={y}
-                r={blueSize}
-                fill="url(#blueGrad)"
-                opacity={blueOpacity}
-              />
-              
-              <circle
-                cx={yellowX}
-                cy={y}
-                r={yellowSize}
-                fill="url(#yellowGrad)"
-                opacity={yellowOpacity}
-              />
+
+              <circle cx={blueX} cy={y} r={blueSize} fill="url(#blueGrad)" opacity={blueOpacity} />
+              <circle cx={yellowX} cy={y} r={yellowSize} fill="url(#yellowGrad)" opacity={yellowOpacity} />
             </g>
           );
         })}
-        
+
         <text x="430" y="580" fill="#94a3b8" fontSize="14" fontWeight="bold">
           DNA
         </text>
@@ -133,19 +94,22 @@ const DNAHelix = () => {
   );
 };
 
-
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [step, setStep] = useState<'login' | '2fa'>('login');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
     // Simulate login API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     setIsLoading(false);
     setStep('2fa');
   };
@@ -170,66 +134,53 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
   };
 
+  // ✅ IMPORTANT: this is the REAL NextAuth login (creates cookie/session)
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate OTP verification
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    
-    // Mock login - determine role from email
-    const credentials = CREDENTIALS[email as keyof typeof CREDENTIALS];;
-    if (credentials && credentials.password === password) {
-  // Store teacherId in localStorage ONLY if role is teacher
-  if (credentials.role === 'teacher') {
-    localStorage.setItem('teacherId', credentials.id.toString());
-  }
 
-      onLogin({
-        name: credentials.name,
-        role: credentials.role,
-        email,
-        id: credentials.id.toString(),
-      });
+    // Simulate OTP verification
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const otpCode = otp.join('');
+    if (otpCode.length !== 6) {
+      setIsLoading(false);
+      alert('Enter valid OTP');
+      return;
+    }
+
+    const res = await signIn('credentials', {
+      redirect: false,
+      email,
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (res?.ok) {
+      // After this, /api/auth/session should return user + role + teacherId
+      window.location.href = '/';
     } else {
-      alert('Invalid OTP or credentials');
+      alert('Invalid email/password');
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50/30 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* DNA Helix Animation */}
       <DNAHelix />
-      
-      {/* Animated Background Elements */}
+
       <motion.div
         className="absolute top-20 left-10 w-72 h-72 bg-blue-200/30 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
         className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-200/30 rounded-full blur-3xl"
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1,
-        }}
+        animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
       />
 
       <div className="w-full max-w-md relative z-10">
-        {/* Header */}
         <motion.div
           className="text-center mb-8"
           initial={{ opacity: 0, y: -20 }}
@@ -239,36 +190,21 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <motion.div
             className="flex justify-center mb-4"
             whileHover={{ scale: 1.05, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 300 }}
+            transition={{ type: 'spring', stiffness: 300 }}
           >
             <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-4 rounded-full shadow-lg">
               <FlaskConical className="w-12 h-12 text-white" />
             </div>
           </motion.div>
-          <motion.h1
-            className="text-blue-900 mb-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <motion.h1 className="text-blue-900 mb-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
             Science Lab Management System
           </motion.h1>
-          <motion.p
-            className="text-gray-600"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
+          <motion.p className="text-gray-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
             School Laboratory Portal
           </motion.p>
         </motion.div>
 
-        {/* Login Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
           <Card className="shadow-2xl border-0 backdrop-blur-sm bg-white/90">
             <CardHeader className="space-y-1">
               <CardTitle className="flex items-center gap-2">
@@ -281,15 +217,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   : 'Enter the 6-digit code sent to your registered device'}
               </CardDescription>
             </CardHeader>
+
             <CardContent>
               {step === 'login' ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <motion.div
-                    className="space-y-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
+                  <motion.div className="space-y-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
@@ -302,12 +234,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     />
                   </motion.div>
 
-                  <motion.div
-                    className="space-y-2"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
+                  <motion.div className="space-y-2" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
                     <Label htmlFor="password">Password</Label>
                     <Input
                       id="password"
@@ -320,11 +247,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     />
                   </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl group"
@@ -334,7 +257,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                         <motion.div
                           className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         />
                       ) : (
                         <>
@@ -353,19 +276,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 </form>
               ) : (
                 <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <motion.div
-                    className="flex justify-center gap-2"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
+                  <motion.div className="flex justify-center gap-2" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
                     {otp.map((digit, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                      >
+                      <motion.div key={index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * index }}>
                         <Input
                           id={`otp-${index}`}
                           type="text"
@@ -380,21 +293,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     ))}
                   </motion.div>
 
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                  >
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
                     <Button
                       type="submit"
                       className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl"
-                      disabled={isLoading || otp.some(d => !d)}
+                      disabled={isLoading || otp.some((d) => !d)}
                     >
                       {isLoading ? (
                         <motion.div
                           className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                           animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                         />
                       ) : (
                         'Verify & Sign In'
@@ -404,14 +313,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
                   <div className="text-center space-y-2">
                     <p className="text-sm text-gray-600">Didn't receive the code?</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => {
-                        // Resend OTP logic
-                      }}
-                    >
+                    <Button type="button" variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
                       Resend Code
                     </Button>
                   </div>
@@ -421,35 +323,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </Card>
         </motion.div>
 
-        {/* Footer */}
-        <motion.div
-          className="mt-6 text-center text-sm text-gray-600"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-        >
+        <motion.div className="mt-6 text-center text-sm text-gray-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
           <p>Secure access for authorized school personnel only</p>
-        </motion.div>
-
-        {/* Test Credentials Info */}
-        <motion.div
-          className="mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-        >
-          <Card className="bg-blue-50/50 border-blue-200">
-            <CardContent className="pt-4">
-              <p className="text-xs text-gray-700 mb-2">Demo Credentials:</p>
-              <div className="space-y-1 text-xs text-gray-600">
-                <p><span className="font-semibold text-blue-700">Admin:</span> admin@school.lk / admin123</p>
-                <p><span className="font-semibold text-blue-700">Principal:</span> principal@school.lk / principal123</p>
-                <p><span className="font-semibold text-green-700">Teacher:</span> teacher1@school.lk / teacher123</p>
-                <p><span className="font-semibold text-yellow-700">Lab Assistant:</span> labassist1@school.lk / labassist123</p>
-                <p><span className="font-semibold text-gray-700">Student:</span> student1@school.lk / student123</p>
-              </div>
-            </CardContent>
-          </Card>
         </motion.div>
       </div>
     </div>

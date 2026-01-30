@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Added React import
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -36,9 +36,12 @@ import {
   UserCircle, Building, CalendarDays, BookOpen, School, MapPin, ClipboardList,
   ChevronRight, Search, Zap, Layers, MoreVertical, CalendarCheck, CalendarX,
   CheckSquare, Package, PackageCheck, PackageX, PackageSearch, User, Bell,
-  Shield, ShieldCheck, ShieldAlert, Briefcase, TestTube
+  Shield, ShieldCheck, ShieldAlert, Briefcase, TestTube, RefreshCw
 } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
+import { useSession } from 'next-auth/react';
+
+
 
 // Types based on Prisma schema
 enum EquipmentCategory {
@@ -367,6 +370,54 @@ interface Toast {
   type: 'success' | 'error' | 'info' | 'warning';
 }
 
+// Error Boundary Component - Fixed with proper React import
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="p-8 bg-red-50 border border-red-200 rounded-lg">
+          <h2 className="text-xl font-bold text-red-800 mb-2">Something went wrong</h2>
+          <p className="text-red-600 mb-4">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Main Component
 export function SchedulePage({ 
   userRole, 
   userId, 
@@ -387,54 +438,62 @@ export function SchedulePage({
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [equipmentQuantity, setEquipmentQuantity] = useState(1);
   const [isCreatingRequest, setIsCreatingRequest] = useState(false);
-  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState<string>('all');
+  const [selectedEquipmentCategory, setSelectedEquipmentCategory] = useState<'all' | EquipmentCategory>('all');
   const [equipmentSearch, setEquipmentSearch] = useState('');
-  const [activeRequestTab, setActiveRequestTab] = useState<string>('all');
+  const [activeRequestTab, setActiveRequestTab] = useState<'all' | RequestStatus>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [sessionValid, setSessionValid] = useState<boolean>(false);
   const [userTeacherId, setUserTeacherId] = useState<number>(0);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const { data: session, status } = useSession();
 
-  // Calculate currentTeacherId - FIXED VERSION
+  // Normalize role from props or session and compute flags
+  const normalizedRole = useMemo(() => {
+    const rawRole = (userRole as unknown as string) || (session as any)?.user?.role || '';
+    const lower = String(rawRole).toLowerCase();
+
+    if (lower.includes('teacher')) return 'teacher';
+    if (lower.includes('lab') && (lower.includes('assistant') || lower.includes('lab-assistant') || lower.includes('lab_assistant'))) return 'lab_assistant';
+    if (lower.includes('admin')) return 'admin';
+    return lower;
+  }, [userRole, session]);
+
+  const isTeacher = normalizedRole === 'teacher';
+  const isLabAssistant = normalizedRole === 'lab_assistant';
+  const isAdmin = normalizedRole === 'admin';
+  const canSchedule = isTeacher || isLabAssistant || isAdmin;
+
+  // Stable toast helper (defined before effects that use it)
+  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+    const id = Date.now().toString();
+    const newToast: Toast = { id, message, type };
+    setToasts(prev => [...prev, newToast]);
+
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 3000);
+  }, []);
+
+  // session-derived ids
+  const sessionLabAssistantId = useMemo(() => Number((session as any)?.user?.labAssistantId) || 0, [session]);
+
+  // Calculate currentTeacherId - priority: prop -> state -> session
   const currentTeacherId = useMemo(() => {
-    console.log('🔍 Calculating teacher ID:', { 
-      teacherId, 
-      userId, 
-      userRole,
-      userTeacherId 
-    });
-    
-    // Priority 1: Direct teacherId prop
-    if (teacherId !== undefined && teacherId !== null) {
-      const id = Number(teacherId);
-      if (!isNaN(id) && id > 0) {
-        console.log('✅ Using teacherId from props:', id);
-        return id;
-      }
-    }
-    
-    // Priority 2: UserTeacherId from session
-    if (userTeacherId && userTeacherId > 0) {
-      console.log('✅ Using userTeacherId from session:', userTeacherId);
-      return userTeacherId;
-    }
-    
-    // Priority 3: If user is a teacher and has userId
-    if (userRole === 'teacher' && userId) {
-      const id = Number(userId);
-      if (!isNaN(id) && id > 0) {
-        console.log('⚠️ Using userId as fallback (might not match teacher.id):', id);
-        return id;
-      }
-    }
-    
-    console.log('❌ No valid teacher ID found');
-    return 0;
-  }, [teacherId, userId, userRole, userTeacherId]);
+    // 1) teacherId prop from parent
+    const propId = Number(teacherId);
+    if (!Number.isNaN(propId) && propId > 0) return propId;
 
-  // Check permissions
-  const canSchedule = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
-  const isTeacher = userRole === 'teacher';
-  const isLabAssistant = userRole === 'lab-assistant';
+    // 2) teacherId fetched and stored in state (from /api/teacher/me)
+    const stateId = Number(userTeacherId);
+    if (!Number.isNaN(stateId) && stateId > 0) return stateId;
+
+    // 3) teacherId coming from next-auth session
+    const sessionId = Number((session as any)?.user?.teacherId);
+    if (!Number.isNaN(sessionId) && sessionId > 0) return sessionId;
+
+    return 0;
+  }, [teacherId, userTeacherId, session]);
 
   // Initialize form data
   const [formData, setFormData] = useState({
@@ -474,6 +533,29 @@ export function SchedulePage({
   const days: DayType[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const periods = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
+  // Add global error handlers
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleGlobalError = (event: ErrorEvent) => {
+        console.error('Global error caught:', event.error);
+        addToast('An unexpected error occurred. Please refresh the page.', 'error');
+      };
+
+      const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        addToast('A network error occurred. Please try again.', 'error');
+      };
+
+      window.addEventListener('error', handleGlobalError);
+      window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+      return () => {
+        window.removeEventListener('error', handleGlobalError);
+        window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      };
+    }
+  }, [addToast]);
+
   // Check session validity on mount
   useEffect(() => {
     const validateSession = async () => {
@@ -482,26 +564,54 @@ export function SchedulePage({
       try {
         console.log('🔍 Validating teacher session...');
         
-        // First, try to get teacher info from API
-        const response = await fetch('/api/auth/teacher-info', {
-          credentials: 'include'
-        });
+        // Try multiple endpoints if needed
+        const endpoints = [
+          '/api/auth/teacher-info',
+          '/api/auth/session',
+          '/api/teacher/me'
+        ];
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Teacher info from API:', data);
-          
-          if (data.teacherId) {
-            setUserTeacherId(data.teacherId);
-            setSessionValid(true);
-            console.log('✅ Session validated, teacherId:', data.teacherId);
-          } else {
-            console.warn('⚠️ API returned no teacherId');
-            setSessionValid(false);
+        let teacherData = null;
+        
+        for (const endpoint of endpoints) {
+          try {
+            const response = await fetch(endpoint, {
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`✅ ${endpoint} response:`, data);
+              
+              if (data.teacherId) {
+                teacherData = data;
+                break;
+              }
+            }
+          } catch (error) {
+            console.log(`⚠️ ${endpoint} failed:`, error);
           }
+        }
+        
+        if (teacherData?.teacherId) {
+          setUserTeacherId(teacherData.teacherId);
+          setSessionValid(true);
+          console.log('✅ Session validated, teacherId:', teacherData.teacherId);
         } else {
-          console.warn('⚠️ Failed to fetch teacher info:', response.status);
-          setSessionValid(false);
+          // Fallback: Check if we have teacherId from props
+          console.log('⚠️ No teacher ID from API, checking props...');
+          if (teacherId && teacherId > 0) {
+            setUserTeacherId(Number(teacherId));
+            setSessionValid(true);
+            console.log('✅ Using teacherId from props:', teacherId);
+          } else {
+            console.warn('❌ No valid teacher ID found');
+            setSessionValid(false);
+            addToast('Teacher session not found. Please log in again.', 'error');
+          }
         }
       } catch (error) {
         console.error('❌ Error validating session:', error);
@@ -511,84 +621,158 @@ export function SchedulePage({
     };
     
     validateSession();
-  }, [isTeacher]);
+  }, [isTeacher, teacherId, addToast]);
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
-      try {
-        console.log('📦 Fetching initial data...');
+  // Fetch initial data with improved error handling
+  const fetchInitialData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      console.log('📦 Fetching initial data...');
+      
+      // Create URLs with proper encoding
+      let scheduleUrl = '/api/schedules';
+      let requestUrl = '/api/equipment-requests';
+      
+      const params = new URLSearchParams();
+      
+      if (isTeacher && currentTeacherId > 0) {
+        params.append('teacherId', currentTeacherId.toString());
+      } else if (isLabAssistant && sessionLabAssistantId > 0) {
+        // Lab assistants should be filtered by their labAssistantId (from session), not teacherId
+        params.append('labAssistantId', sessionLabAssistantId.toString());
+      } // admins fetch without filters
+      
+      
+      if (params.toString()) {
+        scheduleUrl += `?${params.toString()}`;
+        requestUrl += `?${params.toString()}`;
+      }
+      
+      console.log('📅 Fetching schedules from:', scheduleUrl);
+      console.log('📦 Fetching equipment requests from:', requestUrl);
+      
+      // Fetch all data in parallel with timeout
+      const [scheduleResponse, requestResponse, assistantsResponse] = await Promise.all([
+        fetch(scheduleUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        }).catch(err => {
+          console.error('❌ Schedule fetch failed:', err);
+          return { ok: false, status: 500, json: async () => ({ success: false, schedules: [] }) };
+        }),
         
-        // Fetch practical schedules
-        let scheduleUrl = '/api/schedules';
-        if (isTeacher && currentTeacherId > 0) {
-          scheduleUrl += `?teacherId=${currentTeacherId}`;
-        }
+        fetch(requestUrl, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        }).catch(err => {
+          console.error('❌ Request fetch failed:', err);
+          return { ok: false, status: 500, json: async () => ({ success: false, requests: [] }) };
+        }),
         
-        console.log('📅 Fetching schedules from:', scheduleUrl);
-        const scheduleResponse = await fetch(scheduleUrl, {
-          credentials: 'include'
-        });
-        
-        if (scheduleResponse.ok) {
+        fetch('/api/lab-assistants', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        }).catch(err => {
+          console.error('❌ Assistants fetch failed:', err);
+          return { ok: false, status: 500, json: async () => ({ success: false, assistants: [] }) };
+        })
+      ]);
+      
+      // Handle schedule response
+      if (scheduleResponse.ok) {
+        try {
           const data = await scheduleResponse.json();
           console.log('✅ Schedules fetched:', data.schedules?.length || data.length || 0);
           setPracticalSchedules(data.schedules || data || []);
-        } else {
-          console.error('❌ Failed to fetch schedules:', scheduleResponse.status);
+        } catch (parseError) {
+          console.error('❌ Failed to parse schedule response:', parseError);
+          setPracticalSchedules([]);
         }
-
-        // Fetch equipment requests
-        let requestUrl = '/api/equipment-requests';
-        if (isTeacher && currentTeacherId > 0) {
-          requestUrl += `?teacherId=${currentTeacherId}`;
-        } else if (isLabAssistant && currentTeacherId > 0) {
-          requestUrl += `?labAssistantId=${currentTeacherId}`;
-        }
-
-        console.log('📦 Fetching equipment requests from:', requestUrl);
-        const requestResponse = await fetch(requestUrl, {
-          credentials: 'include'
-        });
-        
-        if (requestResponse.ok) {
+      } else {
+        console.warn('⚠️ Schedule fetch returned:', scheduleResponse.status);
+        setPracticalSchedules([]);
+      }
+      
+      // Handle request response
+      if (requestResponse.ok) {
+        try {
           const data = await requestResponse.json();
           console.log('✅ Equipment requests fetched:', data.requests?.length || data.length || 0);
           setEquipmentRequests(data.requests || data || []);
-        } else {
-          console.error('❌ Failed to fetch equipment requests:', requestResponse.status);
+        } catch (parseError) {
+          console.error('❌ Failed to parse request response:', parseError);
+          setEquipmentRequests([]);
         }
-
-        // Fetch lab assistants
-        console.log('👨‍🔬 Fetching lab assistants...');
-        const assistantsResponse = await fetch('/api/lab-assistants', {
-          credentials: 'include'
-        });
-        
-        if (assistantsResponse.ok) {
+      } else {
+        console.warn('⚠️ Request fetch returned:', requestResponse.status);
+        setEquipmentRequests([]);
+      }
+      
+      // Handle assistants response
+      if (assistantsResponse.ok) {
+        try {
           const data = await assistantsResponse.json();
           console.log('✅ Lab assistants fetched:', data.assistants?.length || data.length || 0);
           setLabAssistants(data.assistants || data || []);
-        } else {
-          console.error('❌ Failed to fetch lab assistants:', assistantsResponse.status);
+        } catch (parseError) {
+          console.error('❌ Failed to parse assistants response:', parseError);
+          setLabAssistants([]);
         }
-        
-        console.log('✅ All initial data loaded');
-      } catch (error) {
-        console.error('❌ Error fetching initial data:', error);
-        addToast('Failed to load data', 'error');
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.warn('⚠️ Assistants fetch returned:', assistantsResponse.status);
+        setLabAssistants([]);
       }
-    };
+      
+      console.log('✅ All initial data loaded');
+      setHasError(false);
+      
+    } catch (error: any) {
+      console.error('❌ Error fetching initial data:', error);
+      addToast('Failed to load data. Please refresh the page.', 'error');
+      setHasError(true);
+      // Ensure empty arrays on error
+      setPracticalSchedules([]);
+      setEquipmentRequests([]);
+      setLabAssistants([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isTeacher, isLabAssistant, currentTeacherId, sessionLabAssistantId, addToast]);
 
-    if (isTeacher || isLabAssistant || userRole === 'admin') {
-      fetchInitialData();
+  // Update the useEffect that calls fetchInitialData
+  useEffect(() => {
+    // Wait until NextAuth status is resolved
+    if (status === 'loading') {
+      setIsLoading(true);
+      return;
+    }
+
+    if (status !== 'authenticated') {
+      // Do not call protected endpoints if unauthenticated
+      setIsLoading(false);
+      return;
+    }
+
+    if (isTeacher || isLabAssistant || isAdmin) {
+      // Add a small delay to ensure session-derived ids are available
+      const timer = setTimeout(() => {
+        fetchInitialData();
+      }, 300);
+
+      return () => clearTimeout(timer);
     } else {
       setIsLoading(false);
     }
-  }, [userRole, currentTeacherId, isTeacher, isLabAssistant]);
+  }, [status, isTeacher, isLabAssistant, isAdmin, currentTeacherId, fetchInitialData]);
 
   // Helper functions
   const getSubjectOptions = (grade: string): SubjectType[] => {
@@ -616,15 +800,7 @@ export function SchedulePage({
     return '';
   };
 
-  const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
-    const id = Date.now().toString();
-    const newToast = { id, message, type };
-    setToasts(prev => [...prev, newToast]);
-    
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 3000);
-  };
+
 
   const getSubjectColor = (subject: string) => {
     switch (subject) {
@@ -677,13 +853,17 @@ export function SchedulePage({
 
   // Format date for display
   const formatDisplayDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      weekday: 'short'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        weekday: 'short'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   // Handle card click
@@ -871,10 +1051,11 @@ export function SchedulePage({
     }
     
     if (equipmentSearch) {
+      const q = equipmentSearch.toLowerCase();
       filtered = filtered.filter(item => 
-        item.name.toLowerCase().includes(equipmentSearch.toLowerCase()) ||
-        item.category.toLowerCase().includes(equipmentSearch.toLowerCase()) ||
-        item.subject.toLowerCase().includes(equipmentSearch.toLowerCase())
+        item.name.toLowerCase().includes(q) ||
+        String(item.category).toLowerCase().includes(q) ||
+        item.subject.toLowerCase().includes(q)
       );
     }
     
@@ -904,18 +1085,18 @@ export function SchedulePage({
   };
 
   // THE FIXED SCHEDULE FUNCTION
-  const handleScheduleOnly = async () => {
+  const handleScheduleOnly = async (): Promise<PracticalSchedule | null> => {
     console.log('🚀 handleScheduleOnly called');
     
     // Validation
     if (!formData.title || !formData.date || !formData.period || !formData.subject || !formData.grade || !formData.className) {
       addToast('Please fill in all schedule fields', 'error');
-      return;
+      return null;
     }
 
     if (isTeacher && !sessionValid) {
       addToast('Invalid teacher session. Please log in again.', 'error');
-      return;
+      return null;
     }
 
     setIsCreatingRequest(true);
@@ -946,6 +1127,7 @@ export function SchedulePage({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify(schedulePayload),
@@ -983,7 +1165,7 @@ export function SchedulePage({
       const scheduleData = JSON.parse(responseText);
       console.log('✅ Schedule created successfully:', scheduleData);
       
-      const createdSchedule = scheduleData.schedule || scheduleData;
+      const createdSchedule: PracticalSchedule = scheduleData.schedule || scheduleData;
       
       // Update local state
       setPracticalSchedules(prev => [createdSchedule, ...prev]);
@@ -994,66 +1176,72 @@ export function SchedulePage({
       
       // Reset form
       resetForm();
+
+      return createdSchedule;
     } catch (error: any) {
       console.error('❌ Error creating schedule:', error);
       addToast(error.message || 'Failed to create schedule. Please try again.', 'error');
+      return null;
     } finally {
       setIsCreatingRequest(false);
     }
   };
 
   const handleSubmitAll = async () => {
-    // First create the schedule
-    await handleScheduleOnly();
-    
-    // If schedule created successfully and we have equipment items
-    if (formData.equipmentItems.length > 0 && formData.labAssistantId) {
-      // Wait a moment for the schedule to be created
-      setTimeout(async () => {
-        try {
-          // Find the latest schedule (the one we just created)
-          const latestSchedule = practicalSchedules[0];
-          
-          const requestPayload = {
-            teacherId: currentTeacherId,
-            labAssistantId: Number(formData.labAssistantId),
-            practicalScheduleId: latestSchedule?.id,
-            className: formData.className,
-            grade: formData.grade,
-            subject: formData.subject,
-            practicalDate: new Date(formData.date).toISOString(),
-            practicalTime: formData.practicalTime,
-            additionalNotes: formData.additionalNotes || '',
-            status: RequestStatus.PENDING,
-            equipmentItems: formData.equipmentItems.map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              category: item.category,
-            })),
-          };
+    // First create the schedule and get the created schedule
+    const created = await handleScheduleOnly();
+    if (!created) return;
 
-          console.log('Creating equipment request:', requestPayload);
+    // If schedule created successfully and we have equipment items and a selected lab assistant
+    if (formData.equipmentItems.length > 0 && Number(formData.labAssistantId) > 0) {
+      try {
+        const practicalTime = getTimeForPeriod(created.period || formData.period);
 
-          const requestResponse = await fetch('/api/equipment-requests', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(requestPayload),
-          });
+        const requestPayload: any = {
+          labAssistantId: Number(formData.labAssistantId),
+          practicalScheduleId: created.id,
+          className: formData.className,
+          grade: formData.grade,
+          subject: formData.subject,
+          practicalDate: new Date(formData.date).toISOString(),
+          practicalTime,
+          additionalNotes: formData.additionalNotes || '',
+          status: RequestStatus.PENDING,
+          equipmentItems: formData.equipmentItems.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            category: item.category,
+          })),
+        };
 
-          if (requestResponse.ok) {
-            const requestData = await requestResponse.json();
-            const createdRequest = requestData.request || requestData;
-            setEquipmentRequests(prev => [createdRequest, ...prev]);
-            addToast('Equipment request submitted successfully!', 'success');
-          } else {
-            addToast('Schedule created but equipment request failed', 'warning');
-          }
-        } catch (error) {
-          console.error('Error creating equipment request:', error);
-          addToast('Equipment request failed', 'error');
+        // Include teacherId only if we have a reliable teacher id (some APIs derive teacher from session)
+        if (currentTeacherId > 0) {
+          requestPayload.teacherId = currentTeacherId;
         }
-      }, 1000);
+
+        console.log('Creating equipment request:', requestPayload);
+
+        const requestResponse = await fetch('/api/equipment-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(requestPayload),
+        });
+
+        if (requestResponse.ok) {
+          const requestData = await requestResponse.json();
+          const createdRequest = requestData.request || requestData;
+          setEquipmentRequests(prev => [createdRequest, ...prev]);
+          addToast('Equipment request submitted successfully!', 'success');
+        } else {
+          const text = await requestResponse.text().catch(() => '');
+          console.warn('Equipment request failed:', requestResponse.status, text);
+          addToast('Schedule created but equipment request failed', 'warning');
+        }
+      } catch (error: any) {
+        console.error('Error creating equipment request:', error);
+        addToast(error?.message || 'Equipment request failed', 'error');
+      }
     }
   };
 
@@ -1113,6 +1301,7 @@ export function SchedulePage({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -1122,13 +1311,26 @@ export function SchedulePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update schedule');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to update schedule';
+        try {
+          const parsed = JSON.parse(text);
+          msg = parsed.error || msg;
+        } catch (e) {}
+        throw new Error(msg);
       }
 
-      const updatedSchedule = await response.json();
-      
+      let updatedResp: any = {};
+      try {
+        updatedResp = await response.json();
+      } catch (e) {
+        updatedResp = {};
+      }
+
+      const updated = updatedResp.schedule || updatedResp;
+
       setPracticalSchedules(prev => prev.map(s => 
-        s.id === editFormData.id ? updatedSchedule.schedule : s
+        s.id === updated.id ? updated : s
       ));
 
       addToast('Schedule updated successfully!', 'success');
@@ -1146,6 +1348,7 @@ export function SchedulePage({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -1154,7 +1357,10 @@ export function SchedulePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to cancel schedule');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to cancel schedule';
+        try { msg = JSON.parse(text).error || msg; } catch (e) {}
+        throw new Error(msg);
       }
 
       setPracticalSchedules(prev => prev.map(s => 
@@ -1174,6 +1380,7 @@ export function SchedulePage({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -1182,7 +1389,10 @@ export function SchedulePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to complete schedule');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to complete schedule';
+        try { msg = JSON.parse(text).error || msg; } catch (e) {}
+        throw new Error(msg);
       }
 
       setPracticalSchedules(prev => prev.map(s => 
@@ -1200,11 +1410,15 @@ export function SchedulePage({
     try {
       const response = await fetch(`/api/schedules/${scheduleId}`, {
         method: 'DELETE',
+        headers: { 'Accept': 'application/json' },
         credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete schedule');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to delete schedule';
+        try { msg = JSON.parse(text).error || msg; } catch (e) {}
+        throw new Error(msg);
       }
 
       setPracticalSchedules(prev => prev.filter(s => s.id !== scheduleId));
@@ -1223,6 +1437,7 @@ export function SchedulePage({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -1233,13 +1448,18 @@ export function SchedulePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to approve request');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to approve request';
+        try { msg = JSON.parse(text).error || msg; } catch (e) {}
+        throw new Error(msg);
       }
 
-      const updatedRequest = await response.json();
-      
+      let updatedResp: any = {};
+      try { updatedResp = await response.json(); } catch (e) { updatedResp = {}; }
+      const updated = updatedResp.request || updatedResp;
+
       setEquipmentRequests(prev => prev.map(req => 
-        req.id === requestId ? updatedRequest.request : req
+        req.id === updated.id ? updated : req
       ));
       
       addToast('Request approved successfully!', 'success');
@@ -1255,6 +1475,7 @@ export function SchedulePage({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -1265,13 +1486,18 @@ export function SchedulePage({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to reject request');
+        const text = await response.text().catch(() => '');
+        let msg = 'Failed to reject request';
+        try { msg = JSON.parse(text).error || msg; } catch (e) {}
+        throw new Error(msg);
       }
 
-      const updatedRequest = await response.json();
-      
+      let updatedResp: any = {};
+      try { updatedResp = await response.json(); } catch (e) { updatedResp = {}; }
+      const updated = updatedResp.request || updatedResp;
+
       setEquipmentRequests(prev => prev.map(req => 
-        req.id === requestId ? updatedRequest.request : req
+        req.id === updated.id ? updated : req
       ));
       
       addToast('Request rejected', 'info');
@@ -1306,6 +1532,52 @@ export function SchedulePage({
     setSelectedEquipmentCategory('all');
     setEquipmentSearch('');
   };
+
+  // Handle retry
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    fetchInitialData();
+  };
+
+  // Show error state
+  if (hasError && retryCount > 2) {
+    return (
+      <div className="max-w-4xl mx-auto p-8">
+        <Card className="shadow-lg">
+          <CardHeader className="bg-red-50 border-red-200">
+            <CardTitle className="text-red-800 flex items-center gap-2">
+              <AlertCircle className="w-6 h-6" />
+              Schedule System Error
+            </CardTitle>
+            <CardDescription>
+              The schedule system encountered an error. Please try the following:
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <ol className="list-decimal pl-5 space-y-2 mb-6">
+              <li>Refresh the page (Ctrl + R or Cmd + R)</li>
+              <li>Clear your browser cache and cookies</li>
+              <li>Log out and log back in</li>
+              <li>Contact support if the issue persists</li>
+            </ol>
+            <div className="flex gap-3">
+              <Button onClick={() => window.location.reload()}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Page
+              </Button>
+              <Button variant="outline" onClick={() => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.reload();
+              }}>
+                Clear Cache & Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -1368,7 +1640,7 @@ export function SchedulePage({
               <UserCircle className="w-4 h-4" />
               <span className="font-medium">{userName}</span>
               <Badge variant="outline" className="ml-2">
-                {userRole}
+                {normalizedRole}
               </Badge>
             </div>
             {isTeacher && (
@@ -1390,23 +1662,68 @@ export function SchedulePage({
             )}
           </div>
         </div>
-        {canSchedule && (
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700" 
-            onClick={() => {
-              if (isTeacher && !sessionValid) {
-                addToast('Please log in as a teacher to schedule practicals', 'error');
-                return;
-              }
-              setIsDialogOpen(true);
-            }}
-            disabled={isTeacher && !sessionValid}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Schedule Practical
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasError && (
+            <Button 
+              variant="outline" 
+              onClick={handleRetry}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry
+            </Button>
+          )}
+          {canSchedule && (
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700" 
+              onClick={() => {
+                if (isTeacher && !sessionValid) {
+                  addToast('Please log in as a teacher to schedule practicals', 'error');
+                  return;
+                }
+                setIsDialogOpen(true);
+              }}
+              disabled={isTeacher && !sessionValid}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Schedule Practical
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Debug Panel */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
+          <h4 className="font-bold mb-2 text-sm">Debug Session Info</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+            <div><span className="font-semibold">User Role:</span> {userRole}</div>
+            <div><span className="font-semibold">User ID:</span> {userId}</div>
+            <div><span className="font-semibold">Teacher ID Prop:</span> {teacherId}</div>
+            <div><span className="font-semibold">Current Teacher ID:</span> {currentTeacherId}</div>
+            <div><span className="font-semibold">Session Valid:</span> {sessionValid ? '✅ Yes' : '❌ No'}</div>
+            <div><span className="font-semibold">User Teacher ID:</span> {userTeacherId}</div>
+            <div><span className="font-semibold">Can Schedule:</span> {canSchedule ? 'Yes' : 'No'}</div>
+            <div><span className="font-semibold">Is Teacher:</span> {isTeacher ? 'Yes' : 'No'}</div>
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => {
+              fetch('/api/auth/teacher-info', { credentials: 'include' })
+                .then(r => r.json())
+                .then(data => {
+                  console.log('Manual session check:', data);
+                  addToast(`Session check: ${data.success ? 'Valid' : 'Invalid'}`, 
+                          data.success ? 'success' : 'error');
+                });
+            }}
+            className="mt-2"
+          >
+            Check Session Manually
+          </Button>
+        </div>
+      )}
 
       {/* Timetable Display - Only show for teachers */}
       {isTeacher && (
@@ -1486,9 +1803,16 @@ export function SchedulePage({
           <h3 className="text-xl font-bold text-gray-900">
             {isTeacher ? 'My Scheduled Practicals' : 'All Scheduled Practicals'}
           </h3>
-          <Badge variant="outline">
-            {practicalSchedules.length} Total
-          </Badge>
+          <div className="flex items-center gap-2">
+            {hasError && (
+              <Badge variant="destructive" className="animate-pulse">
+                Connection Error
+              </Badge>
+            )}
+            <Badge variant="outline">
+              {practicalSchedules.length} Total
+            </Badge>
+          </div>
         </div>
 
         {practicalSchedules.length === 0 ? (
@@ -1631,7 +1955,7 @@ export function SchedulePage({
         </CardHeader>
         <CardContent className="p-4 md:p-6">
           {/* Request Tabs */}
-          <Tabs value={activeRequestTab} onValueChange={setActiveRequestTab} className="w-full">
+          <Tabs value={activeRequestTab} onValueChange={(v) => setActiveRequestTab(v as 'all' | RequestStatus)} className="w-full">
             <TabsList className="grid grid-cols-4 mb-6">
               <TabsTrigger value="all" className="flex items-center gap-2">
                 <PackageSearch className="w-4 h-4" />
@@ -2224,7 +2548,7 @@ export function SchedulePage({
                         />
                       </div>
                     </div>
-                    <Select value={selectedEquipmentCategory} onValueChange={setSelectedEquipmentCategory}>
+                    <Select value={selectedEquipmentCategory} onValueChange={(v) => setSelectedEquipmentCategory(v as 'all' | EquipmentCategory)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Filter by category" />
                       </SelectTrigger>

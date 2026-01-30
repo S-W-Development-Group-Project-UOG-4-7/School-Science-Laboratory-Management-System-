@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, RequestStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from "@/lib/auth";
 import { cookies, headers } from 'next/headers';
 
 const prisma = new PrismaClient();
@@ -15,22 +15,56 @@ const prisma = new PrismaClient();
 async function getAuthenticatedUser() {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (session?.user?.id) {
-      const user = await prisma.user.findUnique({
-        where: { id: Number(session.user.id) },
-        include: {
-          teacher: true,
-          labAssistant: true,
-        },
-      });
-      
-      if (user) {
-        return user;
+
+    // Prefer session-based authorisation. Normalize role to lowercase and
+    // derive teacherId / labAssistantId from session.user (never derive teacherId from user.id).
+    if (session?.user) {
+      const role = String((session.user as any).role || '').toLowerCase();
+      const teacherId = Number((session.user as any).teacherId || 0);
+      const labAssistantId = Number((session.user as any).labAssistantId || 0);
+
+      const result: any = { role };
+
+      if (teacherId > 0) {
+        const teacher = await prisma.teacher.findUnique({
+          where: { id: teacherId },
+          include: { user: true }
+        });
+
+        result.teacher = teacher || undefined;
+        result.teacherId = teacherId;
+        result.id = session.user.id;
+        return result;
+      }
+
+      if (labAssistantId > 0) {
+        const lab = await prisma.labAssistant.findUnique({
+          where: { id: labAssistantId },
+          include: { user: true }
+        });
+
+        result.labAssistant = lab || undefined;
+        result.labAssistantId = labAssistantId;
+        result.id = session.user.id;
+        return result;
+      }
+
+      // If no teacherId or labAssistantId in session, try to find the user by session.user.id
+      if (session.user.id) {
+        const user = await prisma.user.findUnique({
+          where: { id: Number(session.user.id) },
+          include: { teacher: true, labAssistant: true }
+        });
+
+        if (user) {
+          // normalize role on the returned user object
+          (user as any).role = String(user.role || '').toLowerCase();
+          return user;
+        }
       }
     }
 
-    // Fallback: cookies/headers
+    // Fallback: cookies/headers (legacy support)
     const cookieStore = await cookies();
     const headersList = await headers();
 
@@ -46,6 +80,7 @@ async function getAuthenticatedUser() {
       });
       
       if (user) {
+        (user as any).role = String(user.role || '').toLowerCase();
         return user;
       }
     }
@@ -64,7 +99,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
     
-    if (!user || user.role !== 'TEACHER' || !user.teacher) {
+    if (!user || user.role !== 'teacher' || !user.teacher) {
       return NextResponse.json(
         { error: 'Unauthorized. Only teachers can create equipment requests.' }, 
         { status: 401 }
@@ -176,13 +211,13 @@ export async function GET(request: NextRequest) {
     // Build where clause based on user role and filters
     const where: any = {};
 
-    if (user.role === 'TEACHER' && user.teacher) {
+    if (user.role === 'teacher' && user.teacher) {
       // Teachers can only see their own requests
       where.teacherId = user.teacher.id;
-    } else if (user.role === 'LAB_ASSISTANT' && user.labAssistant) {
+    } else if (user.role === 'lab_assistant' && user.labAssistant) {
       // Lab assistants see requests assigned to them
       where.labAssistantId = user.labAssistant.id;
-    } else if (user.role === 'ADMIN' || user.role === 'PRINCIPAL') {
+    } else if (user.role === 'admin' || user.role === 'principal') {
       // Admins and principals can see all, optionally filtered
       if (teacherId) where.teacherId = Number(teacherId);
       if (labAssistantId) where.labAssistantId = Number(labAssistantId);
@@ -235,7 +270,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
     
-    if (!user || user.role !== 'LAB_ASSISTANT' || !user.labAssistant) {
+    if (!user || user.role !== 'lab_assistant' || !user.labAssistant) {
       return NextResponse.json(
         { error: 'Unauthorized. Only lab assistants can update request status.' }, 
         { status: 401 }
@@ -308,7 +343,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const user = await getAuthenticatedUser();
     
-    if (!user || user.role !== 'TEACHER' || !user.teacher) {
+    if (!user || user.role !== 'teacher' || !user.teacher) {
       return NextResponse.json(
         { error: 'Unauthorized. Only teachers can delete their requests.' }, 
         { status: 401 }

@@ -54,7 +54,7 @@ export const scheduleApi = {
     if (params?.startDate) query.append('startDate', params.startDate);
     if (params?.endDate) query.append('endDate', params.endDate);
     
-    const response = await fetch(`/api/schedules?${query.toString()}`);
+    const response = await fetch(`/api/schedules?${query.toString()}`, { credentials: 'include', headers: { 'Accept': 'application/json' } });
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -67,7 +67,8 @@ export const scheduleApi = {
   async createSchedule(data: any) {
     const response = await fetch('/api/schedules', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     
@@ -82,7 +83,8 @@ export const scheduleApi = {
   async updateSchedule(id: string, data: any) {
     const response = await fetch('/api/schedules', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ id, ...data }),
     });
     
@@ -97,6 +99,8 @@ export const scheduleApi = {
   async deleteSchedule(id: string) {
     const response = await fetch(`/api/schedules?id=${id}`, {
       method: 'DELETE',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' }
     });
     
     if (!response.ok) {

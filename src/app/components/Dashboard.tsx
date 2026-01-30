@@ -45,7 +45,6 @@ type Page =
   | "inventory"
   | "schedule"
   | "settings"
-  | "requests"
   | "users";
 
 export function Dashboard({ user, onLogout }: DashboardProps) {
@@ -72,12 +71,6 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
         label: "Schedule",
         icon: Calendar,
         roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
-      },
-      {
-        id: "requests" as Page,
-        label: "Laboratory Requests",
-        icon: FileText,
-        roles: ['teacher', 'lab-assistant'],
       },
       {
         id: "users" as Page,

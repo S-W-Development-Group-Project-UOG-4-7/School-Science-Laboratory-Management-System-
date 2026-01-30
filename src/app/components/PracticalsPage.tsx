@@ -46,7 +46,7 @@ import {
 } from '@/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
-import { practicalService } from '@/services/practicalService';
+import { practicalService } from '@/app/lib/services/practicalService';
 
 interface PracticalsPageProps {
   userRole: UserRole;
