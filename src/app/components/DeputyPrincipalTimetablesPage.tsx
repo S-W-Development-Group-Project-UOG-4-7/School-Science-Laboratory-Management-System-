@@ -3,24 +3,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "./ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import type { UserRole } from '@/lib/types';
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Badge } from "./ui/badge";
+import { toast } from "sonner";
+import type { UserRole } from "@/lib/types";
+import { CalendarDays, FlaskConical, Users } from "lucide-react";
 
 type DayOfWeek = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY";
 
@@ -33,6 +24,7 @@ const DAYS: { label: string; value: DayOfWeek }[] = [
 ];
 
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
+const INTERVAL_AFTER = 4;
 
 type Teacher = { id: string; name: string; email: string };
 type Lab = { id: string; name: string };
@@ -42,7 +34,7 @@ type TeacherTT = {
   teacherId: string;
   day: DayOfWeek;
   period: number;
-  subject: string;
+  subject: string; // stored like "Science | 8A"
   grade: number;
   available: boolean;
   teacher?: Teacher;
@@ -54,45 +46,182 @@ type LabTT = {
   day: DayOfWeek;
   period: number;
   available: boolean;
+  classCode?: string | null;
   lab?: Lab;
 };
 
+function getKey(day: DayOfWeek, period: number) {
+  return `${day}-${period}`;
+}
+
+function parseClassCodeFromTeacherSubject(subject: string, fallbackGrade?: number) {
+  // subject stored as "Science | 8A"
+  const s = (subject ?? "").trim();
+  const parts = s.split("|").map((p) => p.trim());
+  const maybe = parts.length > 1 ? parts[1] : "";
+  const m = maybe.toUpperCase().match(/^(\d{1,2})([A-Z])$/);
+  if (m) return `${m[1]}${m[2]}`;
+
+  // fallback if old data had only grade without section:
+  return fallbackGrade ? String(fallbackGrade) : "";
+}
+
+function parseClassCode(code: string) {
+  const v = (code ?? "").trim().toUpperCase();
+  const m = v.match(/^(\d{1,2})([A-Z])$/);
+  if (!m) return null;
+  return { grade: Number(m[1]), classCode: `${Number(m[1])}${m[2]}` };
+}
+
+function getAllowedGradesForLabName(labName: string) {
+  const name = (labName ?? "").toLowerCase();
+
+  // ✅ your rule:
+  if (name.includes("science")) return [6, 7, 8, 9,10,11];
+  if (name.includes("physics") || name.includes("chemistry") || name.includes("biology")) return [12, 13];
+
+  // fallback: allow 6-13 if lab name not matched
+  return [6,7,8,9,10,11,12,13];
+}
+
+function GridEditor({
+  title,
+  description,
+  icon,
+  selectedLabel,
+  onSave,
+  grid,
+  setGrid,
+  placeholder,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  selectedLabel: React.ReactNode;
+  onSave: () => Promise<void>;
+  grid: Record<string, string>;
+  setGrid: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  placeholder: string;
+}) {
+  const rows = useMemo(() => {
+    const out: Array<{ type: "period" | "interval"; period?: number }> = [];
+    for (const p of PERIODS) {
+      out.push({ type: "period", period: p });
+      if (p === INTERVAL_AFTER) out.push({ type: "interval" });
+    }
+    return out;
+  }, []);
+
+  const setCell = (day: DayOfWeek, period: number, value: string) => {
+    const k = getKey(day, period);
+    setGrid((prev) => ({ ...prev, [k]: value.toUpperCase() }));
+  };
+
+  const getCell = (day: DayOfWeek, period: number) => grid[getKey(day, period)] ?? "";
+
+  return (
+    <Card className="rounded-2xl border">
+      <CardHeader className="space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              {icon} {title}
+            </CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+
+          <div className="text-right">
+            {selectedLabel}
+            <div className="mt-3 flex justify-end">
+              <Button
+                onClick={onSave}
+                className="rounded-xl px-5 py-2 font-semibold shadow-sm"
+              >
+                Save Timetable
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary">Periods: 1–8</Badge>
+          <Badge variant="secondary">Interval after Period 4</Badge>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <div className="overflow-auto rounded-xl border">
+          <table className="min-w-[900px] w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="text-left p-3 w-36">Period</th>
+                {DAYS.map((d) => (
+                  <th key={d.value} className="text-left p-3">
+                    {d.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.map((r, idx) => {
+                if (r.type === "interval") {
+                  return (
+                    <tr key={`interval-${idx}`} className="bg-muted/20 border-t">
+                      <td className="p-3 font-semibold">INTERVAL</td>
+                      <td className="p-3 text-muted-foreground" colSpan={DAYS.length}>
+                        Break / Interval
+                      </td>
+                    </tr>
+                  );
+                }
+
+                const p = r.period!;
+                return (
+                  <tr key={`p-${p}`} className="border-t">
+                    <td className="p-3 font-medium">Period {p}</td>
+
+                    {DAYS.map((d) => (
+                      <td key={`${d.value}-${p}`} className="p-2">
+                        <Input
+                          className="h-10 rounded-xl text-center font-medium"
+                          placeholder={placeholder}
+                          value={getCell(d.value, p)}
+                          onChange={(e) => setCell(d.value, p, e.target.value)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-3">
+          Tip: Leave a cell empty if that period has no allocation.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole }) {
   const isDeputy = userRole === "admin" || userRole === "deputy-principal";
+
+  const [loading, setLoading] = useState(false);
+
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [labs, setLabs] = useState<Lab[]>([]);
   const [teacherTT, setTeacherTT] = useState<TeacherTT[]>([]);
   const [labTT, setLabTT] = useState<LabTT[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // filters
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("all");
-  const [selectedLabId, setSelectedLabId] = useState<string>("all");
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
+  const [selectedLabId, setSelectedLabId] = useState<string>("");
 
-  // dialogs
-  const [addTeacherOpen, setAddTeacherOpen] = useState(false);
-  const [addLabOpen, setAddLabOpen] = useState(false);
-  const [editTeacherOpen, setEditTeacherOpen] = useState(false);
-  const [editLabOpen, setEditLabOpen] = useState(false);
-
-  // add forms
-  const [newTeacherSlot, setNewTeacherSlot] = useState({
-    teacherId: "",
-    day: "" as "" | DayOfWeek,
-    period: "" as "" | string,
-    subject: "",
-    grade: "" as "" | string,
-  });
-
-  const [newLabSlot, setNewLabSlot] = useState({
-    labId: "",
-    day: "" as "" | DayOfWeek,
-    period: "" as "" | string,
-  });
-
-  // edit forms
-  const [editTeacherSlot, setEditTeacherSlot] = useState<TeacherTT | null>(null);
-  const [editLabSlot, setEditLabSlot] = useState<LabTT | null>(null);
+  // ✅ grids MUST be above any useEffect that uses them
+  const [teacherGrid, setTeacherGrid] = useState<Record<string, string>>({});
+  const [labGrid, setLabGrid] = useState<Record<string, string>>({});
 
   async function refreshAll() {
     setLoading(true);
@@ -104,153 +233,131 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
         fetch("/api/timetables/lab"),
       ]);
 
-      const [t, l, tt, lt] = await Promise.all([tRes.json(), lRes.json(), ttRes.json(), ltRes.json()]);
+      // if API returns HTML error page, json() will fail — show clear error
+      const [t, l, tt, lt] = await Promise.all([
+        tRes.json(),
+        lRes.json(),
+        ttRes.json(),
+        ltRes.json(),
+      ]);
 
       setTeachers(Array.isArray(t) ? t : []);
       setLabs(Array.isArray(l) ? l : []);
       setTeacherTT(Array.isArray(tt) ? tt : []);
       setLabTT(Array.isArray(lt) ? lt : []);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to load timetables");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (isDeputy) refreshAll();
+    if (!isDeputy) return;
+    refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDeputy]);
 
-  const teacherRows = useMemo(() => {
-    const rows = selectedTeacherId === "all" ? teacherTT : teacherTT.filter(r => r.teacherId === selectedTeacherId);
-    return rows.slice().sort((a, b) => (a.day > b.day ? 1 : -1) || a.period - b.period);
-  }, [teacherTT, selectedTeacherId]);
+  // default selections after load
+  useEffect(() => {
+    if (!selectedTeacherId && teachers.length) setSelectedTeacherId(teachers[0].id);
+  }, [teachers, selectedTeacherId]);
 
-  const labRows = useMemo(() => {
-    const rows = selectedLabId === "all" ? labTT : labTT.filter(r => r.labId === selectedLabId);
-    return rows.slice().sort((a, b) => (a.day > b.day ? 1 : -1) || a.period - b.period);
-  }, [labTT, selectedLabId]);
+  useEffect(() => {
+    if (!selectedLabId && labs.length) setSelectedLabId(labs[0].id);
+  }, [labs, selectedLabId]);
 
-  // ---------- Teacher timetable CRUD ----------
-  async function addTeacherTimetableSlot() {
-    if (!newTeacherSlot.teacherId || !newTeacherSlot.day || !newTeacherSlot.period || !newTeacherSlot.subject || !newTeacherSlot.grade) {
-      alert("Fill teacher, day, period, subject, grade");
+  // ✅ rebuild Teacher grid (ONLY ONCE)
+  useEffect(() => {
+    if (!selectedTeacherId) return;
+
+    const map: Record<string, string> = {};
+    for (const r of teacherTT.filter((x) => x.teacherId === selectedTeacherId)) {
+      map[getKey(r.day, r.period)] = parseClassCodeFromTeacherSubject(r.subject, r.grade);
+    }
+    setTeacherGrid(map);
+  }, [selectedTeacherId, teacherTT]);
+
+  // ✅ rebuild Lab grid (ONLY ONCE)
+useEffect(() => {
+  if (!selectedLabId) return;
+
+  const map: Record<string, string> = {};
+  for (const r of labTT.filter((x) => x.labId === selectedLabId)) {
+    map[getKey(r.day, r.period)] = (r.classCode ?? "").toUpperCase();
+  }
+  setLabGrid(map);
+}, [selectedLabId, labTT]);
+
+  async function saveTeacherGrid() {
+    if (!selectedTeacherId) return;
+
+    for (const [k, v] of Object.entries(teacherGrid)) {
+      const value = (v ?? "").trim();
+      if (!value) continue;
+      if (!/^\d{1,2}[A-Z]$/i.test(value)) {
+        toast.error(`Invalid class format at ${k}. Use like 8A / 11D`);
+        return;
+      }
+    }
+
+    const res = await fetch("/api/timetables/teacher/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teacherId: selectedTeacherId, grid: teacherGrid }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast.error(data?.error ?? "Failed to save teacher timetable");
       return;
     }
 
-    const res = await fetch("/api/teacher-timetable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        teacherId: newTeacherSlot.teacherId,
-        day: newTeacherSlot.day,
-        period: Number(newTeacherSlot.period),
-        subject: newTeacherSlot.subject,
-        grade: Number(newTeacherSlot.grade),
-        available: true,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Failed to add slot");
-
-    setNewTeacherSlot({ teacherId: "", day: "", period: "", subject: "", grade: "" });
-    setAddTeacherOpen(false);
+    toast.success("Teacher timetable saved");
     refreshAll();
   }
 
-  async function updateTeacherSlot() {
-    if (!editTeacherSlot) return;
+async function saveLabGrid() {
+  if (!selectedLabId) return;
 
-    const res = await fetch(`/api/teacher-timetable/${editTeacherSlot.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        day: editTeacherSlot.day,
-        period: editTeacherSlot.period,
-        subject: editTeacherSlot.subject,
-        grade: editTeacherSlot.grade,
-        available: editTeacherSlot.available,
-      }),
-    });
+  const labName = selectedLab?.name ?? "";
+  const allowed = getAllowedGradesForLabName(labName);
 
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Update failed");
+  for (const [k, v] of Object.entries(labGrid)) {
+    const value = (v ?? "").trim();
+    if (!value) continue;
 
-    setEditTeacherOpen(false);
-    setEditTeacherSlot(null);
-    refreshAll();
-  }
-
-  async function deleteTeacherSlot(id: string) {
-    if (!confirm("Delete this teacher timetable slot?")) return;
-
-    const res = await fetch(`/api/teacher-timetable/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Delete failed");
-
-    refreshAll();
-  }
-
-  // ---------- Lab timetable CRUD ----------
-  async function addLabTimetableSlot() {
-    if (!newLabSlot.labId || !newLabSlot.day || !newLabSlot.period) {
-      alert("Fill lab, day, period");
+    const parsed = parseClassCode(value);
+    if (!parsed) {
+      toast.error(`Invalid class at ${k}. Use like 12A / 13B`);
       return;
     }
 
-    const res = await fetch("/api/lab-timetable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        labId: newLabSlot.labId,
-        day: newLabSlot.day,
-        period: Number(newLabSlot.period),
-        available: true,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Failed to add slot");
-
-    setNewLabSlot({ labId: "", day: "", period: "" });
-    setAddLabOpen(false);
-    refreshAll();
+    if (!allowed.includes(parsed.grade)) {
+      toast.error(`Invalid grade for ${labName}. Allowed: ${allowed.join(", ")}`);
+      return;
+    }
   }
 
-  async function updateLabSlot() {
-    if (!editLabSlot) return;
+  const res = await fetch("/api/timetables/lab/bulk", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ labId: selectedLabId, grid: labGrid }),
+  });
 
-    const res = await fetch(`/api/lab-timetable/${editLabSlot.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        day: editLabSlot.day,
-        period: editLabSlot.period,
-        available: editLabSlot.available,
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Update failed");
-
-    setEditLabOpen(false);
-    setEditLabSlot(null);
-    refreshAll();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    toast.error(data?.error ?? "Failed to save lab timetable");
+    return;
   }
 
-  async function deleteLabSlot(id: string) {
-    if (!confirm("Delete this lab timetable slot?")) return;
-
-    const res = await fetch(`/api/lab-timetable/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (!res.ok) return alert(data?.error || "Delete failed");
-
-    refreshAll();
-  }
+  toast.success("Lab timetable saved");
+  refreshAll();
+}
 
   if (!isDeputy) {
     return (
-      <Card className="border border-gray-200">
+      <Card className="border border-gray-200 rounded-2xl">
         <CardContent className="p-6 text-gray-700">
           You don’t have permission to access Deputy Principal timetable management.
         </CardContent>
@@ -258,420 +365,126 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
     );
   }
 
+  const selectedTeacher = teachers.find((t) => t.id === selectedTeacherId);
+  const selectedLab = labs.find((l) => l.id === selectedLabId);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">Timetable Management</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Annual Timetable Setup</h2>
           <p className="text-gray-600">
-            Deputy Principal can manage teacher timetables and main lab timetable (Add / Edit / Delete).
+            Deputy Principal manages the repeating weekly pattern for the full academic year
+            (Teacher timetable + Lab timetable).
           </p>
         </div>
-        <Button variant="outline" onClick={refreshAll} disabled={loading}>
+
+        <Button variant="outline" onClick={refreshAll} disabled={loading} className="rounded-xl">
           {loading ? "Refreshing..." : "Refresh"}
         </Button>
       </div>
 
-      <Tabs defaultValue="teacher" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="teacher">Teacher Timetable</TabsTrigger>
-          <TabsTrigger value="lab">Main Lab Timetable</TabsTrigger>
-        </TabsList>
+      {/* selectors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="rounded-2xl border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" /> Teacher Selection
+            </CardTitle>
+            <CardDescription>Select a teacher and fill their timetable grid.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label>Teacher</Label>
+            <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
+              <SelectTrigger className="bg-white rounded-xl">
+                <SelectValue placeholder="Select teacher" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                {teachers.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name} ({t.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        {/* ---------------- Teacher Timetable ---------------- */}
-        <TabsContent value="teacher">
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="space-y-2">
-              <CardTitle>Science Teachers Timetable</CardTitle>
-              <CardDescription>Add / Edit / Delete weekly teacher slots</CardDescription>
+            {selectedTeacher ? (
+              <p className="text-sm text-muted-foreground mt-2">
+                Editing: <span className="font-medium text-gray-900">{selectedTeacher.name}</span>
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
 
-              <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                <div className="w-full md:w-80">
-                  <Label>Filter Teacher</Label>
-                  <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                      <SelectItem value="all">All Teachers</SelectItem>
-                      {teachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.name} ({t.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Card className="rounded-2xl border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FlaskConical className="w-5 h-5 text-indigo-600" /> Lab Selection
+            </CardTitle>
+            <CardDescription>Select a lab and fill the lab timetable grid.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label>Lab</Label>
+            <Select value={selectedLabId} onValueChange={setSelectedLabId}>
+              <SelectTrigger className="bg-white rounded-xl">
+                <SelectValue placeholder="Select lab" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                {labs.map((l) => (
+                  <SelectItem key={l.id} value={l.id}>
+                    {l.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-                <Dialog open={addTeacherOpen} onOpenChange={setAddTeacherOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Slot
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-white border border-gray-200 shadow-xl max-w-xl">
-                    <DialogHeader>
-                      <DialogTitle>Add Teacher Timetable Slot</DialogTitle>
-                      <DialogDescription>Set teacher weekly availability slot.</DialogDescription>
-                    </DialogHeader>
+            {selectedLab ? (
+              <p className="text-sm text-muted-foreground mt-2">
+                Editing: <span className="font-medium text-gray-900">{selectedLab.name}</span>
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="md:col-span-2">
-                        <Label>Teacher *</Label>
-                        <Select value={newTeacherSlot.teacherId} onValueChange={(v) => setNewTeacherSlot(p => ({ ...p, teacherId: v }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select teacher" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {teachers.map((t) => (
-                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+      {/* BOTH grids */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <GridEditor
+          title="Teacher Timetable"
+          description="Teachers can only book lab slots for the class assigned here."
+          icon={<CalendarDays className="w-5 h-5 text-blue-600" />}
+          selectedLabel={
+            <div className="text-sm text-muted-foreground">
+              Teacher:{" "}
+              <span className="font-medium text-gray-900">
+                {selectedTeacher?.name ?? "—"}
+              </span>
+            </div>
+          }
+          grid={teacherGrid}
+          setGrid={setTeacherGrid}
+          onSave={saveTeacherGrid}
+          placeholder="ex: 8A"
+        />
 
-                      <div>
-                        <Label>Day *</Label>
-                        <Select value={newTeacherSlot.day} onValueChange={(v) => setNewTeacherSlot(p => ({ ...p, day: v as DayOfWeek }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select day" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Period *</Label>
-                        <Select value={newTeacherSlot.period} onValueChange={(v) => setNewTeacherSlot(p => ({ ...p, period: v }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select period" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {PERIODS.map(p => <SelectItem key={p} value={String(p)}>Period {p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Subject *</Label>
-                        <Input
-                          placeholder="Science / Physics / Chemistry / Biology"
-                          value={newTeacherSlot.subject}
-                          onChange={(e) => setNewTeacherSlot(p => ({ ...p, subject: e.target.value }))}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Grade *</Label>
-                        <Select value={newTeacherSlot.grade} onValueChange={(v) => setNewTeacherSlot(p => ({ ...p, grade: v }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select grade" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {[6,7,8,9,10,11,12,13].map(g => <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-4">
-                      <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={addTeacherTimetableSlot}>
-                        Save Slot
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Teacher</TableHead>
-                    <TableHead>Day</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Grade</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teacherRows.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.teacher?.name ?? r.teacherId}</TableCell>
-                      <TableCell>{r.day}</TableCell>
-                      <TableCell>Period {r.period}</TableCell>
-                      <TableCell><Badge variant="outline">{r.subject}</Badge></TableCell>
-                      <TableCell>Grade {r.grade}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { setEditTeacherSlot(r); setEditTeacherOpen(true); }}
-                        >
-                          <Pencil className="w-4 h-4 mr-2" /> Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => deleteTeacherSlot(r.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {teacherRows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-gray-600 py-8">
-                        No teacher timetable slots found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* Edit Teacher Slot Dialog */}
-              <Dialog open={editTeacherOpen} onOpenChange={setEditTeacherOpen}>
-                <DialogContent className="bg-white border border-gray-200 shadow-xl max-w-xl">
-                  <DialogHeader>
-                    <DialogTitle>Edit Teacher Slot</DialogTitle>
-                    <DialogDescription>Update day/period/subject/grade.</DialogDescription>
-                  </DialogHeader>
-
-                  {!editTeacherSlot ? null : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <Label>Day</Label>
-                        <Select
-                          value={editTeacherSlot.day}
-                          onValueChange={(v) => setEditTeacherSlot(p => p ? ({ ...p, day: v as DayOfWeek }) : p)}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Period</Label>
-                        <Select
-                          value={String(editTeacherSlot.period)}
-                          onValueChange={(v) => setEditTeacherSlot(p => p ? ({ ...p, period: Number(v) }) : p)}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {PERIODS.map(p => <SelectItem key={p} value={String(p)}>Period {p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Subject</Label>
-                        <Input
-                          value={editTeacherSlot.subject}
-                          onChange={(e) => setEditTeacherSlot(p => p ? ({ ...p, subject: e.target.value }) : p)}
-                        />
-                      </div>
-
-                      <div>
-                        <Label>Grade</Label>
-                        <Select
-                          value={String(editTeacherSlot.grade)}
-                          onValueChange={(v) => setEditTeacherSlot(p => p ? ({ ...p, grade: Number(v) }) : p)}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {[6,7,8,9,10,11,12,13].map(g => <SelectItem key={g} value={String(g)}>Grade {g}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-4">
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={updateTeacherSlot}>
-                      Save Changes
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ---------------- Lab Timetable ---------------- */}
-        <TabsContent value="lab">
-          <Card className="border border-gray-200 shadow-sm">
-            <CardHeader className="space-y-2">
-              <CardTitle>Main Lab Timetable</CardTitle>
-              <CardDescription>Add / Edit / Delete lab weekly availability slots</CardDescription>
-
-              <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-                <div className="w-full md:w-80">
-                  <Label>Filter Lab</Label>
-                  <Select value={selectedLabId} onValueChange={setSelectedLabId}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                      <SelectItem value="all">All Labs</SelectItem>
-                      {labs.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Dialog open={addLabOpen} onOpenChange={setAddLabOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Slot
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-white border border-gray-200 shadow-xl max-w-xl">
-                    <DialogHeader>
-                      <DialogTitle>Add Lab Timetable Slot</DialogTitle>
-                      <DialogDescription>Set lab weekly availability slot.</DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="md:col-span-2">
-                        <Label>Lab *</Label>
-                        <Select value={newLabSlot.labId} onValueChange={(v) => setNewLabSlot(p => ({ ...p, labId: v }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select lab" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {labs.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Day *</Label>
-                        <Select value={newLabSlot.day} onValueChange={(v) => setNewLabSlot(p => ({ ...p, day: v as DayOfWeek }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select day" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Period *</Label>
-                        <Select value={newLabSlot.period} onValueChange={(v) => setNewLabSlot(p => ({ ...p, period: v }))}>
-                          <SelectTrigger className="bg-white"><SelectValue placeholder="Select period" /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {PERIODS.map(p => <SelectItem key={p} value={String(p)}>Period {p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2 pt-4">
-                      <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                      <Button className="bg-blue-600 hover:bg-blue-700" onClick={addLabTimetableSlot}>
-                        Save Slot
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lab</TableHead>
-                    <TableHead>Day</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {labRows.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.lab?.name ?? r.labId}</TableCell>
-                      <TableCell>{r.day}</TableCell>
-                      <TableCell>Period {r.period}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => { setEditLabSlot(r); setEditLabOpen(true); }}>
-                          <Pencil className="w-4 h-4 mr-2" /> Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 border-red-200 hover:bg-red-50"
-                          onClick={() => deleteLabSlot(r.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" /> Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {labRows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-gray-600 py-8">
-                        No lab timetable slots found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-
-              {/* Edit Lab Slot Dialog */}
-              <Dialog open={editLabOpen} onOpenChange={setEditLabOpen}>
-                <DialogContent className="bg-white border border-gray-200 shadow-xl max-w-xl">
-                  <DialogHeader>
-                    <DialogTitle>Edit Lab Slot</DialogTitle>
-                    <DialogDescription>Update day/period.</DialogDescription>
-                  </DialogHeader>
-
-                  {!editLabSlot ? null : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <Label>Day</Label>
-                        <Select
-                          value={editLabSlot.day}
-                          onValueChange={(v) => setEditLabSlot(p => p ? ({ ...p, day: v as DayOfWeek }) : p)}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {DAYS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label>Period</Label>
-                        <Select
-                          value={String(editLabSlot.period)}
-                          onValueChange={(v) => setEditLabSlot(p => p ? ({ ...p, period: Number(v) }) : p)}
-                        >
-                          <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                            {PERIODS.map(p => <SelectItem key={p} value={String(p)}>Period {p}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-4">
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={updateLabSlot}>
-                      Save Changes
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <GridEditor
+          title="Lab Timetable"
+          description="Allocate lab slots for grades (only grade number)."
+          icon={<FlaskConical className="w-5 h-5 text-indigo-600" />}
+          selectedLabel={
+            <div className="text-sm text-muted-foreground">
+              Lab:{" "}
+              <span className="font-medium text-gray-900">
+                {selectedLab?.name ?? "—"}
+              </span>
+            </div>
+          }
+          grid={labGrid}
+          setGrid={setLabGrid}
+          onSave={saveLabGrid}
+          placeholder="ex: 9A"
+        />
+      </div>
     </div>
   );
 }

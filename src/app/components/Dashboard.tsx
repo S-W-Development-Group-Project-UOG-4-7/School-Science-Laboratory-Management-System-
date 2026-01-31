@@ -35,6 +35,7 @@ import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
 import type { User } from "@/lib/types";
 import { DeputyPrincipalTimetablesPage } from "./DeputyPrincipalTimetablesPage";
+import DeputyDashboardHome from "./DeputyDashboardHome";
 
 
 interface DashboardProps {
@@ -74,7 +75,7 @@ const getNavigationItems = () => {
       id: "schedule" as Page,
       label: "Schedule & Calendar",
       icon: Calendar,
-      roles: [,'admin', 'deputy-principal'], 
+      roles: ['admin', 'deputy-principal'], 
     },
     {
       id: "requests" as Page,
@@ -275,11 +276,18 @@ const getRoleBadgeColor = () => {
             transition={{ duration: 0.3 }}
           >
             {currentPage === "home" && (
-              <HomePage 
-                userName={user.name}
-                userRole={user.role} 
-                onNavigate={(page) => setCurrentPage(page as Page)}
-              />
+            user.role === "deputy-principal" ? (
+            <DeputyDashboardHome
+            userName={user.name}
+            onNavigate={(page) => setCurrentPage(page)}
+            />
+            ) : (
+            <HomePage 
+            userName={user.name}
+            userRole={user.role} 
+            onNavigate={(page) => setCurrentPage(page as Page)}
+             />
+            )
             )}
             {currentPage === "practicals" && (
               <PracticalsPage userRole={user.role} />

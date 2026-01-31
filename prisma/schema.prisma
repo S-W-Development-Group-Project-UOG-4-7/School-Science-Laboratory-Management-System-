@@ -8,10 +8,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  password          String
+  role              Role
+  createdAt         DateTime           @default(now())
+  practicals        Practical[]
+  teacherTimetables TeacherTimetable[]
+}
+
+model Lab {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  gradeFrom     Int
+  gradeTo       Int
+  createdAt     DateTime       @default(now())
+  labTimetables LabTimetable[]
+  practicals    Practical[]
+}
+
+model TeacherTimetable {
+  id        String    @id @default(cuid())
+  teacherId String
+  day       DayOfWeek
+  period    Int
+  subject   String
+  grade     Int
+  classCode String   
+  available Boolean   @default(true)
+  teacher   User      @relation(fields: [teacherId], references: [id])
+
+  @@unique([teacherId, day, period])
+}
+
+model LabTimetable {
+  id        String    @id @default(cuid())
+  labId     String
+  classCode String    // REQUIRED (ex: "10A")
+  day       DayOfWeek
+  period    Int
+  available Boolean   @default(true)
+  lab       Lab       @relation(fields: [labId], references: [id])
+
+  @@unique([labId, day, period]) 
+  @@index([classCode])          
+}
+
+model Practical {
+  id        String          @id @default(cuid())
+  title     String
+  date      DateTime
+  day       DayOfWeek
+  period    Int
+  grade     Int
+  subject   String
+  status    PracticalStatus @default(UPCOMING)
+  teacherId String
+  labId     String
+  createdAt DateTime        @default(now())
+  lab       Lab             @relation(fields: [labId], references: [id])
+  teacher   User            @relation(fields: [teacherId], references: [id])
+
+  @@unique([labId, day, period, date])
+}
+
 enum Role {
   ADMIN
+  PRINCIPAL
+  DEPUTY_PRINCIPAL
   TEACHER
   LAB_ASSISTANT
+  STUDENT
 }
 
 enum DayOfWeek {
@@ -28,73 +97,5 @@ enum PracticalStatus {
   CANCELLED
 }
 
-model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
 
-  teacherTimetables TeacherTimetable[]
-  practicals        Practical[]
-}
-
-model Lab {
-  id        String   @id @default(cuid())
-  name      String   @unique   // Physics Lab, Chemistry Lab
-  createdAt DateTime @default(now())
-
-  labTimetables LabTimetable[]
-  practicals    Practical[]
-}
-
-model TeacherTimetable {
-  id        String    @id @default(cuid())
-  teacherId String
-  day       DayOfWeek
-  period    Int       // 1–8
-  subject   String
-  grade     Int
-  available Boolean   @default(true)
-
-  teacher User @relation(fields: [teacherId], references: [id])
-
-  @@unique([teacherId, day, period])
-}
-
-model LabTimetable {
-  id      String    @id @default(cuid())
-  labId   String
-  day     DayOfWeek
-  period  Int
-  available Boolean @default(true)
-
-  lab Lab @relation(fields: [labId], references: [id])
-
-  @@unique([labId, day, period])
-}
-
-model Practical {
-  id          String           @id @default(cuid())
-  title       String
-  date        DateTime
-  day         DayOfWeek
-  period      Int
-  grade       Int
-  subject     String
-  maxStudents Int
-  status      PracticalStatus @default(UPCOMING)
-  notes       String?
-
-  teacherId String
-  labId     String
-
-  teacher User @relation(fields: [teacherId], references: [id])
-  lab     Lab  @relation(fields: [labId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([labId, day, period, date])
-}
 
