@@ -8,84 +8,183 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  PRINCIPAL
+  TEACHER
+  LAB_ASSISTANT
+  STUDENT
+  DEPUTY_PRINCIPAL
+}
+
+enum RequestPriority {
+  low
+  medium
+  high
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+  in_progress
+  fulfilled
+}
+
+enum NotificationType {
+  fulfillment
+  approval
+  rejection
+  request
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
 model User {
-  id       Int    @id @default(autoincrement())
-  name     String
-  email    String @unique
-  password String
-
-  phone     String?
-  role      String
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  activityLogs     ActivityLog[]
-  labSchedules     LabSchedule[]
-  practicals       Practical[]        @relation("CreatedPracticals")
-  InventoryRequest InventoryRequest[]
-}
+  // Inventory requests created by this user
+  requests InventoryRequest[] @relation("RequestCreatedBy")
 
-model LabSchedule {
-  id       Int      @id @default(autoincrement())
-  title    String
-  subject  String
-  date     DateTime
-  time     String
-  location String
-  status   String
+  // Requests approved by principal
+  approvals InventoryRequest[] @relation("RequestApprovedBy")
 
-  teacherId Int
-  teacher   User @relation(fields: [teacherId], references: [id])
+  // Requests rejected by principal
+  rejections InventoryRequest[] @relation("RequestRejectedBy")
 
-  createdAt DateTime @default(now())
-}
+  // Requests fulfilled by lab assistant
+  fulfillments InventoryRequest[] @relation("RequestFulfilledBy")
 
-model Practical {
-  id          Int     @id @default(autoincrement())
-  title       String
-  description String
-  subject     String
-  grade       String
-  duration    Int
-  difficulty  String
-  videoUrl    String?
-  labSheetUrl String?
+  // Lab schedules where this user is the teacher
+  labSchedules LabSchedule[]
 
-  createdBy Int
-  creator   User @relation("CreatedPracticals", fields: [createdBy], references: [id])
-
-  createdAt DateTime @default(now())
+  notifications Notification[]
+  activityLogs  ActivityLog[]
 }
 
 model InventoryItem {
-  id          Int    @id @default(autoincrement())
-  name        String
-  category    String
-  quantity    Int
-  minQuantity Int
-  location    String
-  status      String
+  id                  String   @id @default(cuid())
+  name                String
+  category            String
+  stockLevel          Int      @default(0)
+  minStockLevel       Int      @default(0)
+  unit                String
+  location            String
+  photo               String?
+  storageInstructions String?
+  handlingProcedure   String?
+  safetyNotes         String?
+  lastUpdated         DateTime @default(now())
+
+  requests InventoryRequest[]
 }
 
 model InventoryRequest {
-  id       Int     @id @default(autoincrement())
-  itemName String
-  quantity Int
-  priority String
-  status   String
-  reason   String
-  response String?
+  id String @id @default(cuid())
 
-  requestedBy Int
-  requester   User @relation(fields: [requestedBy], references: [id])
+  itemId String
+  item   InventoryItem @relation(fields: [itemId], references: [id])
+
+  quantity   Int
+  priority   RequestPriority
+  status     RequestStatus   @default(pending)
+  reason     String
+  neededDate DateTime
+
+  // Created by
+  requestedById String
+  requestedBy   User   @relation("RequestCreatedBy", fields: [requestedById], references: [id])
+
+  // Approved by principal
+  approvedById String?
+  approvedBy   User?     @relation("RequestApprovedBy", fields: [approvedById], references: [id])
+  approvedDate DateTime?
+
+  // Rejected by principal
+  rejectedById String?
+  rejectedBy   User?     @relation("RequestRejectedBy", fields: [rejectedById], references: [id])
+  rejectedDate DateTime?
+
+  // Fulfilled by lab assistant
+  fulfilledById     String?
+  fulfilledBy       User?     @relation("RequestFulfilledBy", fields: [fulfilledById], references: [id])
+  fulfilledDate     DateTime?
+  fulfilledQuantity Int?
+  notes             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notifications Notification[]
 }
 
+model Lab {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules LabSchedule[]
+}
+
+model LabSchedule {
+  id String @id @default(cuid())
+
+  labId String
+  lab   Lab    @relation(fields: [labId], references: [id])
+
+  teacherId String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+
+  day    DayOfWeek
+  period Int
+  date   DateTime
+
+  title   String?
+  subject String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([labId, day, period, date])
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  type    NotificationType
+  title   String
+  message String
+  read    Boolean          @default(false)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  requestId String?
+  request   InventoryRequest? @relation(fields: [requestId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+
+
 model ActivityLog {
-  id      Int    @id @default(autoincrement())
-  action  String
-  details String
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
-
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 }

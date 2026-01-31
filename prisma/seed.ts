@@ -1,5 +1,5 @@
 // prisma/seed.ts
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Role, RequestPriority, RequestStatus, NotificationType, DayOfWeek } from '@prisma/client'
 import { hash } from 'bcrypt'
 
 const prisma = new PrismaClient()
@@ -7,12 +7,14 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // Clear existing data
+  // Clear existing data (correct order)
+  await prisma.notification.deleteMany()
   await prisma.activityLog.deleteMany()
+  await prisma.labSchedule.deleteMany()
+  await prisma.lab.deleteMany()
   await prisma.inventoryRequest.deleteMany()
   await prisma.inventoryItem.deleteMany()
-  await prisma.labSchedule.deleteMany()
-  await prisma.practical.deleteMany()
+ 
   await prisma.user.deleteMany()
 
   // --------------------
@@ -23,8 +25,7 @@ async function main() {
       name: 'Principal Silva',
       email: 'principal@school.lk',
       password: await hash('principal123', 10),
-      phone: '+94 71 224 5670',
-      role: 'PRINCIPAL',
+      role: Role.PRINCIPAL,
     },
   })
 
@@ -33,7 +34,7 @@ async function main() {
       name: 'System Administrator',
       email: 'admin@school.lk',
       password: await hash('admin123', 10),
-      role: 'ADMIN',
+      role: Role.ADMIN,
     },
   })
 
@@ -42,7 +43,7 @@ async function main() {
       name: 'Mr. Perera',
       email: 'teacher1@school.lk',
       password: await hash('teacher123', 10),
-      role: 'TEACHER',
+      role: Role.TEACHER,
     },
   })
 
@@ -51,7 +52,7 @@ async function main() {
       name: 'Mrs. Fernando',
       email: 'teacher2@school.lk',
       password: await hash('teacher123', 10),
-      role: 'TEACHER',
+      role: Role.TEACHER,
     },
   })
 
@@ -60,112 +61,168 @@ async function main() {
       name: 'Lab Assistant Kumar',
       email: 'labassist1@school.lk',
       password: await hash('labassist123', 10),
-      role: 'LAB_ASSISTANT',
+      role: Role.LAB_ASSISTANT,
     },
   })
 
-  const student = await prisma.user.create({
+  await prisma.user.create({
     data: {
       name: 'Student Amal',
       email: 'student1@school.lk',
       password: await hash('student123', 10),
-      role: 'STUDENT',
+      role: Role.STUDENT,
     },
   })
 
   // --------------------
+  // LABS
+  // --------------------
+  const labA = await prisma.lab.create({ data: { name: 'Lab A', location: 'Science Block - Ground Floor' } })
+  const labB = await prisma.lab.create({ data: { name: 'Lab B', location: 'Science Block - 1st Floor' } })
+
+  // --------------------
   // INVENTORY ITEMS
   // --------------------
-  await prisma.inventoryItem.createMany({
+  const microscope = await prisma.inventoryItem.create({
+    data: {
+      name: 'Microscope',
+      category: 'Equipment',
+      stockLevel: 15,
+      minStockLevel: 5,
+      unit: 'units',
+      location: 'Lab A',
+    },
+  })
+
+  const beakerSet = await prisma.inventoryItem.create({
+    data: {
+      name: 'Beaker Set',
+      category: 'Glassware',
+      stockLevel: 50,
+      minStockLevel: 20,
+      unit: 'sets',
+      location: 'Storage B',
+    },
+  })
+
+  const safetyGoggles = await prisma.inventoryItem.create({
+    data: {
+      name: 'Safety Goggles',
+      category: 'Safety',
+      stockLevel: 40,
+      minStockLevel: 30,
+      unit: 'pieces',
+      location: 'Lab C',
+    },
+  })
+
+  // --------------------
+  // INVENTORY REQUESTS (Principal approves/rejects)
+  // --------------------
+  const reqPending = await prisma.inventoryRequest.create({
+    data: {
+      itemId: microscope.id,
+      quantity: 2,
+      priority: RequestPriority.high,
+      status: RequestStatus.pending,
+      reason: 'Need microscopes for biology practical class',
+      neededDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      requestedById: teacher1.id,
+    },
+  })
+
+  const reqApproved = await prisma.inventoryRequest.create({
+    data: {
+      itemId: beakerSet.id,
+      quantity: 5,
+      priority: RequestPriority.medium,
+      status: RequestStatus.approved,
+      reason: 'Chemistry demonstration equipment',
+      neededDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      requestedById: teacher2.id,
+      approvedById: principal.id,
+      approvedDate: new Date(),
+    },
+  })
+
+  const reqFulfilled = await prisma.inventoryRequest.create({
+    data: {
+      itemId: safetyGoggles.id,
+      quantity: 15,
+      priority: RequestPriority.low,
+      status: RequestStatus.fulfilled,
+      reason: 'New students joining lab sessions',
+      neededDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      requestedById: labAssistant.id,
+      approvedById: principal.id,
+      approvedDate: new Date(),
+      fulfilledById: labAssistant.id,
+      fulfilledDate: new Date(),
+      fulfilledQuantity: 15,
+      notes: 'Purchased from supplier and stored in Lab C cabinet',
+    },
+  })
+
+  // --------------------
+  // NOTIFICATIONS
+  // Principal wants to see fulfilled items for approved requests
+  // --------------------
+  await prisma.notification.createMany({
     data: [
-      { name: 'Microscope', category: 'Equipment', quantity: 15, minQuantity: 5, location: 'Lab A', status: 'Available' },
-      { name: 'Beaker Set', category: 'Glassware', quantity: 50, minQuantity: 20, location: 'Storage B', status: 'Available' },
-      { name: 'Bunsen Burner', category: 'Equipment', quantity: 20, minQuantity: 10, location: 'Lab A', status: 'Available' },
-      { name: 'Test Tubes', category: 'Glassware', quantity: 200, minQuantity: 100, location: 'Storage B', status: 'Available' },
-      { name: 'Safety Goggles', category: 'Safety', quantity: 40, minQuantity: 30, location: 'Lab C', status: 'Available' },
+      {
+        userId: principal.id,
+        type: NotificationType.fulfillment,
+        title: 'Safety Goggles Restocked',
+        message: 'Lab Assistant Kumar fulfilled an approved request and added 15 Safety Goggles to inventory.',
+        read: false,
+        requestId: reqFulfilled.id,
+      },
+      {
+        userId: principal.id,
+        type: NotificationType.request,
+        title: 'New Inventory Request',
+        message: 'Mr. Perera requested 2 Microscopes',
+        read: false,
+        requestId: reqPending.id,
+      },
+      {
+        userId: teacher2.id,
+        type: NotificationType.approval,
+        title: 'Request Approved',
+        message: 'Your request for Beaker Set was approved by the Principal.',
+        read: false,
+        requestId: reqApproved.id,
+      },
     ],
   })
 
   // --------------------
-  // INVENTORY REQUESTS
-  // --------------------
-  await prisma.inventoryRequest.createMany({
-    data: [
-      {
-        itemName: 'Microscope',
-        quantity: 2,
-        priority: 'High',
-        status: 'Pending',
-        reason: 'For biology practical class',
-        requestedBy: teacher1.id,
-      },
-      {
-        itemName: 'Beaker Set',
-        quantity: 5,
-        priority: 'Medium',
-        status: 'Approved',
-        reason: 'Chemistry demonstration',
-        response: 'Request approved. Items available in Lab A.',
-        requestedBy: teacher2.id,
-      },
-      {
-        itemName: 'Safety Goggles',
-        quantity: 15,
-        priority: 'Low',
-        status: 'Pending',
-        reason: 'New students joining lab sessions',
-        requestedBy: labAssistant.id,
-      },
-    ],
-  })
-
-  // --------------------
-  // LAB SCHEDULES
+  // LAB SCHEDULE (Principal-only)
   // --------------------
   const today = new Date()
-  const tomorrow = new Date(today)
+  const tomorrow = new Date()
   tomorrow.setDate(today.getDate() + 1)
 
   await prisma.labSchedule.createMany({
     data: [
       {
+        labId: labA.id,
+        teacherId: teacher1.id,
+        day: DayOfWeek.MONDAY,
+        period: 2,
+        date: tomorrow,
         title: 'Biology Practical',
         subject: 'Biology',
+      },
+      {
+        labId: labB.id,
+        teacherId: teacher2.id,
+        day: DayOfWeek.TUESDAY,
+        period: 4,
         date: tomorrow,
-        time: '10:00 AM - 12:00 PM',
-        location: 'Lab A',
-        status: 'Scheduled',
-        teacherId: teacher1.id,
-      },
-    ],
-  })
-
-  // --------------------
-  // PRACTICALS
-  // --------------------
-  await prisma.practical.createMany({
-    data: [
-      {
-        title: 'Microscopic Examination',
-        description: 'Examining plant cells under microscope',
-        subject: 'Biology',
-        grade: 'Grade 11',
-        duration: 90,
-        difficulty: 'Intermediate',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        labSheetUrl: 'https://example.com/labsheet1.pdf',
-        createdBy: teacher1.id,
-      },
-      {
-        title: 'Chemical Reactions',
-        description: 'Observing acid-base reactions',
+        title: 'Chemistry Practical',
         subject: 'Chemistry',
-        grade: 'Grade 10',
-        duration: 120,
-        difficulty: 'Beginner',
-        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        labSheetUrl: 'https://example.com/labsheet2.pdf',
-        createdBy: teacher2.id,
+  
       },
     ],
   })
@@ -175,11 +232,10 @@ async function main() {
   // --------------------
   await prisma.activityLog.createMany({
     data: [
-      { action: 'LOGIN', details: 'Admin logged in', userId: admin.id },
-      { action: 'CREATED', details: 'Biology practical scheduled', userId: teacher1.id },
-      { action: 'REQUESTED', details: 'Inventory request submitted', userId: teacher1.id },
-      { action: 'APPROVED', details: 'Inventory request approved', userId: admin.id },
-      { action: 'UPDATED', details: 'Inventory updated', userId: labAssistant.id },
+      { action: 'LOGIN', details: 'Principal logged in', userId: principal.id },
+      { action: 'REQUESTED', details: 'Teacher requested microscopes', userId: teacher1.id },
+      { action: 'APPROVED', details: 'Principal approved Beaker Set request', userId: principal.id },
+      { action: 'FULFILLED', details: 'Lab assistant restocked Safety Goggles', userId: labAssistant.id },
     ],
   })
 
@@ -195,4 +251,4 @@ main()
     await prisma.$disconnect()
   })
 
-  
+// To run the seed script, use the command: npx ts-node prisma/seed.ts

@@ -1,11 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, AlertTriangle, CheckCircle, Info, Plus, Edit, X, Bell, CheckCircle2, Clock, User, Package, AlertCircle, Mail, Download, CheckCheck, ShoppingCart } from 'lucide-react';
+import {
+  Search,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Plus,
+  Edit,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Package,
+  CheckCheck,
+} from 'lucide-react';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -15,14 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
+
 import type { UserRole } from '@/lib/types';
 import { ImageWithFallback } from './img/ImageWithFallback';
 
@@ -30,10 +36,14 @@ interface InventoryPageProps {
   userRole: UserRole;
 }
 
+type ItemCategory = 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety' | 'Instruments';
+type RequestPriority = 'low' | 'medium' | 'high';
+type RequestStatus = 'pending' | 'approved' | 'rejected' | 'in-progress' | 'fulfilled';
+
 interface InventoryItem {
   id: string;
   name: string;
-  category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety' | 'Instruments';
+  category: ItemCategory;
   stockLevel: number;
   minStockLevel: number;
   unit: string;
@@ -55,12 +65,16 @@ interface InventoryRequest {
   requestedDate: string;
   neededDate: string;
   quantity: number;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'approved' | 'rejected' | 'in-progress' | 'fulfilled';
+  priority: RequestPriority;
+  status: RequestStatus;
   reason: string;
   attachments: string[];
+
+  // Principal approval (done somewhere else in your system)
   approvedBy?: string;
   approvedDate?: string;
+
+  // Fulfillment (lab assistant restock)
   fulfilledBy?: string;
   fulfilledDate?: string;
   fulfilledQuantity?: number;
@@ -69,15 +83,16 @@ interface InventoryRequest {
 
 interface Notification {
   id: string;
-  type: 'request' | 'approval' | 'rejection' | 'fulfillment';
+  type: 'fulfillment';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
-  requestId?: string;
-  itemId?: string;
+  requestId: string;
+  itemId: string;
 }
 
+/** ------------------ SAMPLE DATA ------------------ **/
 const inventoryItems: InventoryItem[] = [
   {
     id: '1',
@@ -87,10 +102,14 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 20,
     unit: 'pieces',
     location: 'Cabinet A2 - Shelf 3',
-    photo: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a dry, cool place away from direct sunlight. Stack carefully with padding between units to prevent breakage.',
-    handlingProcedure: 'Handle with care. Check for cracks before use. Clean thoroughly after each use with appropriate cleaning solution.',
-    safetyNotes: 'Wear safety gloves when handling. Dispose of broken glassware in designated sharps container.',
+    photo:
+      'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGVtaXN0cnklMjBsYWJvcmF0b3J5JTIwYmVha2VyfGVufDF8fHx8MTc2Mjk2NDk4NHww&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store in a dry, cool place away from direct sunlight. Stack carefully with padding between units to prevent breakage.',
+    handlingProcedure:
+      'Handle with care. Check for cracks before use. Clean thoroughly after each use with appropriate cleaning solution.',
+    safetyNotes:
+      'Wear safety gloves when handling. Dispose of broken glassware in designated sharps container.',
     lastUpdated: '2025-11-10',
   },
   {
@@ -101,10 +120,13 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 10,
     unit: 'units',
     location: 'Equipment Room - Shelf B',
-    photo: 'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a dust-free cabinet with desiccant packs. Keep covered when not in use. Maintain at room temperature (20-25°C).',
-    handlingProcedure: 'Always carry with both hands - one on the arm and one supporting the base. Clean lenses with lens paper only. Never use regular cloth or tissue.',
-    safetyNotes: 'Ensure electrical safety before plugging in. Keep away from water sources. Report any damaged cables immediately.',
+    photo:
+      'https://images.unsplash.com/photo-1614308457932-e16d85c5d053?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaWNyb3Njb3BlJTIwc2NpZW5jZSUyMGxhYnxlbnwxfHx8fDE3NjI4ODI3NzR8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store in a dust-free cabinet with desiccant packs. Keep covered when not in use. Maintain at room temperature (20-25°C).',
+    handlingProcedure:
+      'Always carry with both hands - one on the arm and one supporting the base. Clean lenses with lens paper only.',
+    safetyNotes: 'Ensure electrical safety before plugging in. Report damaged cables immediately.',
     lastUpdated: '2025-11-08',
   },
   {
@@ -115,10 +137,14 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 80,
     unit: 'pieces',
     location: 'Cabinet A1 - Drawer 2',
-    photo: 'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store upright in test tube racks. Keep in dry storage away from heat sources. Organize by size for easy access.',
-    handlingProcedure: 'Inspect for chips or cracks before use. Use test tube holders for hot materials. Clean with appropriate brushes and detergent.',
-    safetyNotes: 'Never heat a closed test tube. Point opening away from yourself and others when heating. Dispose of broken glass properly.',
+    photo:
+      'https://images.unsplash.com/photo-1606206605628-0a09580d44a1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwdGVzdCUyMHR1YmVzfGVufDF8fHx8MTc2Mjg3NzgzM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store upright in test tube racks. Keep in dry storage away from heat sources.',
+    handlingProcedure:
+      'Inspect for chips/cracks before use. Use test tube holders for hot materials.',
+    safetyNotes:
+      'Never heat a closed test tube. Point opening away from yourself and others when heating.',
     lastUpdated: '2025-11-11',
   },
   {
@@ -129,10 +155,14 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 50,
     unit: 'pieces',
     location: 'Safety Cabinet - Main Lab',
-    photo: 'https://images.unsplash.com/photo-1758685848561-3658f433e6a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYWZldHklMjBnb2dnbGVzJTIwbGFifGVufDF8fHx8MTc2Mjk2NDk4Nnww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in a clean, dry place. Keep each pair in individual compartments to prevent scratching. Sanitize regularly.',
-    handlingProcedure: 'Ensure proper fit before use. Clean with mild soap and water after each use. Check for scratches or damage before issuing.',
-    safetyNotes: 'Mandatory for all laboratory work. Must be worn at all times in the lab. Replace if scratched or damaged.',
+    photo:
+      'https://images.unsplash.com/photo-1758685848561-3658f433e6a0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYWZldHklMjBnb2dnbGVzJTIwbGFifGVufDF8fHx8MTc2Mjk2NDk4Nnww&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store in a clean, dry place. Keep each pair in individual compartments.',
+    handlingProcedure:
+      'Ensure proper fit before use. Clean with mild soap and water after each use.',
+    safetyNotes:
+      'Mandatory for lab work. Replace if scratched or damaged.',
     lastUpdated: '2025-11-09',
   },
   {
@@ -143,10 +173,14 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 12,
     unit: 'units',
     location: 'Equipment Room - Shelf C',
-    photo: 'https://images.unsplash.com/photo-1644261766628-3af7203be678?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidW5zZW4lMjBidXJuZXIlMjBmbGFtZXxlbnwxfHx8fDE3NjI5NjQ5ODZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store in ventilated area away from flammable materials. Disconnect gas tubing when not in use. Keep upright.',
-    handlingProcedure: 'Check gas connections before use. Light with striker, never matches. Adjust air valve for proper flame type. Turn off gas when not actively heating.',
-    safetyNotes: 'Never leave unattended when lit. Ensure proper ventilation. Keep flammable materials at safe distance. Allow to cool before storing.',
+    photo:
+      'https://images.unsplash.com/photo-1644261766628-3af7203be678?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidW5zZW4lMjBidXJuZXIlMjBmbGFtZXxlbnwxfHx8fDE3NjI5NjQ5ODZ8MA&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store in ventilated area away from flammable materials. Disconnect gas tubing when not in use.',
+    handlingProcedure:
+      'Check gas connections before use. Light with striker. Turn off gas when not actively heating.',
+    safetyNotes:
+      'Never leave unattended when lit. Ensure proper ventilation.',
     lastUpdated: '2025-11-07',
   },
   {
@@ -157,15 +191,19 @@ const inventoryItems: InventoryItem[] = [
     minStockLevel: 15,
     unit: 'pieces',
     location: 'Cabinet A3 - Shelf 2',
-    photo: 'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
-    storageInstructions: 'Store with stoppers in place. Keep in secured cabinet to prevent tipping. Maintain at constant room temperature.',
-    handlingProcedure: 'Clean thoroughly before use. Fill to calibration mark at eye level. Use for preparation of standard solutions only.',
-    safetyNotes: 'Do not heat. Handle stopper separately from flask when in use. Clean immediately after use to prevent contamination.',
+    photo:
+      'https://images.unsplash.com/photo-1761095596584-34731de3e568?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYWJvcmF0b3J5JTIwZ2xhc3N3YXJlJTIwZXF1aXBtZW50fGVufDF8fHx8MTc2Mjg4MjQxM3ww&ixlib=rb-4.1.0&q=80&w=1080',
+    storageInstructions:
+      'Store with stoppers in place. Keep in secured cabinet to prevent tipping.',
+    handlingProcedure:
+      'Fill to calibration mark at eye level. Use for preparation of standard solutions only.',
+    safetyNotes: 'Do not heat. Handle carefully.',
     lastUpdated: '2025-11-10',
   },
 ];
 
 const initialRequests: InventoryRequest[] = [
+  // Approved but not fulfilled yet
   {
     id: 'req1',
     itemId: '2',
@@ -179,10 +217,12 @@ const initialRequests: InventoryRequest[] = [
     priority: 'high',
     status: 'approved',
     reason: 'Stock running low. Need additional units for upcoming biology practical exams.',
-    attachments: ['lesson_plan.pdf', 'student_list.csv'],
+    attachments: [],
     approvedBy: 'Principal Silva',
     approvedDate: '2025-11-13',
   },
+
+  // Approved + Fulfilled (this should appear in notifications)
   {
     id: 'req2',
     itemId: '4',
@@ -196,7 +236,7 @@ const initialRequests: InventoryRequest[] = [
     priority: 'medium',
     status: 'fulfilled',
     reason: 'Stock running low due to increased class sizes. Need additional pairs for safety compliance.',
-    attachments: ['inventory_report.pdf'],
+    attachments: [],
     approvedBy: 'Principal Silva',
     approvedDate: '2025-11-12',
     fulfilledBy: 'Lab Assistant Mike',
@@ -204,6 +244,8 @@ const initialRequests: InventoryRequest[] = [
     fulfilledQuantity: 20,
     notes: 'Purchased from Science Supplies Ltd. Added to inventory on 2025-11-15.',
   },
+
+  // Pending (approval happens elsewhere - we keep it but we do NOT show approve UI here)
   {
     id: 'req3',
     itemId: '1',
@@ -217,7 +259,7 @@ const initialRequests: InventoryRequest[] = [
     priority: 'high',
     status: 'pending',
     reason: 'Chemistry practical session for Grade 10 students scheduled next week.',
-    attachments: ['lesson_plan.pdf', 'student_list.csv'],
+    attachments: [],
   },
 ];
 
@@ -232,45 +274,37 @@ const initialNotifications: Notification[] = [
     requestId: 'req2',
     itemId: '4',
   },
-  {
-    id: 'notif2',
-    type: 'fulfillment',
-    title: 'Test Tubes Restocked',
-    message: 'Lab Assistant Sarah has added 50 pieces of Test Tubes (20ml) to inventory.',
-    timestamp: '2025-11-14 11:30 AM',
-    read: false,
-    requestId: 'req4',
-    itemId: '3',
-  },
 ];
 
+/** ------------------ COMPONENT ------------------ **/
 export function InventoryPage({ userRole }: InventoryPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+
   const [requests, setRequests] = useState<InventoryRequest[]>(initialRequests);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const [showRequestDialog, setShowRequestDialog] = useState(false);
-  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<InventoryRequest | null>(null);
-  
-  // Request form state
-  const [requestQuantity, setRequestQuantity] = useState('');
-  const [requestPriority, setRequestPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [requestReason, setRequestReason] = useState('');
-  const [requestNeededDate, setRequestNeededDate] = useState('');
-  
+
   // Fulfillment form state
   const [fulfilledQuantity, setFulfilledQuantity] = useState('');
   const [fulfillmentNotes, setFulfillmentNotes] = useState('');
   const [fulfillmentDate, setFulfillmentDate] = useState('');
 
-  const filteredItems = inventoryItems.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const canEdit = userRole === 'teacher' || userRole === 'lab-assistant';
+  const isPrincipal = userRole === 'principal';
+  const isLabAssistant = userRole === 'lab-assistant';
+
+  const filteredItems = useMemo(() => {
+    return inventoryItems.filter((item) => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, selectedCategory]);
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.stockLevel <= item.minStockLevel) {
@@ -279,177 +313,90 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
   };
 
-  const canEdit = userRole === 'teacher' || userRole === 'lab-assistant';
-  const isPrincipal = userRole === 'principal';
-  const isLabAssistant = userRole === 'lab-assistant';
-  const isTeacher = userRole === 'teacher';
+  const getItemRequests = (itemId: string) => requests.filter((r) => r.itemId === itemId);
 
-  const pendingRequests = requests.filter(req => req.status === 'pending');
-  const approvedRequests = requests.filter(req => req.status === 'approved');
-  const fulfilledRequests = requests.filter(req => req.status === 'fulfilled');
-  const inProgressRequests = requests.filter(req => req.status === 'in-progress');
-  const rejectedRequests = requests.filter(req => req.status === 'rejected');
+  /**
+   * ✅ Only show notifications that match:
+   * - request is fulfilled
+   * - request was approved by principal (approvedBy exists OR status previously approved)
+   */
+  const approvedFulfilledNotifications = useMemo(() => {
+    return notifications.filter((n) => {
+      if (n.type !== 'fulfillment') return false;
 
-  const unreadNotifications = notifications.filter(n => !n.read);
-  const fulfillmentNotifications = notifications.filter(n => n.type === 'fulfillment');
+      const req = requests.find((r) => r.id === n.requestId);
+      if (!req) return false;
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-700 border-blue-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
+      const isApprovedByPrincipal = !!req.approvedBy || !!req.approvedDate;
+      const isFulfilled = req.status === 'fulfilled';
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'approved': return 'bg-green-100 text-green-700 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
-      case 'in-progress': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'fulfilled': return 'bg-purple-100 text-purple-700 border-purple-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
-  };
+      return isApprovedByPrincipal && isFulfilled;
+    });
+  }, [notifications, requests]);
 
-  const handleRequestSubmit = () => {
-    if (!selectedItem || !requestQuantity || !requestReason || !requestNeededDate) return;
-    
-    const newRequest: InventoryRequest = {
-      id: `req${requests.length + 1}`,
-      itemId: selectedItem.id,
-      itemName: selectedItem.name,
-      itemCategory: selectedItem.category,
-      requestedBy: isLabAssistant ? 'Lab Assistant' : 'Teacher',
-      requestedByRole: userRole,
-      requestedDate: new Date().toISOString().split('T')[0],
-      neededDate: requestNeededDate,
-      quantity: parseInt(requestQuantity),
-      priority: requestPriority,
-      status: 'pending',
-      reason: requestReason,
-      attachments: [],
-    };
+  const unreadCount = useMemo(() => {
+    return approvedFulfilledNotifications.filter((n) => !n.read).length;
+  }, [approvedFulfilledNotifications]);
 
-    setRequests([newRequest, ...requests]);
-    
-    // Send notification to principal
-    const notification: Notification = {
-      id: `notif${notifications.length + 1}`,
-      type: 'request',
-      title: 'New Inventory Request',
-      message: `${newRequest.requestedBy} requested ${newRequest.quantity} ${selectedItem.unit} of ${selectedItem.name}`,
-      timestamp: new Date().toLocaleString(),
-      read: false,
-      requestId: newRequest.id,
-      itemId: selectedItem.id,
-    };
+  const fulfilledRequestsApproved = useMemo(() => {
+    return requests.filter((r) => r.status === 'fulfilled' && (!!r.approvedBy || !!r.approvedDate));
+  }, [requests]);
 
-    setNotifications([notification, ...notifications]);
-    
-    // Reset form
-    setShowRequestDialog(false);
-    setRequestQuantity('');
-    setRequestPriority('medium');
-    setRequestReason('');
-    setRequestNeededDate('');
-  };
-
-  const handleApproveRequest = (requestId: string) => {
-    const request = requests.find(req => req.id === requestId);
-    if (!request) return;
-
-    const updatedRequests = requests.map(req => 
-      req.id === requestId 
-        ? { ...req, status: 'approved', approvedBy: 'Principal Silva', approvedDate: new Date().toISOString().split('T')[0] }
-        : req
+  const markNotificationAsRead = (notificationId: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
     );
-
-    setRequests(updatedRequests);
-
-    // Send notification to requester
-    const notification: Notification = {
-      id: `notif${notifications.length + 1}`,
-      type: 'approval',
-      title: 'Request Approved',
-      message: `Your request for ${request.quantity} ${inventoryItems.find(i => i.id === request.itemId)?.unit} of ${request.itemName} has been approved by Principal Silva.`,
-      timestamp: new Date().toLocaleString(),
-      read: false,
-      requestId: requestId,
-      itemId: request.itemId,
-    };
-
-    setNotifications([notification, ...notifications]);
   };
 
-  const handleRejectRequest = (requestId: string) => {
-    const request = requests.find(req => req.id === requestId);
-    if (!request) return;
-
-    const updatedRequests = requests.map(req => 
-      req.id === requestId 
-        ? { ...req, status: 'rejected' }
-        : req
-    );
-
-    setRequests(updatedRequests);
-
-    // Send notification to requester
-    const notification: Notification = {
-      id: `notif${notifications.length + 1}`,
-      type: 'rejection',
-      title: 'Request Rejected',
-      message: `Your request for ${request.quantity} ${inventoryItems.find(i => i.id === request.itemId)?.unit} of ${request.itemName} has been rejected.`,
-      timestamp: new Date().toLocaleString(),
-      read: false,
-      requestId: requestId,
-      itemId: request.itemId,
-    };
-
-    setNotifications([notification, ...notifications]);
+  const markAllNotificationsAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
+  /**
+   * ✅ Lab assistant fulfillment action
+   * - Only allowed for "approved" requests (because principal approval is required first)
+   * - After fulfill, create a fulfillment notification
+   */
   const handleFulfillRequest = () => {
     if (!selectedRequest || !fulfilledQuantity || !fulfillmentDate) return;
 
-    const updatedRequests = requests.map(req => 
-      req.id === selectedRequest.id 
-        ? { 
-            ...req, 
-            status: 'fulfilled',
-            fulfilledBy: 'Lab Assistant',
-            fulfilledDate: fulfillmentDate,
-            fulfilledQuantity: parseInt(fulfilledQuantity),
-            notes: fulfillmentNotes,
-          }
-        : req
+    const qty = parseInt(fulfilledQuantity, 10);
+    if (Number.isNaN(qty) || qty <= 0) return;
+
+    // Only fulfill if principal has approved
+    if (!selectedRequest.approvedBy && !selectedRequest.approvedDate) return;
+
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === selectedRequest.id
+          ? {
+              ...r,
+              status: 'fulfilled',
+              fulfilledBy: 'Lab Assistant',
+              fulfilledDate: fulfillmentDate,
+              fulfilledQuantity: qty,
+              notes: fulfillmentNotes,
+            }
+          : r
+      )
     );
 
-    setRequests(updatedRequests);
+    const unit = inventoryItems.find((i) => i.id === selectedRequest.itemId)?.unit ?? 'units';
 
-    // Update inventory stock level
-    const item = inventoryItems.find(i => i.id === selectedRequest.itemId);
-    if (item) {
-      // In a real app, you would update the actual inventory here
-      console.log(`Updated ${item.name} stock: +${fulfilledQuantity} ${item.unit}`);
-    }
-
-    // Send fulfillment notification
-    const notification: Notification = {
-      id: `notif${notifications.length + 1}`,
+    const newNotification: Notification = {
+      id: `notif${Date.now()}`,
       type: 'fulfillment',
       title: `${selectedRequest.itemName} Restocked`,
-      message: `Lab Assistant has added ${fulfilledQuantity} ${item?.unit} of ${selectedRequest.itemName} to inventory.`,
+      message: `Lab Assistant has added ${qty} ${unit} of ${selectedRequest.itemName} to inventory.`,
       timestamp: new Date().toLocaleString(),
       read: false,
       requestId: selectedRequest.id,
       itemId: selectedRequest.itemId,
     };
 
-    setNotifications([notification, ...notifications]);
+    setNotifications((prev) => [newNotification, ...prev]);
 
-    // Reset form
+    // reset
     setShowFulfillDialog(false);
     setSelectedRequest(null);
     setFulfilledQuantity('');
@@ -457,24 +404,10 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     setFulfillmentDate('');
   };
 
-  const markNotificationAsRead = (notificationId: string) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === notificationId ? { ...notif, read: true } : notif
-    ));
-  };
-
-  const markAllNotificationsAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
-  };
-
-  // Get requests for a specific item
-  const getItemRequests = (itemId: string) => {
-    return requests.filter(req => req.itemId === itemId);
-  };
-
+  
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header with Notifications */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-gray-900 mb-2">Laboratory Inventory</h2>
@@ -482,98 +415,122 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             Manage and track all laboratory equipment, glassware, and materials
           </p>
         </div>
+
         <div className="flex items-center gap-4">
-          {/* Notifications Bell */}
+          {/* Notifications Bell (Fulfillment only) */}
           <div className="relative">
             <Button
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => setShowNotifications((v) => !v)}
             >
               <Bell className="h-5 w-5" />
-              {unreadNotifications.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-xs text-white flex items-center justify-center">
-                  {unreadNotifications.length}
+                  {unreadCount}
                 </span>
               )}
             </Button>
-            
-            {/* Notifications Dropdown - MODIFIED to show fulfillment details */}
+
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Fulfillment Notifications</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <h3 className="font-semibold">
+                      {isPrincipal ? 'Fulfillment Notifications' : 'Fulfillment Notifications'}
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={markAllNotificationsAsRead}
                       className="text-blue-600 hover:text-blue-800"
                     >
                       Mark all as read
                     </Button>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">Items that have been restocked</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    What lab assistants have fulfilled for principal-approved purchases
+                  </p>
                 </div>
+
                 <div className="max-h-96 overflow-y-auto">
-                  {fulfillmentNotifications.length > 0 ? (
-                    fulfillmentNotifications.map((notification) => {
-                      const request = requests.find(req => req.id === notification.requestId);
-                      const item = inventoryItems.find(i => i.id === notification.itemId);
-                      
+                  {approvedFulfilledNotifications.length > 0 ? (
+                    approvedFulfilledNotifications.map((notif) => {
+                      const req = requests.find((r) => r.id === notif.requestId);
+                      const item = inventoryItems.find((i) => i.id === notif.itemId);
+
                       return (
                         <div
-                          key={notification.id}
+                          key={notif.id}
                           className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                            !notification.read ? 'bg-purple-50' : ''
+                            !notif.read ? 'bg-purple-50' : ''
                           }`}
-                          onClick={() => markNotificationAsRead(notification.id)}
+                          onClick={() => markNotificationAsRead(notif.id)}
                         >
                           <div className="flex items-start gap-3">
                             <div className="rounded-full p-2 bg-purple-100 text-purple-600">
                               <Package className="h-4 w-4" />
                             </div>
+
                             <div className="flex-1">
                               <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-gray-900">{notification.title}</h4>
-                                {!notification.read && (
-                                  <span className="h-2 w-2 rounded-full bg-purple-500"></span>
-                                )}
+                                <h4 className="font-medium text-gray-900">{notif.title}</h4>
+                                {!notif.read && <span className="h-2 w-2 rounded-full bg-purple-500"></span>}
                               </div>
-                              
-                              {/* Detailed fulfillment information */}
+
                               <div className="mt-2 space-y-2">
-                                <p className="text-sm text-gray-600">{notification.message}</p>
-                                
-                                {request && (
+                                <p className="text-sm text-gray-600">{notif.message}</p>
+
+                                {req && (
                                   <div className="text-sm">
                                     <div className="flex items-center gap-2 text-gray-700">
-                                      <span className="font-medium">Requested by:</span>
-                                      <span>{request.requestedBy}</span>
+                                      <span className="font-medium">Approved by:</span>
+                                      <span>{req.approvedBy ?? 'Principal'}</span>
+                                      {req.approvedDate && (
+                                        <span className="text-gray-500">({req.approvedDate})</span>
+                                      )}
                                     </div>
+
                                     <div className="flex items-center gap-2 text-gray-700">
-                                      <span className="font-medium">Date fulfilled:</span>
-                                      <span>{request.fulfilledDate}</span>
+                                      <span className="font-medium">Fulfilled by:</span>
+                                      <span>{req.fulfilledBy ?? 'Lab Assistant'}</span>
+                                      {req.fulfilledDate && (
+                                        <span className="text-gray-500">({req.fulfilledDate})</span>
+                                      )}
                                     </div>
-                                    {request.notes && (
+
+                                    {typeof req.fulfilledQuantity === 'number' && (
+                                      <div className="flex items-center gap-2 text-gray-700">
+                                        <span className="font-medium">Quantity added:</span>
+                                        <span>
+                                          {req.fulfilledQuantity} {item?.unit ?? 'units'}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {req.notes && (
                                       <div className="mt-1 p-2 bg-gray-50 rounded border border-gray-200">
                                         <span className="font-medium text-gray-700">Notes: </span>
-                                        <span className="text-gray-600">{request.notes}</span>
+                                        <span className="text-gray-600">{req.notes}</span>
                                       </div>
                                     )}
                                   </div>
                                 )}
-                                
+
                                 {item && (
                                   <div className="flex items-center gap-2 mt-1">
-                                    <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
-                                    <span className="text-xs text-gray-500">Location: {item.location}</span>
+                                    <Badge variant="outline" className="bg-gray-50">
+                                      {item.category}
+                                    </Badge>
+                                    <span className="text-xs text-gray-500">
+                                      Location: {item.location}
+                                    </span>
                                   </div>
                                 )}
                               </div>
-                              
-                              <p className="text-xs text-gray-500 mt-3">{notification.timestamp}</p>
+
+                              <p className="text-xs text-gray-500 mt-3">{notif.timestamp}</p>
                             </div>
                           </div>
                         </div>
@@ -583,7 +540,9 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                     <div className="p-8 text-center">
                       <CheckCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-600">No fulfillment notifications</p>
-                      <p className="text-sm text-gray-500 mt-1">Items restocked will appear here</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Restocked (fulfilled) items will appear here
+                      </p>
                     </div>
                   )}
                 </div>
@@ -591,6 +550,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             )}
           </div>
 
+          {/* Add Item Button (optional) */}
           {canEdit && (
             <Dialog>
               <DialogTrigger asChild>
@@ -599,6 +559,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                   Add Item
                 </Button>
               </DialogTrigger>
+
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
                 <DialogHeader>
                   <DialogTitle>Add New Inventory Item</DialogTitle>
@@ -606,60 +567,22 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                     Add new equipment or material to the laboratory inventory
                   </DialogDescription>
                 </DialogHeader>
-                <form className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Item Name</label>
-                      <Input placeholder="e.g., Beakers (250ml)" className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Category</label>
-                      <Select>
-                        <SelectTrigger className="mt-1 bg-white">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                          <SelectItem value="Glassware">Glassware</SelectItem>
-                          <SelectItem value="Equipment">Equipment</SelectItem>
-                          <SelectItem value="Chemicals">Chemicals</SelectItem>
-                          <SelectItem value="Safety">Safety Equipment</SelectItem>
-                          <SelectItem value="Instruments">Instruments</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Stock Level</label>
-                      <Input type="number" placeholder="e.g., 35" className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Minimum Stock Level</label>
-                      <Input type="number" placeholder="e.g., 20" className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Unit</label>
-                      <Input placeholder="e.g., pieces, units" className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Location</label>
-                      <Input placeholder="e.g., Cabinet A2 - Shelf 3" className="mt-1" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="outline" onClick={() => {}}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                      Add Item
-                    </Button>
-                  </div>
-                </form>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                  <Button type="button" className="bg-blue-600 hover:bg-blue-700">
+                    Add Item
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           )}
         </div>
       </div>
 
-      {/* Fulfillment Statistics - ONLY FULFILLED */}
+      {/* Principal Stat Card: only Approved+Fulfilled */}
       {isPrincipal && (
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <Card className="border border-gray-200 shadow-sm">
@@ -667,41 +590,18 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Items Restocked</p>
-                  <p className="text-3xl font-bold text-purple-600">{fulfilledRequests.length}</p>
-                  <p className="text-sm text-gray-600 mt-1">Fulfilled requests</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {fulfilledRequestsApproved.length}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Fulfilled requests (principal-approved)
+                  </p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
                   <Package className="w-6 h-6 text-purple-600" />
                 </div>
               </div>
-              
-              {/* Recent Fulfillments */}
-              {fulfilledRequests.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <h4 className="font-medium text-gray-900 mb-3">Recently Restocked</h4>
-                  <div className="space-y-3">
-                    {fulfilledRequests.slice(0, 3).map((request) => {
-                      const item = inventoryItems.find(i => i.id === request.itemId);
-                      return (
-                        <div key={request.id} className="flex items-center justify-between p-2 bg-purple-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                              <CheckCheck className="w-4 h-4 text-purple-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{request.itemName}</p>
-                              <p className="text-xs text-gray-600">
-                                {request.fulfilledQuantity} {item?.unit} added by {request.fulfilledBy}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-500">{request.fulfilledDate}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+   
             </CardContent>
           </Card>
         </div>
@@ -722,6 +622,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                 />
               </div>
             </div>
+
             <div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="hover:border-blue-400 transition-colors bg-white">
@@ -741,64 +642,39 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
         </CardContent>
       </Card>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-gray-700">Total Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-gray-900">{inventoryItems.length}</p>
-            <p className="text-sm text-gray-600 mt-1">Unique item types</p>
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-gray-700">Low Stock Alerts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-red-600">{inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length}</p>
-            <p className="text-sm text-gray-600 mt-1">Items need restocking</p>
-          </CardContent>
-        </Card>
-        <Card className="border border-gray-200 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-gray-700">Last Updated</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-gray-900">Today</p>
-            <p className="text-sm text-gray-600 mt-1">2025-11-12</p>
-          </CardContent>
-        </Card>
-      </div>
-
-    {/* Inventory Grid Container */}
-        <div className="border border-gray-200 rounded-lg shadow-sm">
-        <div className="p-6">
       {/* Inventory Grid */}
+      <div className="border border-gray-200 rounded-lg shadow-sm">
+        <div className="p-6">
+         
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredItems.map((item) =>{
+            {filteredItems.map((item) => {
               const status = getStockStatus(item);
               const StatusIcon = status.icon;
               const itemRequests = getItemRequests(item.id);
-              const hasPendingRequest = itemRequests.some(req => req.status === 'pending');
-              const hasApprovedRequest = itemRequests.some(req => req.status === 'approved');
-              const hasFulfilledRequest = itemRequests.some(req => req.status === 'fulfilled');
+
+              const hasPendingRequest = itemRequests.some((r) => r.status === 'pending');
+              const hasApprovedRequest = itemRequests.some((r) => r.status === 'approved');
+              const hasFulfilledRequest = itemRequests.some((r) => r.status === 'fulfilled');
 
               return (
-                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow border border-gray-200">
+                <Card
+                  key={item.id}
+                  className="overflow-hidden hover:shadow-lg transition-shadow border border-gray-200"
+                >
                   <div className="h-48 bg-gray-100 relative">
                     <ImageWithFallback
                       src={item.photo}
                       alt={item.name}
                       className="w-full h-full object-cover"
                     />
+
                     <div className="absolute top-2 right-2">
                       <Badge className={status.color}>
                         <StatusIcon className="w-3 h-3 mr-1" />
                         {status.label}
                       </Badge>
                     </div>
+
                     {(hasPendingRequest || hasApprovedRequest || hasFulfilledRequest) && (
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {hasPendingRequest && (
@@ -822,32 +698,42 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                       </div>
                     )}
                   </div>
+
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
+                      <Badge variant="outline" className="bg-gray-50">
+                        {item.category}
+                      </Badge>
                       <span className="text-xs text-gray-500">{item.lastUpdated}</span>
                     </div>
-                    <CardTitle className="text-lg font-semibold text-gray-900">{item.name}</CardTitle>
-                    <CardDescription className="text-sm text-gray-600">Location: {item.location}</CardDescription>
+                    <CardTitle className="text-lg font-semibold text-gray-900">
+                      {item.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-gray-600">
+                      Location: {item.location}
+                    </CardDescription>
                   </CardHeader>
+
                   <CardContent className="space-y-3 pt-0">
                     <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                       <div>
                         <p className="text-xs text-gray-500 font-medium">Current Stock</p>
                         <p className="text-lg font-bold text-gray-900 mt-1">
-                          {item.stockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
+                          {item.stockLevel}{' '}
+                          <span className="text-sm font-normal text-gray-600">{item.unit}</span>
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 font-medium">Min. Required</p>
                         <p className="text-lg font-bold text-gray-900 mt-1">
-                          {item.minStockLevel} <span className="text-sm font-normal text-gray-600">{item.unit}</span>
+                          {item.minStockLevel}{' '}
+                          <span className="text-sm font-normal text-gray-600">{item.unit}</span>
                         </p>
                       </div>
                     </div>
 
                     <div className="flex gap-2">
-                      {/* Details Button */}
+                      {/* Details */}
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -860,16 +746,19 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                             Details
                           </Button>
                         </DialogTrigger>
+
                         <DialogContent className="max-w-2xl bg-white border border-gray-200 shadow-xl max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold text-gray-900">{item.name}</DialogTitle>
+                            <DialogTitle className="text-2xl font-bold text-gray-900">
+                              {item.name}
+                            </DialogTitle>
                             <DialogDescription className="text-gray-600">
                               Inventory details and restock history
                             </DialogDescription>
                           </DialogHeader>
-                          
+
                           <div className="space-y-6 py-4">
-                            {/* Image */}
+                  
                             <div className="h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
                               <ImageWithFallback
                                 src={item.photo}
@@ -878,28 +767,25 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                               />
                             </div>
 
-                            {/* Divider */}
+                       
                             <hr className="border-gray-300" />
 
-                            {/* Table-like Details - UPDATED to match new screenshot */}
+                       
                             <div className="space-y-6">
                               <h3 className="text-lg font-semibold text-gray-900">Property</h3>
                               <div className="space-y-4">
-                                {/* Category */}
+                       
                                 <div>
                                   <h4 className="text-sm font-medium text-gray-700 mb-1">Category</h4>
-                                  <div>
-                                    <Badge variant="outline" className="bg-gray-50">{item.category}</Badge>
-                                  </div>
+                                  <Badge variant="outline" className="bg-gray-50">
+                                    {item.category}
+                                  </Badge>
                                 </div>
-                                
-                                {/* Location */}
                                 <div>
                                   <h4 className="text-sm font-medium text-gray-700 mb-1">Location</h4>
                                   <p className="text-gray-900">{item.location}</p>
                                 </div>
-                                
-                                {/* Stock Level */}
+                         
                                 <div>
                                   <h4 className="text-sm font-medium text-gray-700 mb-1">Stock Level</h4>
                                   <div className="flex items-center gap-3">
@@ -912,8 +798,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                                     </Badge>
                                   </div>
                                 </div>
-                                
-                                {/* Last Updated */}
+                           
                                 <div>
                                   <h4 className="text-sm font-medium text-gray-700 mb-1">Last Updated</h4>
                                   <p className="text-gray-900">{item.lastUpdated}</p>
@@ -921,87 +806,64 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                               </div>
                             </div>
 
-                            {/* Divider */}
+                         
                             <hr className="border-gray-300" />
 
-                            {/* Restock History Section - UPDATED to match new screenshot */}
+                            {/* Restock History: show only fulfilled + principal-approved */}
                             <div className="space-y-6">
                               <h3 className="text-lg font-semibold text-gray-900">Restock History</h3>
-                              
-                              {/* Filter to only show fulfilled requests for this item from lab assistants */}
-                              {itemRequests.filter(request => 
-                                request.status === 'fulfilled' && 
-                                request.requestedByRole === 'lab-assistant'
-                              ).length > 0 ? (
+
+                              {itemRequests.filter((r) => r.status === 'fulfilled' && (!!r.approvedBy || !!r.approvedDate)).length > 0 ? (
                                 <div className="space-y-6">
-                                  {itemRequests.filter(request => 
-                                    request.status === 'fulfilled' && 
-                                    request.requestedByRole === 'lab-assistant'
-                                  ).map((request) => (
-                                    <div key={request.id} className="space-y-4">
-                                      {/* Requester and status */}
-                                      <div>
-                                        <h4 className="text-lg font-bold text-gray-900">{request.requestedBy}</h4>
-                                        <div className="flex items-center gap-3 mt-2">
-                                          <Badge className="bg-purple-100 text-purple-800 border-purple-200">
-                                            <CheckCheck className="w-3 h-3 mr-1" />
-                                            Fulfilled
-                                          </Badge>
-                                          <span className="text-sm text-gray-600 italic">
-                                            {request.priority} Priority
-                                          </span>
+                                  {itemRequests
+                                    .filter((r) => r.status === 'fulfilled' && (!!r.approvedBy || !!r.approvedDate))
+                                    .map((r) => (
+                                      <div key={r.id} className="space-y-4">
+                                        <div>
+                                          <h4 className="text-lg font-bold text-gray-900">
+                                            {r.fulfilledBy ?? 'Lab Assistant'}
+                                          </h4>
+                                          <div className="flex items-center gap-3 mt-2">
+                                            <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                                              <CheckCheck className="w-3 h-3 mr-1" />
+                                              Fulfilled
+                                            </Badge>
+                                            <span className="text-sm text-gray-600 italic">{r.priority} Priority</span>
+                                          </div>
+                                          <p className="text-sm text-gray-600 mt-2">
+                                            <span className="font-medium">Approved by:</span> {r.approvedBy ?? 'Principal'} {r.approvedDate ? `(${r.approvedDate})` : ''}
+                                          </p>
                                         </div>
-                                      </div>
-                                      
-                                      {/* Quantity */}
-                                      <div>
-                                        <p className="text-2xl font-bold text-gray-900">{request.quantity} {item.unit}</p>
-                                        <p className="text-sm text-gray-500 mt-1">Quantity requested</p>
-                                      </div>
-                                      
-                                      {/* Dates */}
-                                      <div className="text-sm text-gray-700">
-                                        <p>
-                                          <span className="font-medium">Requested:</span> {request.requestedDate} · 
-                                          <span className="font-medium ml-1">Needed:</span> {request.neededDate}
-                                        </p>
-                                      </div>
-                                      
-                                      {/* Reason */}
-                                      <p className="text-gray-700">
-                                        {request.reason}
-                                      </p>
-                                      
-                                      {/* Divider */}
-                                      <hr className="border-gray-300" />
-                                      
-                                      {/* Fulfillment Details */}
-                                      <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                          <CheckCheck className="w-5 h-5 text-green-600" />
-                                          <h5 className="font-bold text-gray-900">
-                                            Fulfilled by {request.fulfilledBy} on {request.fulfilledDate}
-                                          </h5>
+
+                                        <div>
+                                          <p className="text-2xl font-bold text-gray-900">
+                                            {r.fulfilledQuantity ?? r.quantity} {item.unit}
+                                          </p>
+                                          <p className="text-sm text-gray-500 mt-1">Quantity added</p>
                                         </div>
-                                        <p className="text-gray-700">
-                                          <span className="font-medium">Quantity added:</span> {request.fulfilledQuantity} {item.unit}
-                                        </p>
-                                        {request.notes && (
-                                          <div className="mt-2">
-                                            <p className="text-gray-700">
-                                              <span className="font-medium">Notes:</span> {request.notes}
-                                            </p>
+
+                                        <div className="text-sm text-gray-700">
+                                          <p>
+                                            <span className="font-medium">Fulfilled:</span> {r.fulfilledDate ?? '-'}
+                                          </p>
+                                        </div>
+
+                                        {r.notes && (
+                                          <div className="p-3 bg-gray-50 rounded border border-gray-200">
+                                            <span className="font-medium text-gray-700">Notes: </span>
+                                            <span className="text-gray-600">{r.notes}</span>
                                           </div>
                                         )}
                                       </div>
-                                    </div>
-                                  ))}
+                                    ))}
                                 </div>
                               ) : (
                                 <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
                                   <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                   <p className="text-gray-600">No restock history available</p>
-                                  <p className="text-sm text-gray-500 mt-1">Restocked items will appear here</p>
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    Fulfilled (principal-approved) items will appear here
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -1009,20 +871,44 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                         </DialogContent>
                       </Dialog>
 
-                      {/* Edit Button */}
+                      {/* Edit */}
                       {canEdit && (
-                        <Button size="sm" variant="outline" className="border-gray-300 hover:border-blue-400 hover:bg-blue-50">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
+
+                    {/* ✅ Lab Assistant: quick action to fulfill approved requests (optional UI hook)
+                        You can trigger this from a different page too; here is a simple approach:
+                    */}
+                    {isLabAssistant && itemRequests.some((r) => r.status === 'approved' && (!!r.approvedBy || !!r.approvedDate)) && (
+                      <Button
+                        size="sm"
+                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        onClick={() => {
+                          // pick the latest approved request for this item
+                          const req = itemRequests.find((r) => r.status === 'approved' && (!!r.approvedBy || !!r.approvedDate));
+                          if (!req) return;
+                          setSelectedRequest(req);
+                          setShowFulfillDialog(true);
+                        }}
+                      >
+                        <CheckCheck className="w-4 h-4 mr-2" />
+                        Mark Approved Request as Fulfilled
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );
             })}
           </div>
 
-          {/* Empty State */}
+        
           {filteredItems.length === 0 && (
             <Card className="py-12 border border-gray-200 shadow-sm">
               <CardContent className="text-center">
@@ -1037,7 +923,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
         </div>
       </div>
 
-      {/* Fulfillment Dialog for Lab Assistant */}
+      {/* Fulfillment Dialog (Lab Assistant) */}
       <Dialog open={showFulfillDialog} onOpenChange={setShowFulfillDialog}>
         <DialogContent className="bg-white">
           <DialogHeader>
@@ -1046,15 +932,23 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               Confirm that you have added the requested items to inventory
             </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4 py-4">
             {selectedRequest && (
               <>
                 <div className="p-3 bg-gray-50 rounded-lg border">
                   <h4 className="font-semibold text-gray-900">{selectedRequest.itemName}</h4>
                   <p className="text-sm text-gray-600">Requested by: {selectedRequest.requestedBy}</p>
-                  <p className="text-sm text-gray-600">Quantity requested: {selectedRequest.quantity} {inventoryItems.find(i => i.id === selectedRequest.itemId)?.unit}</p>
+                  <p className="text-sm text-gray-600">
+                    Approved by: {selectedRequest.approvedBy ?? 'Principal'}{' '}
+                    {selectedRequest.approvedDate ? `(${selectedRequest.approvedDate})` : ''}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Quantity requested: {selectedRequest.quantity}{' '}
+                    {inventoryItems.find((i) => i.id === selectedRequest.itemId)?.unit}
+                  </p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">
                     Quantity Fulfilled
@@ -1065,13 +959,11 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                     value={fulfilledQuantity}
                     onChange={(e) => setFulfilledQuantity(e.target.value)}
                     min="1"
-                    max={selectedRequest.quantity.toString()}
+                    max={String(selectedRequest.quantity)}
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Requested: {selectedRequest.quantity} {inventoryItems.find(i => i.id === selectedRequest.itemId)?.unit}
-                  </p>
+        
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">
                     Fulfillment Date
@@ -1083,7 +975,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                     max={new Date().toISOString().split('T')[0]}
                   />
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">
                     Notes (Optional)
@@ -1091,7 +983,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                   <textarea
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
-                    placeholder="Add any notes about the fulfillment (e.g., supplier, quality, storage location)"
+                    placeholder="Add notes (supplier / quality / storage etc.)"
                     value={fulfillmentNotes}
                     onChange={(e) => setFulfillmentNotes(e.target.value)}
                   />
@@ -1099,8 +991,9 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               </>
             )}
           </div>
+
           <div className="flex justify-end gap-2">
-            <Button 
+            <Button
               variant="outline"
               onClick={() => {
                 setShowFulfillDialog(false);
@@ -1109,7 +1002,8 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             >
               Cancel
             </Button>
-            <Button 
+
+            <Button
               className="bg-purple-600 hover:bg-purple-700"
               onClick={handleFulfillRequest}
               disabled={!fulfilledQuantity || !fulfillmentDate}

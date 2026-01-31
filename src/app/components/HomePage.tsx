@@ -140,7 +140,7 @@ export function HomePage({ userName, userRole, onNavigate }: HomePageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-white shadow-lg">
+        <div className="bg-linear-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-white shadow-lg">
           <motion.h1
             className="text-white mb-2"
             initial={{ opacity: 0, x: -20 }}
