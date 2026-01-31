@@ -37,6 +37,7 @@ import type { AuthUser } from "@/lib/types";
 interface DashboardProps {
   user: AuthUser;
   onLogout: () => void;
+  initialView?: string;
 }
 
 type Page =
@@ -47,9 +48,9 @@ type Page =
   | "settings"
   | "users";
 
-export function Dashboard({ user, onLogout }: DashboardProps) {
+export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
   const [currentPage, setCurrentPage] =
-    useState<Page>("home");
+    useState<Page>((initialView as Page) ?? "home");
 
   // Define navigation items based on user role
   const getNavigationItems = () => {

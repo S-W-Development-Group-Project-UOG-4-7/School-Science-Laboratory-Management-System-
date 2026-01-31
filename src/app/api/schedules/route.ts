@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, ScheduleStatus } from "@prisma/client";
 import { getServerSession } from "next-auth/next";
+import type { Session } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
   console.log("📨 POST /api/schedules - Start");
 
   try {
-    const session = await getSessionFromReq(req);
+    const session = (await getSessionFromReq(req)) as Session | null;
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -114,7 +115,7 @@ export async function GET(req: NextRequest) {
   console.log("📅 GET /api/schedules - Start");
 
   try {
-    const session = await getSessionFromReq(req);
+    const session = (await getSessionFromReq(req)) as Session | null;
 
     if (!session?.user?.id) {
       return NextResponse.json(

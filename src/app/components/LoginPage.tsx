@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 
 import { FlaskConical, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { AuthUser } from '@/lib/types';
+
+interface LoginPageProps {
+  onLogin: (user: AuthUser) => void;
+}
 
 // DNA Helix Animation Component
 const DNAHelix = () => {
@@ -94,13 +99,11 @@ const DNAHelix = () => {
   );
 };
 
-export function LoginPage() {
+export function LoginPage({ onLogin }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const [step, setStep] = useState<'login' | '2fa'>('login');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,8 +111,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     // Simulate login API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
+    await new Promise((r) => setTimeout(r, 800));
     setIsLoading(false);
     setStep('2fa');
   };

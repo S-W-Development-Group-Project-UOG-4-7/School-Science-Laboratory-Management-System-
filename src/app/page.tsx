@@ -5,10 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { LoginPage } from './components/LoginPage';
 import { Dashboard } from './components/Dashboard';
 import { Toaster } from './components/ui/sonner';
-import type { User } from './lib/types';
+import type { AuthUser } from '@/lib/types';
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function Home() {
     }
   };
 
-  const handleLogin = (userData: User) => {
+  const handleLogin = (userData: AuthUser) => {
     setUser(userData);
     
     // Restore the view from localStorage if it exists
