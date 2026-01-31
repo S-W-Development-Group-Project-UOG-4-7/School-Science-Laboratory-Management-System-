@@ -54,13 +54,19 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   const [openAdd, setOpenAdd] = useState(false);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [openDetails, setOpenDetails] = useState(false);
+  const ITEM_UNITS = ['pcs', 'bottle', 'box', 'bag', 'packet'];
+const PACKAGE_UNITS = ['g', 'kg', 'ml', 'L'];
   const [form, setForm] = useState({
     name: '',
     category: 'Equipment' as InventoryItem['category'],
-    stockLevel: 0,
-    minStockLevel: 0,
+    quantity: 0,
     unit: '',
+    packageSize: undefined as number | undefined,
+    packageUnit: '',
+
+    minStockLevel: 0,
     location: 'Junior Lab',
+    
     storageInstructions: '',
     handlingProcedure: '',
     safetyNotes: '',
@@ -80,8 +86,8 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   
   // Sort items: low stock items first
   const sortedItems = [...filteredItems].sort((a, b) => {
-    const aIsLowStock = a.stockLevel <= a.minStockLevel;
-    const bIsLowStock = b.stockLevel <= b.minStockLevel;
+    const aIsLowStock = a.quantity<= a.minStockLevel;
+    const bIsLowStock = b.quantity<= b.minStockLevel;
     
     if (aIsLowStock && !bIsLowStock) return -1;
     if (!aIsLowStock && bIsLowStock) return 1;
@@ -91,7 +97,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   const canEdit = userRole === 'admin' || userRole === 'lab-assistant';
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.stockLevel <= item.minStockLevel) {
+    if (item.quantity<= item.minStockLevel) {
       return { label: 'Low Stock', color: 'bg-red-100 text-red-700 border-red-200', icon: AlertTriangle };
     }
     return { label: 'In Stock', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle };
@@ -101,10 +107,10 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   const formData = new FormData();
   formData.append('name', form.name);
   formData.append('category', form.category);
-  formData.append('stockLevel', form.stockLevel.toString());
-  formData.append('minStockLevel', form.minStockLevel.toString());
+  formData.append('quantity', form.quantity.toString());
   formData.append('unit', form.unit);
-  formData.append('location', form.location);
+  formData.append('minStockLevel', form.minStockLevel.toString());
+  formData.append('location', form.location); 
   formData.append('storageInstructions', form.storageInstructions);
   formData.append('handlingProcedure', form.handlingProcedure);
   formData.append('safetyNotes', form.safetyNotes);
@@ -112,7 +118,12 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
   if (photoFile) {
     formData.append('photo', photoFile); // attach the file
   }
-
+if (form.packageSize !== undefined) {
+  formData.append('packageSize', form.packageSize.toString());
+}
+if (form.packageUnit) {
+  formData.append('packageUnit', form.packageUnit);
+}
   await fetch('/api/inventory', {
     method: 'POST',
     body: formData, // send as FormData
@@ -120,20 +131,27 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
 
   setOpenAdd(false);
   setForm({
-    name: '',
-    category: 'Equipment',
-    stockLevel: 0,
-    minStockLevel: 0,
-    unit: '',
-    location: 'Junior Lab',
-    storageInstructions: '',
-    handlingProcedure: '',
-    safetyNotes: '',
-    photo: '',
-  });
+  name: '',
+  category: 'Equipment',
+
+  quantity: 0,
+  unit: '',
+
+  packageSize: undefined,
+  packageUnit: '',
+
+  minStockLevel: 0,
+  location: 'Junior Lab',
+
+  storageInstructions: '',
+  handlingProcedure: '',
+  safetyNotes: '',
+  photo: '',
+});
   setPhotoFile(null);
   mutate('/api/inventory');
 };
+
 
   const handleUpdateItem = async () => {
     if (!selectedItem) return;
@@ -156,8 +174,8 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     mutate('/api/inventory');
   };
 
-  const inStockCount = inventoryItems.filter(item => item.stockLevel > item.minStockLevel).length;
-  const lowStockCount = inventoryItems.filter(item => item.stockLevel <= item.minStockLevel).length;
+  const inStockCount = inventoryItems.filter(item => item.quantity> item.minStockLevel).length;
+  const lowStockCount = inventoryItems.filter(item => item.quantity<= item.minStockLevel).length;
  
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -224,9 +242,9 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                 type="number"
                 min={0}
                 placeholder="Enter quantity"
-                value={form.stockLevel}
+                value={form.quantity }
                 onChange={(e) =>
-                  setForm({ ...form, stockLevel: Number(e.target.value) })
+                  setForm({ ...form,quantity: Number(e.target.value) })
                 }
               />
             </div>
@@ -246,12 +264,65 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
 
             <div>
               <label className="text-sm font-medium mb-1 block">Unit</label>
-              <Input
-                placeholder="e.g., pcs, ml, kg"
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              />
-            </div>
+             <Select
+  value={form.unit}
+  onValueChange={(value) => setForm({ ...form, unit: value })}
+>
+  <SelectTrigger>
+    <SelectValue placeholder="Select unit (container)" />
+  </SelectTrigger>
+  <SelectContent>
+    {ITEM_UNITS.map((u) => (
+      <SelectItem key={u} value={u}>
+        {u}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+
+</div>
+{form.category === 'Chemicals' && (
+  <div className="grid grid-cols-2 gap-4">
+    <div>
+      <label className="text-sm font-medium mb-1 block">
+        Package Size (per {form.unit || 'unit'})
+      </label>
+      <Input
+        type="number"
+        min={0}
+        step="0.01"
+        value={form.packageSize ?? ''}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            packageSize: e.target.value ? Number(e.target.value) : undefined,
+          })
+        }
+      />
+    </div>
+
+    <div>
+      <label className="text-sm font-medium mb-1 block">
+        Package Unit
+      </label>
+      <Select
+        value={form.packageUnit}
+        onValueChange={(value) => setForm({ ...form, packageUnit: value })}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="kg, g, ml, L" />
+        </SelectTrigger>
+        <SelectContent>
+          {PACKAGE_UNITS.map((u) => (
+            <SelectItem key={u} value={u}>{u}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+)}
+
+
 
             <div>
               <label className="text-sm font-medium mb-1 block">Location</label>
@@ -427,7 +498,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                   <div>
                     <p className="text-sm text-gray-600">Current Stock</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {item.stockLevel} {item.unit}
+                      {item.quantity}{ item.unit}
                     </p>
                   </div>
                   <div className="text-right">
@@ -476,7 +547,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                           </div>
                           <div>
                             <p className="text-sm font-medium">Quantity</p>
-                            <p>{item.stockLevel} {item.unit}</p>
+                            <p>{item.quantity} {item.unit}</p>
                           </div>
                           <div>
                             <p className="text-sm font-medium">Minimum Stock</p>
@@ -506,15 +577,33 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
                   {canEdit && (
                     <>
                       <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setForm(item);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
+  size="sm"
+  variant="outline"
+  onClick={() => {
+    setSelectedItem(item);
+    setForm({
+      name: item.name,
+      category: item.category,
+
+      quantity: item.quantity,
+      unit: item.unit,
+
+      packageSize: item.packageSize ?? undefined,
+      packageUnit: item.packageUnit ?? '',
+
+      minStockLevel: item.minStockLevel,
+      location: item.location,
+
+      storageInstructions: item.storageInstructions ?? '',
+      handlingProcedure: item.handlingProcedure ?? '',
+      safetyNotes: item.safetyNotes ?? '',
+      photo: item.photo ?? '',
+    });
+  }}
+>
+  <Edit className="w-4 h-4" />
+</Button>
+
 
                       <Button
                         size="sm"
@@ -548,7 +637,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
             
             <div>
               <label className="text-sm font-medium mb-1 block">Quantity</label>
-              <Input type="number" value={form.stockLevel} onChange={e => setForm({ ...form, stockLevel: Number(e.target.value) })} />
+              <Input type="number" value={form.quantity} onChange={e => setForm({ ...form, quantity: Number(e.target.value) })} />
             </div>
             
             <div>
@@ -560,6 +649,39 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
               <label className="text-sm font-medium mb-1 block">Unit</label>
               <Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} />
             </div>
+            {/* Package Information */}
+<div className="grid grid-cols-2 gap-4">
+  <div>
+    <label className="text-sm font-medium mb-1 block">
+      Package Size
+    </label>
+    <Input
+      type="number"
+      min={0}
+      step="0.01"
+      value={form.packageSize ?? ''}
+      onChange={(e) =>
+        setForm({
+          ...form,
+          packageSize: e.target.value ? Number(e.target.value) : undefined,
+        })
+      }
+    />
+  </div>
+
+  <div>
+    <label className="text-sm font-medium mb-1 block">
+      Package Unit
+    </label>
+    <Input
+      value={form.packageUnit}
+      onChange={(e) =>
+        setForm({ ...form, packageUnit: e.target.value })
+      }
+    />
+  </div>
+</div>
+
             
             <div>
               <label className="text-sm font-medium mb-1 block">Location</label>
