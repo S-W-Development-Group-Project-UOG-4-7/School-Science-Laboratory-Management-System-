@@ -5,9 +5,6 @@ import fs from 'fs/promises';
 
 const prisma = new PrismaClient();
 
-/* =====================================================
-   GET: Fetch all inventory items
-===================================================== */
 export async function GET() {
   try {
     const items = await prisma.inventory.findMany({
@@ -45,10 +42,7 @@ export async function POST(req: Request) {
       const fileName = `${Date.now()}-${photo.name}`;
       const uploadPath = path.join(uploadDir, fileName);
 
-      // Ensure upload folder exists
       await fs.mkdir(uploadDir, { recursive: true });
-
-      // Save image
       await fs.writeFile(uploadPath, buffer);
 
       photoUrl = `/uploads/${fileName}`;
@@ -59,11 +53,23 @@ export async function POST(req: Request) {
       data: {
         name: formData.get('name') as string,
         category: formData.get('category') as Category,
-        stockLevel: Number(formData.get('stockLevel')),
-        minStockLevel: Number(formData.get('minStockLevel')),
+
+        quantity: Number(formData.get('quantity')),
         unit: formData.get('unit') as string,
+
+        packageSize: formData.get('packageSize')
+          ? Number(formData.get('packageSize'))
+          : null,
+
+        packageUnit: formData.get('packageUnit')
+          ? (formData.get('packageUnit') as string)
+          : null,
+
+        minStockLevel: Number(formData.get('minStockLevel')),
         location: formData.get('location') as string,
+
         photo: photoUrl,
+
         storageInstructions:
           (formData.get('storageInstructions') as string) || null,
         handlingProcedure:
@@ -97,10 +103,16 @@ export async function PUT(req: Request) {
       data: {
         name: data.name,
         category: data.category,
-        stockLevel: Number(data.stockLevel),
-        minStockLevel: Number(data.minStockLevel),
+
+        quantity: Number(data.quantity),
         unit: data.unit,
+
+        packageSize: data.packageSize ?? null,
+        packageUnit: data.packageUnit || null,
+
+        minStockLevel: Number(data.minStockLevel),
         location: data.location,
+
         storageInstructions: data.storageInstructions || null,
         handlingProcedure: data.handlingProcedure || null,
         safetyNotes: data.safetyNotes || null,
@@ -116,6 +128,7 @@ export async function PUT(req: Request) {
     );
   }
 }
+
 
 /* =====================================================
    DELETE: Delete inventory item

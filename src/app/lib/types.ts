@@ -146,10 +146,16 @@ export interface InventoryItem {
   id: string;
   name: string;
   category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety Materials' | 'Instruments';
-  stockLevel: number;
-  minStockLevel: number;
+
+  quantity: number;
   unit: string;
+
+  packageSize?: number | null;
+  packageUnit?: string | null;
+
+  minStockLevel: number;
   location: string;
+  
   photo: string;
   storageInstructions: string;
   handlingProcedure: string;
