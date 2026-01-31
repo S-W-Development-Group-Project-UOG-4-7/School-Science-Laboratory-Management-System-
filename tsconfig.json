@@ -21,14 +21,13 @@
         "name": "next"
       }
     ],
-    "paths": {
 
-             "@/lib/*": ["src/app/lib/*"],
-             "@/": ["./"],
-             "@src/*": ["src/*"],
-            "@/app/lib/*": ["src/app/lib/*"],  // add this
-           
-    }
+   "paths": {
+
+        "@/*": ["./*"] ,     
+        
+}
+
   },
   "include": [
     "next-env.d.ts",

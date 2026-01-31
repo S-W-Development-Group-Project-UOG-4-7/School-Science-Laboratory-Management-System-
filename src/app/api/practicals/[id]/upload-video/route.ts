@@ -27,7 +27,8 @@ export async function POST(
     }
 
     // Check if practical exists
-    const practicalExists = await prisma.practical.findUnique({
+    const p = prisma as any;
+    const practicalExists = await p.practical?.findUnique({
       where: { id: practicalId },
     });
 
@@ -75,10 +76,10 @@ export async function POST(
 
     // TODO: Get real user ID from session/auth
     // For now, using the practical creator's ID
-    const uploadedById = practicalExists.createdById;
+    const uploadedById = practicalExists?.createdById;
 
     // Save to database
-    const video = await prisma.video.upsert({
+    const video = await p.video?.upsert({
       where: { practicalId },
       update: {
         videoUrl: embedUrl,
