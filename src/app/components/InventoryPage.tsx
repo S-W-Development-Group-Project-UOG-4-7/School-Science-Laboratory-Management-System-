@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
-import type { InventoryItem, UserRole } from "@src/app/lib/types";
+import type { InventoryItem, UserRole } from "@/app/lib/types";
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface InventoryPageProps {
@@ -26,8 +26,14 @@ interface InventoryPageProps {
 
 
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
+//const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch inventory');
+  const data = await res.json();
+  // Ensure we always return an array
+   return data.inventoryItems || [];
+}; 
 const LOCATIONS = [
   'Junior Lab',
   'Physics Lab',
@@ -40,6 +46,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
     '/api/inventory',
     fetcher
   );
+  
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

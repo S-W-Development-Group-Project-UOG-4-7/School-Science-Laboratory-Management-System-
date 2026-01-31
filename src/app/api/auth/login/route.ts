@@ -1,8 +1,8 @@
 // src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/app/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { setAuthCookie } from '@/src/app/lib/auth';
+import { setAuthCookie } from '@/app/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {

@@ -54,34 +54,52 @@ model Inventory {
   id                  Int                @id @default(autoincrement())
   name                String
   category            Category
-  stockLevel          Int
-  minStockLevel       Int
-  unit                String
+
+  quantity            Int    // Number of units (e.g., 10 bottles)
+  unit                String     // bottle, pcs, box, set
+
+  packageSize         Float?     // 500, 1, 100
+  packageUnit         String?    // g, kg, ml, L, pcs
   location            String
+  minStockLevel       Int
+
   photo               String?
   storageInstructions String?
   handlingProcedure   String?
   safetyNotes         String?
   lastUpdated         DateTime           @updatedAt
-  requests            InventoryRequest[]
+  requestItems        InventoryRequestItem[]
 }
 model InventoryRequest {
   id            Int           @id @default(autoincrement())
   requesterName String
   requesterRole String
   requesterId   String
-  itemId        Int
-  item          Inventory     @relation(fields: [itemId], references: [id])
+  
   quantity      Int
   reason        String
   urgency       Urgency
   status        RequestStatus @default(pending)
+  
   requestDate   DateTime      @default(now())
   responseDate  DateTime?
   responseNote  String?
 
   approvalToken  String   @unique
   tokenExpiresAt DateTime
+
+  items          InventoryRequestItem[]
+}
+model InventoryRequestItem {
+  id         Int               @id @default(autoincrement())
+
+  requestId  Int
+  request    InventoryRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  inventoryId Int
+  inventory   Inventory        @relation(fields: [inventoryId], references: [id])
+
+  requestedQty Int
 }
 
 enum Category {

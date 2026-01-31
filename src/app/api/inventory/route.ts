@@ -16,7 +16,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(items);
+    return NextResponse.json({ inventoryItems: items });
   } catch (error) {
     console.error('GET inventory error:', error);
     return NextResponse.json(
