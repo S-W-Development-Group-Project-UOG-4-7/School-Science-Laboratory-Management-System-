@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { FlaskConical, ArrowRight, Shield, AlertCircle, Key } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User } from '@/src/app/lib/types';
+import type { User } from "@src/app/lib/types";
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 interface LoginPageProps {
