@@ -5,7 +5,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Plus } from 'lucide-react';
-import { Quiz, QuizAttempt, UserRole, QuizStatus } from '@/lib/types'; 
+import { Quiz, QuizAttempt, UserRole, QuizStatus } from '@/src/app/lib/types'; 
 import { QuizForm } from './QuizForm';
 import { QuizCard } from './QuizCard';
 import { QuizAttemptsView } from './QuizAttemptsView';

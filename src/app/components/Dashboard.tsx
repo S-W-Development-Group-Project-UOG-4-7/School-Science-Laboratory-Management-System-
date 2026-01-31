@@ -31,7 +31,7 @@ import { SchedulePage } from "./SchedulePage";
 import { SettingsPage } from "./SettingsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import type { AuthUser } from "@/lib/types";
+import type { AuthUser } from "@/src/app/lib/types";
 
 
 interface DashboardProps {

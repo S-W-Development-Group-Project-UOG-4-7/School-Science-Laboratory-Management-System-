@@ -1,5 +1,5 @@
 // lib/db/teacher.ts
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/src/app/lib/prisma";
 
 // 1. Get teacher by user ID
 export async function getTeacherByUserId(userId: number) {

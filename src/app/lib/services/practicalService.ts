@@ -1,6 +1,6 @@
 // /app/services/practicalService.ts
 
-import { Practical, CreatePracticalInput, UpdatePracticalInput, PracticalFilters } from '@/lib/types';
+import { Practical, CreatePracticalInput, UpdatePracticalInput, PracticalFilters } from '../types';
 
 const API_BASE = '/api';
 

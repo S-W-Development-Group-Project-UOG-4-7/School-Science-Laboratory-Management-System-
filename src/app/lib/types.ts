@@ -276,6 +276,7 @@ export interface QuizAttempt {
   id: number;
   quizId: number;
   studentId: number;
+  studentName: string;
   answers: any;
   totalMarks: number;
   obtainedMarks: number;

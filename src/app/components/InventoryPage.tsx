@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/src/app/lib/types';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';

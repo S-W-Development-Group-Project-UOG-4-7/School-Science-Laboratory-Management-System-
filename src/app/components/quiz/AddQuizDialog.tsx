@@ -15,7 +15,7 @@ import {
 } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Plus, Loader2 } from 'lucide-react';
-import { Quiz, QuizStatus } from '@/lib/types';
+import { Quiz, QuizStatus } from '@/src/app/lib/types';
 
 interface AddQuizDialogProps {
   practicalId: string;

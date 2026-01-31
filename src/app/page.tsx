@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { LoginPage } from './components/LoginPage';
 import { Dashboard } from './components/Dashboard';
 import { Toaster } from './components/ui/sonner';
-import type { AuthUser } from '@/lib/types';
+import type { AuthUser } from '@/src/app/lib/types';
 
 export default function Home() {
   const [user, setUser] = useState<AuthUser | null>(null);

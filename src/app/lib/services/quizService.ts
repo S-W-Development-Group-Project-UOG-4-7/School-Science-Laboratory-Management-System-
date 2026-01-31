@@ -1,4 +1,4 @@
-import { Quiz, CreateQuizInput, UpdateQuizInput } from '@/lib/types';
+import { Quiz, CreateQuizInput, UpdateQuizInput } from '@/app/lib/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api';
 

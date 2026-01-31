@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
 import { Plus, Trash2, X } from 'lucide-react';
-import { Question, QuestionType } from '@/lib/types';
+import { Question, QuestionType } from '@/src/app/lib/types';
 
 interface QuizFormProps {
   practicalId: string;

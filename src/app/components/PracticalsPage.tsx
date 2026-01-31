@@ -43,10 +43,10 @@ import {
   CreatePracticalInput,
   UpdatePracticalInput,
   QuizAttemptStatus
-} from '@/lib/types'; 
+} from '@/src/app/lib/types'; 
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { QuizManager } from './quiz/QuizManager';
-import { practicalService } from '@/app/lib/services/practicalService';
+import { practicalService } from '@/src/app/lib/services/practicalService';
 
 interface PracticalsPageProps {
   userRole: UserRole;

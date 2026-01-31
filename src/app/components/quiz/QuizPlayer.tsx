@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { Checkbox } from '../ui/checkbox';
+import { Progress } from '../ui/progress';
 import { AlertCircle, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { Quiz, QuizAttempt, QuizQuestion, QuizAnswer } from '@/lib/types';
+import { Quiz, QuizAttempt, Question, QuizAnswer, QuestionType, QuizAttemptStatus } from '../../lib/types';
 
 interface QuizPlayerProps {
   quiz: Quiz;
@@ -30,8 +30,25 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
     passed: boolean;
   } | null>(null);
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  const questions = quiz.questions ?? [];
+  if (questions.length === 0) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>No questions</DialogTitle>
+            <DialogDescription>This quiz has no questions.</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   // Timer effect
   useEffect(() => {
@@ -59,7 +76,7 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < quiz.questions.length - 1) {
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       handleSubmit();
@@ -79,30 +96,27 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
     let obtainedMarks = 0;
     const answerResults: QuizAnswer[] = [];
 
-    quiz.questions.forEach((question) => {
-      const questionId = question.id.toString();
-      const userAnswer = answers[questionId];
+    questions.forEach((question) => {
+      const questionId = question.id;
+      const userAnswer = answers[questionId.toString()];
       let isCorrect = false;
       let marksObtained = 0;
 
-      if (userAnswer) {
-        if (question.type === 'msq') {
-          // Multiple select question
-          const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
-          const correctAnswers = question.correctAnswers || [];
-          
-          // Check if all correct answers are selected and no incorrect ones
-          const allCorrectSelected = correctAnswers.every((ans: string) => 
-            userAnswers.includes(ans)
-          );
-          const noIncorrectSelected = userAnswers.every((ans: string) => 
-            correctAnswers.includes(ans)
-          );
-          
+      const hasAnswer = Array.isArray(userAnswer)
+        ? (userAnswer as string[]).length > 0
+        : (userAnswer !== undefined && String(userAnswer).trim() !== '');
+
+      if (hasAnswer) {
+        if (question.type === QuestionType.MSQ) {
+          const userAnswers = Array.isArray(userAnswer) ? (userAnswer as string[]) : [String(userAnswer)];
+          const correctAnswers = (question.correctAnswers || []) as string[];
+
+          const allCorrectSelected = correctAnswers.every((ans) => userAnswers.includes(ans));
+          const noIncorrectSelected = userAnswers.every((ans) => correctAnswers.includes(ans));
+
           isCorrect = allCorrectSelected && noIncorrectSelected;
         } else {
-          // Single answer question
-          isCorrect = userAnswer === question.correctAnswer;
+          isCorrect = String(userAnswer) === String(question.correctAnswer);
         }
 
         marksObtained = isCorrect ? question.marks : 0;
@@ -110,8 +124,9 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
       }
 
       answerResults.push({
-        questionId: question.id.toString(),
-        answer: Array.isArray(userAnswer) ? JSON.stringify(userAnswer) : (userAnswer || ''),
+        questionId,
+        answer: Array.isArray(userAnswer) ? undefined : (userAnswer as string) || undefined,
+        selectedOptions: Array.isArray(userAnswer) ? (userAnswer as string[]) : undefined,
         isCorrect,
         marksObtained,
       });
@@ -125,21 +140,23 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
       percentage,
       passed,
     });
+
     setIsCompleted(true);
     setIsSubmitting(false);
 
-    // Submit QUIZ ATTEMPT (not quiz)
+    // Submit QUIZ ATTEMPT (not quiz) — use numeric ids and enum status
     onSubmit({
-      quizId: quiz.id.toString(),
-      studentId: 'current-student-id', // Replace with actual student ID
-      studentName: 'Current Student', // Replace with actual student name
-      answers: answerResults,
-      totalMarks: quiz.totalMarks,
-      obtainedMarks,
-      percentage,
-      passed,
-      status: 'completed', // This is correct for QuizAttempt
-    });
+  quizId: quiz.id,
+  studentId: 0, // replace later
+  studentName: 'Student', // ✅ ADD THIS (temporary or from session)
+  answers: answerResults,
+  totalMarks: quiz.totalMarks,
+  obtainedMarks,
+  percentage,
+  passed,
+  status: QuizAttemptStatus.COMPLETED,
+});
+
   };
 
   const formatTime = (seconds: number) => {
@@ -208,20 +225,17 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
 
             <div className="space-y-4">
               <h4 className="font-semibold">Your Answers:</h4>
-              {quiz.questions.map((question, index) => {
+              {questions.map((question, index) => {
                 const questionId = question.id.toString();
                 const userAnswer = answers[questionId];
-                const result = results.obtainedMarks > 0 ? 
-                  (Array.isArray(userAnswer) 
-                    ? JSON.parse(userAnswer as any)
-                    : userAnswer) : null;
-                
+                const answered = Array.isArray(userAnswer) ? userAnswer.length > 0 : Boolean(userAnswer);
+
                 return (
                   <Card key={questionId}>
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-3">
                         <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          result ? 'bg-green-100' : 'bg-gray-100'
+                          answered ? 'bg-green-100' : 'bg-gray-100'
                         }`}>
                           <span className="text-sm font-medium">{index + 1}</span>
                         </div>
@@ -243,7 +257,7 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                             {question.correctAnswers && (
                               <div>
                                 <span className="font-medium">Correct answers: </span>
-                                {question.correctAnswers.join(', ')}
+                                {(question.correctAnswers as string[]).join(', ')}
                               </div>
                             )}
                             {question.explanation && (
@@ -280,7 +294,7 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
             <div>
               <DialogTitle>{quiz.title}</DialogTitle>
               <DialogDescription>
-                Question {currentQuestionIndex + 1} of {quiz.questions.length}
+                Question {currentQuestionIndex + 1} of {questions.length}
               </DialogDescription>
             </div>
             {quiz.timeLimit && (
@@ -297,7 +311,7 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span>Progress</span>
-              <span>{currentQuestionIndex + 1}/{quiz.questions.length}</span>
+              <span>{currentQuestionIndex + 1}/{questions.length}</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
@@ -311,10 +325,10 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                 </h3>
 
                 {/* Multiple Choice */}
-                {currentQuestion.type === 'multiple-choice' && (
+                {currentQuestion.type === QuestionType.MULTIPLE_CHOICE && (
                   <RadioGroup
-                    value={answers[currentQuestion.id.toString()] as string || ''}
-                    onValueChange={(value) => handleAnswerChange(currentQuestion.id.toString(), value)}
+                    value={(answers[currentQuestion.id.toString()] as string) || ''}
+                    onValueChange={(value: string) => handleAnswerChange(currentQuestion.id.toString(), value)}
                   >
                     <div className="space-y-3">
                       {currentQuestion.options?.map((option, index) => (
@@ -330,16 +344,16 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                 )}
 
                 {/* Multiple Select (MSQ) */}
-                {currentQuestion.type === 'msq' && (
+                {currentQuestion.type === QuestionType.MSQ && (
                   <div className="space-y-3">
                     {currentQuestion.options?.map((option, index) => {
-                      const currentAnswers = answers[currentQuestion.id.toString()] as string[] || [];
+                      const currentAnswers = (answers[currentQuestion.id.toString()] as string[]) || [];
                       return (
                         <div key={index} className="flex items-center space-x-2">
                           <Checkbox
                             id={`msq-option-${index}`}
                             checked={currentAnswers.includes(option)}
-                            onCheckedChange={(checked) => {
+                            onCheckedChange={(checked: boolean) => {
                               const newAnswers = checked
                                 ? [...currentAnswers, option]
                                 : currentAnswers.filter((ans: string) => ans !== option);
@@ -356,10 +370,10 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                 )}
 
                 {/* True/False */}
-                {currentQuestion.type === 'true-false' && (
+                {currentQuestion.type === QuestionType.TRUE_FALSE && (
                   <RadioGroup
-                    value={answers[currentQuestion.id.toString()] as string || ''}
-                    onValueChange={(value) => handleAnswerChange(currentQuestion.id.toString(), value)}
+                    value={(answers[currentQuestion.id.toString()] as string) || ''}
+                    onValueChange={(value: string) => handleAnswerChange(currentQuestion.id.toString(), value)}
                   >
                     <div className="space-y-3">
                       {['True', 'False'].map((option) => (
@@ -375,10 +389,10 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                 )}
 
                 {/* Short Answer */}
-                {currentQuestion.type === 'short-answer' && (
+                {currentQuestion.type === QuestionType.SHORT_ANSWER && (
                   <Input
-                    value={answers[currentQuestion.id.toString()] as string || ''}
-                    onChange={(e) => handleAnswerChange(currentQuestion.id.toString(), e.target.value)}
+                    value={(answers[currentQuestion.id.toString()] as string) || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleAnswerChange(currentQuestion.id.toString(), e.target.value)}
                     placeholder="Type your answer here..."
                   />
                 )}
@@ -409,16 +423,16 @@ export function QuizPlayer({ quiz, onSubmit, onClose }: QuizPlayerProps) {
                 onClick={handleNext}
                 disabled={isSubmitting}
               >
-                {currentQuestionIndex === quiz.questions.length - 1 ? 'Submit' : 'Next'}
+                {currentQuestionIndex === questions.length - 1 ? 'Submit' : 'Next'}
               </Button>
             </div>
           </div>
 
           {/* Question Navigation */}
           <div className="grid grid-cols-5 gap-2">
-            {quiz.questions.map((question, index) => {
+            {questions.map((question, index) => {
               const questionId = question.id.toString();
-              const isAnswered = answers[questionId];
+              const isAnswered = Boolean(answers[questionId]);
               const isCurrent = index === currentQuestionIndex;
               
               return (

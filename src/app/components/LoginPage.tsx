@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 
 import { FlaskConical, ArrowRight, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { AuthUser } from '@/lib/types';
+import type { AuthUser } from '@/src/app/lib/types';
 
 interface LoginPageProps {
   onLogin: (user: AuthUser) => void;

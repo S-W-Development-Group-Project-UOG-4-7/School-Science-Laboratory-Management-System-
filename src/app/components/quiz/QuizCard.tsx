@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Edit, Trash2, Play, BarChart3, Users, Clock, CheckCircle } from 'lucide-react';
-import { Quiz, UserRole, QuizStatus } from '@/lib/types';
+import { Quiz, UserRole, QuizStatus } from '@/src/app/lib/types';
 
 interface QuizCardProps {
   quiz: Quiz;

@@ -24,7 +24,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { AuthUser } from "@/lib/types";
+import type { AuthUser } from "@/src/app/lib/types";
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface SettingsPageProps {

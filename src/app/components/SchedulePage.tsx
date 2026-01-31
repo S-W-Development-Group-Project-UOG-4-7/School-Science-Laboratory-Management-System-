@@ -38,7 +38,7 @@ import {
   CheckSquare, Package, PackageCheck, PackageX, PackageSearch, User, Bell,
   Shield, ShieldCheck, ShieldAlert, Briefcase, TestTube, RefreshCw
 } from 'lucide-react';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/src/app/lib/types';
 import { useSession } from 'next-auth/react';
 
 
