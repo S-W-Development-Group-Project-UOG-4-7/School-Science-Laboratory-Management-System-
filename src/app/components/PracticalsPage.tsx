@@ -18,7 +18,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from "@/src/app/lib/types";
+import type { UserRole } from '@/src/app/lib/types';
 
 interface PracticalsPageProps {
   userRole: UserRole;

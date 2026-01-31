@@ -1,6 +1,6 @@
 // src/app/api/auth/totp/setup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/src/app/lib/prisma';
+import prisma from '@/lib/prisma';
 import {
   generateTOTPSecret,
   generateQRCode,

@@ -13,7 +13,7 @@ import {
   Clock
 } from 'lucide-react';
 import { Button } from './ui/button';
-import type { UserRole } from "@/src/app/lib/types";
+import type { UserRole } from '@/src/app/lib/types';
 
 interface HomePageProps {
   userName: string;

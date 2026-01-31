@@ -17,7 +17,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, Users, FileText, AlertCircle } from 'lucide-react';
-import type { UserRole } from "@/src/app/lib/types";
+import type { UserRole } from '@/src/app/lib/types';
 
 interface SchedulePageProps {
   userRole: UserRole;
