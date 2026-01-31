@@ -27,7 +27,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User as UserType } from '@src/app/lib/types';
+import type { User as UserType } from "@/src/app/lib/types";
 import { TwoFactorSetupPage } from './TwoFactorSetupPage';
 
 interface SettingsPageProps {
