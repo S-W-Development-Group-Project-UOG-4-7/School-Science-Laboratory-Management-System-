@@ -74,8 +74,7 @@ export async function POST(
       embedUrl = `https://player.vimeo.com/video/${videoId}`;
     }
 
-    // TODO: Get real user ID from session/auth
-    // For now, using the practical creator's ID
+
     const uploadedById = practicalExists?.createdById;
 
     // Save to database

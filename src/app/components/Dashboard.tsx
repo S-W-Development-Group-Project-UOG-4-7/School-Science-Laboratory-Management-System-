@@ -29,7 +29,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { PracticalsPage } from "./PracticalsPage";
-import { ViewInventoriesPage } from "./student/ViewInventoriesPage";
+import { ViewInventoriesPage } from "./student/ViewInventoriesPage"
 
 // ... existing imports
 
