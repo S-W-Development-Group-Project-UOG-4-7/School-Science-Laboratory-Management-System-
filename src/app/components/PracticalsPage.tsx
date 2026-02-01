@@ -83,6 +83,9 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [isVideoPlayerDialogOpen, setIsVideoPlayerDialogOpen] = useState(false);
   const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<string | null>(null);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteVideoDialogOpen, setIsDeleteVideoDialogOpen] = useState(false);
+  const [selectedPracticalForDelete, setSelectedPracticalForDelete] = useState<string | null>(null);
 
   // Form states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
