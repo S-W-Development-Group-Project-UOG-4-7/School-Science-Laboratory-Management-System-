@@ -1,11 +1,11 @@
 // src/app/api/auth/totp/verify-setup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import { prisma } from '@/src/app/lib/prisma';
 import {
   verifyTOTPToken,
   encryptSecret,
   hashBackupCode,
-} from '@/app/lib/totpHelper';
+} from '@/src/app/lib/totpHelper';
 
 // POST - Verify TOTP and enable 2FA
 export async function POST(request: NextRequest) {
