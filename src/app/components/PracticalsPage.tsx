@@ -7,7 +7,6 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, BookOpen, Plus, Upload, Video, X, CheckCircle, HelpCircle } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import {
   Search,
@@ -25,7 +24,8 @@ import {
   Upload,
   CheckCircle,
   Download,
-  Users
+  Users,
+  HelpCircle
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
@@ -81,11 +81,10 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isVideoUploadDialogOpen, setIsVideoUploadDialogOpen] = useState(false);
   const [isVideoPlayerDialogOpen, setIsVideoPlayerDialogOpen] = useState(false);
-  const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<string | null>(null);
+  const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<number | null>(null);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleteVideoDialogOpen, setIsDeleteVideoDialogOpen] = useState(false);
-  const [selectedPracticalForDelete, setSelectedPracticalForDelete] = useState<string | null>(null);
+  const [selectedPracticalForDeleteVideo, setSelectedPracticalForDeleteVideo] = useState<number | null>(null);
 
   // Form states
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -104,6 +103,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [labSheetFile, setLabSheetFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [videoUrlInput, setVideoUrlInput] = useState<string>('');
   const [uploadProgress, setUploadProgress] = useState<{
     video: number;
     labSheet: number;
@@ -116,6 +116,13 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const [isLoadingResults, setIsLoadingResults] = useState(false);
   
   const componentId = useId();
+
+  // Permissions - Modified for admin video deletion
+  const canCreatePractical = userRole === 'teacher';
+  const canUploadVideo = userRole === 'teacher'; // Only teachers can upload/update videos
+  const canDeletePractical = false; // No one can delete practicals
+  const canDeleteVideo = userRole === 'admin'; // Only admin can delete videos
+  const canViewAll = userRole === 'admin' || userRole === 'teacher';
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
   // Quiz states
@@ -157,13 +164,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
       correctAnswer: "1"
     }
   ];
-
-    // Permissions
-  const canCreatePractical = userRole === 'teacher';
-  const canUploadVideo = userRole === 'teacher'; // Only teachers can upload/update videos
-  const canDeletePractical = false; // Admin cannot delete practicals
-  const canDeleteVideo = userRole === 'admin'; // Only admin can delete videos
-  const canViewAll = userRole === 'admin' || userRole === 'teacher';
   
   // Load teacherId from localStorage (runs once on mount)
   useEffect(() => {
@@ -234,7 +234,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     };
 
     loadPracticals();
-  }, [searchQuery, selectedSubject, selectedGrade, refreshKey, currentUserId, canUpload]);
+  }, [searchQuery, selectedSubject, selectedGrade, refreshKey, currentUserId, canUpload, fetchPracticals]);
 
   const filteredPracticals = practicals;
 
@@ -375,90 +375,89 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   };
 
   const handleAddPractical = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setError(null);
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-  try {
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    try {
+      const form = e.currentTarget;
+      const formData = new FormData(form);
 
-    // Validation
-    const requiredFields = ['title', 'subject', 'grade', 'duration'];
-    for (const field of requiredFields) {
-      if (!formData.get(field)) {
-        alert('Please fill in all required fields');
+      // Validation
+      const requiredFields = ['title', 'subject', 'grade', 'duration'];
+      for (const field of requiredFields) {
+        if (!formData.get(field)) {
+          alert('Please fill in all required fields');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      if (currentUserId === null) {
+        alert('Teacher not found. Please login again.');
         setIsSubmitting(false);
         return;
       }
-    }
 
-    if (currentUserId === null) {
-      alert('Teacher not found. Please login again.');
+      let videoUrl = formData.get('videoUrl') as string || '';
+      let labSheetUrl = formData.get('labSheetUrl') as string || '';
+      let thumbnailUrl = formData.get('thumbnail') as string || '';
+
+      setIsUploading(true);
+
+      // Helper function for upload
+      const safeUpload = async (file: File | null, type: 'video' | 'labSheet' | 'thumbnail') => {
+        if (!file) return '';
+        setUploadProgress(prev => ({ ...prev, [type]: 0 }));
+        try {
+          const url = await uploadFile(file, type);
+          setUploadProgress(prev => ({ ...prev, [type]: 100 }));
+          return url;
+        } catch (err) {
+          console.error(`Failed to upload ${type}:`, err);
+          return '';
+        }
+      };
+
+      // Upload files
+      videoUrl = await safeUpload(videoFile, 'video') || videoUrl;
+      labSheetUrl = await safeUpload(labSheetFile, 'labSheet') || labSheetUrl;
+      thumbnailUrl = await safeUpload(thumbnailFile, 'thumbnail') || thumbnailUrl;
+
+      // Create practical
+      const newPractical = await practicalService.create({
+        title: formData.get('title') as string,
+        description: formData.get('description') as string || undefined,
+        subject: formData.get('subject') as string,
+        grade: formData.get('grade') as string,
+        duration: formData.get('duration') as string,
+        videoUrl: videoUrl || undefined,
+        labSheetUrl: labSheetUrl || undefined,
+        thumbnail: thumbnailUrl || undefined,
+        teacherId: currentUserId,
+      });
+
+      // Add to existing practicals state
+      setPracticals(prev => [newPractical, ...prev]);
+
+      // Reset form
+      setIsAddDialogOpen(false);
+      setVideoFile(null);
+      setLabSheetFile(null);
+      setThumbnailFile(null);
+      setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
+      form.reset();
+
+      alert('Practical created successfully!');
+    } catch (err: any) {
+      console.error('Error creating practical:', err);
+      setError(err.message || 'Failed to create practical');
+      alert(err.message || 'Something went wrong');
+    } finally {
       setIsSubmitting(false);
-      return;
+      setIsUploading(false);
     }
-
-    let videoUrl = formData.get('videoUrl') as string || '';
-    let labSheetUrl = formData.get('labSheetUrl') as string || '';
-    let thumbnailUrl = formData.get('thumbnail') as string || '';
-
-    setIsUploading(true);
-
-    // Helper function for upload
-    const safeUpload = async (file: File | null, type: 'video' | 'labSheet' | 'thumbnail') => {
-      if (!file) return '';
-      setUploadProgress(prev => ({ ...prev, [type]: 0 }));
-      try {
-        const url = await uploadFile(file, type);
-        setUploadProgress(prev => ({ ...prev, [type]: 100 }));
-        return url;
-      } catch (err) {
-        console.error(`Failed to upload ${type}:`, err);
-        return '';
-      }
-    };
-
-    // Upload files
-    videoUrl = await safeUpload(videoFile, 'video') || videoUrl;
-    labSheetUrl = await safeUpload(labSheetFile, 'labSheet') || labSheetUrl;
-    thumbnailUrl = await safeUpload(thumbnailFile, 'thumbnail') || thumbnailUrl;
-
-    // Create practical
-    const newPractical = await practicalService.create({
-      title: formData.get('title') as string,
-      description: formData.get('description') as string || undefined,
-      subject: formData.get('subject') as string,
-      grade: formData.get('grade') as string,
-      duration: formData.get('duration') as string,
-      videoUrl: videoUrl || undefined,
-      labSheetUrl: labSheetUrl || undefined,
-      thumbnail: thumbnailUrl || undefined,
-      teacherId: currentUserId,
-    });
-
-    // Add to existing practicals state
-    setPracticals(prev => [newPractical, ...prev]);
-
-    // Reset form
-    setIsAddDialogOpen(false);
-    setVideoFile(null);
-    setLabSheetFile(null);
-    setThumbnailFile(null);
-    setUploadProgress({ video: 0, labSheet: 0, thumbnail: 0 });
-    form.reset();
-
-    alert('Practical created successfully!');
-  } catch (err: any) {
-    console.error('Error creating practical:', err);
-    setError(err.message || 'Failed to create practical');
-    alert(err.message || 'Something went wrong');
-  } finally {
-    setIsSubmitting(false);
-    setIsUploading(false);
-  }
-};
-
+  };
 
   // Add this function for updating practical
   const handleUpdatePractical = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -494,40 +493,127 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     }
   };
 
-  // Handle deleting practical
+  // Handle deleting practical (disabled for all)
   const handleDeletePractical = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this practical? This will also delete all associated quizzes.')) {
+    alert('Deleting practicals is currently disabled.');
+    return;
+  };
+
+  // Handle video upload - Only for teachers
+  const handleVideoUpload = (practicalId: number) => {
+    if (!canUploadVideo) {
+      alert('Only teachers can upload videos.');
       return;
     }
+    setSelectedPracticalForVideo(practicalId);
+    setVideoUrlInput('');
+    setVideoFile(null);
+    setIsVideoUploadDialogOpen(true);
+  };
 
+  // Handle submit video URL or file
+  const handleSubmitVideo = async () => {
+    if (!selectedPracticalForVideo) return;
+    
+    setIsUploading(true);
+    
     try {
-      // Call the service
-      const deletedCount = await practicalService.delete(id);
+      let finalVideoUrl = videoUrlInput;
+      
+      // If a file is selected, upload it
+      if (videoFile) {
+        setUploadProgress(prev => ({ ...prev, video: 0 }));
+        finalVideoUrl = await uploadFile(videoFile, 'video');
+        setUploadProgress(prev => ({ ...prev, video: 100 }));
+      }
+      
+      if (!finalVideoUrl) {
+        alert('Please provide a video URL or upload a video file');
+        setIsUploading(false);
+        return;
+      }
 
-      // Update the practicals list
-      setPracticals(prev => prev.filter(p => p.id !== id));
+      // Update the practical with the video URL
+      const response = await fetch(`/api/practicals/${selectedPracticalForVideo}/upload-video`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoUrl: finalVideoUrl }),
+      });
 
-      alert(`Practical deleted successfully! Quizzes removed: ${deletedCount}`);
-    } catch (err: any) {
-      console.error('Error deleting practical:', err);
-      alert(`Failed to delete practical: ${err.message}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state with the embed URL
+        setPracticals(prev => prev.map(p =>
+          p.id === selectedPracticalForVideo
+            ? { ...p, videoUrl: data.videoUrl }
+            : p
+        ));
+
+        setVideoUrlInput('');
+        setVideoFile(null);
+        setIsVideoUploadDialogOpen(false);
+        alert('Video uploaded successfully!');
+      } else {
+        alert(data.error || 'Failed to save video URL');
+      }
+    } catch (error) {
+      console.error('Error saving video URL:', error);
+      alert('Failed to save video URL');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const simulateUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(0);
+  // Handle video deletion - Only for admins
+  const handleDeleteVideo = async (practicalId: number) => {
+    if (!canDeleteVideo) {
+      alert('Only administrators can delete videos.');
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          return 100;
-        }
-        return prev + 10;
+    setSelectedPracticalForDeleteVideo(practicalId);
+    setIsDeleteVideoDialogOpen(true);
+  };
+
+  const confirmDeleteVideo = async () => {
+    if (!selectedPracticalForDeleteVideo) return;
+
+    try {
+      const response = await fetch(`/api/practicals/${selectedPracticalForDeleteVideo}/delete-video`, {
+        method: 'DELETE',
       });
-    }, 300);
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local state to remove video URL
+        setPracticals(prev => prev.map(p =>
+          p.id === selectedPracticalForDeleteVideo
+            ? { ...p, videoUrl: null }
+            : p
+        ));
+
+        setIsDeleteVideoDialogOpen(false);
+        setSelectedPracticalForDeleteVideo(null);
+        alert('Video deleted successfully!');
+      } else {
+        alert(data.error || 'Failed to delete video');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      alert('Failed to delete video');
+    }
+  };
+
+  // Handle video watch
+  const handleWatchVideo = (videoUrl: string) => {
+    setCurrentVideoUrl(videoUrl);
+    setIsVideoPlayerDialogOpen(true);
+  };
+
   // Handle starting edit
   const handleStartEdit = (practical: Practical) => {
     setEditingPractical(practical);
@@ -551,7 +637,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     fetchPracticals(); // Refresh practicals
   };
 
-  const handleSubmitQuiz = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
+  const handleSubmitQuizAttempt = (attempt: Omit<QuizAttempt, 'id' | 'startedAt' | 'completedAt'>) => {
     const newAttempt: QuizAttempt = {
       ...attempt,
       id: Number(new Date()),
@@ -584,33 +670,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     }
   };
 
-    try {
-      const response = await fetch(`/api/practicals/${selectedPracticalForVideo}/upload-video`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ videoUrl: videoUrlInput }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update local state with the embed URL
-        setPracticals(prev => prev.map(p =>
-          p.id === selectedPracticalForVideo
-            ? { ...p, videoUrl: data.videoUrl }
-            : p
-        ));
-
-        setVideoUrlInput('');
-        setIsVideoUploadDialogOpen(false);
-      } else {
-        alert(data.error || 'Failed to save video URL');
-      }
-    } catch (error) {
-      console.error('Error saving video URL:', error);
-      alert('Failed to save video URL');
   const getSafeThumbnail = (thumbnail: string | null | undefined): string => {
     if (!thumbnail || thumbnail === '#') {
       return '/default-thumbnail.jpg';
@@ -676,6 +735,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     setCurrentQuizScore(percentage);
     setQuizStep('result');
   };
+
   // Loading state
   if (loading && practicals.length === 0) {
     return (
@@ -702,7 +762,9 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 Showing {practicals.length} practicals • 
                 User ID: <span className="font-bold">{currentUserId}</span> • 
                 Role: {userRole} • 
-                Can Upload: {canUpload ? 'Yes' : 'No'}
+                Can Upload: {canUpload ? 'Yes' : 'No'} • 
+                Can Upload Video: {canUploadVideo ? 'Yes' : 'No'} • 
+                Can Delete Video: {canDeleteVideo ? 'Yes' : 'No'}
               </p>
             </div>
           </div>
@@ -720,7 +782,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-gray-900 mb-2">Practical Videos & Lab Sheets</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Practical Videos & Lab Sheets</h2>
           <p className="text-gray-600">
             Access video demonstrations and downloadable lab sheets for your science practicals
           </p>
@@ -729,7 +791,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
               Role: {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
             </Badge>
           </div>
-        </motion.div>
+        </div>
 
         {canCreatePractical && (
           <motion.div
@@ -737,7 +799,12 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+              setIsAddDialogOpen(open);
+              if (!open) {
+                resetFileStates();
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 shadow-lg">
                   <Plus className="w-4 h-4 mr-2" />
@@ -748,18 +815,31 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 <DialogHeader>
                   <DialogTitle>Create New Practical</DialogTitle>
                   <DialogDescription>
-                    Create a new practical with description, lab sheets, and other materials. Admin will upload videos separately.
+                    Create a new practical with description, lab sheets, and other materials.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
+                <form className="space-y-4" onSubmit={handleAddPractical}>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <Label htmlFor="title">Practical Title</Label>
-                      <Input id="title" placeholder="e.g., Acid-Base Titration" />
+                      <Label htmlFor="title">Practical Title *</Label>
+                      <Input 
+                        id="title" 
+                        name="title"
+                        placeholder="e.g., Acid-Base Titration" 
+                        required
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="subject">Subject</Label>
-                      <Select>
+                      <Label htmlFor="subject">Subject *</Label>
+                      <Select
+                        name="subject"
+                        value={subject}
+                        onValueChange={(value) => {
+                          setSubject(value);
+                          setGrade(""); // reset grade when subject changes
+                        }}
+                        required
+                      >
                         <SelectTrigger id="subject">
                           <SelectValue placeholder="Select subject" />
                         </SelectTrigger>
@@ -767,436 +847,350 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                           <SelectItem value="Physics">Physics</SelectItem>
                           <SelectItem value="Chemistry">Chemistry</SelectItem>
                           <SelectItem value="Biology">Biology</SelectItem>
+                          <SelectItem value="Science">Science</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div>
-                      <Label htmlFor="grade">Grade</Label>
-                      <Select>
+                      <Label htmlFor="grade">Grade *</Label>
+                      <Select
+                        name="grade"
+                        value={grade}
+                        onValueChange={setGrade}
+                        required
+                      >
                         <SelectTrigger id="grade">
                           <SelectValue placeholder="Select grade" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="9">Grade 9</SelectItem>
-                          <SelectItem value="10">Grade 10</SelectItem>
-                          <SelectItem value="11">Grade 11</SelectItem>
-                          <SelectItem value="12">Grade 12</SelectItem>
-                          <SelectItem value="13">Grade 13</SelectItem>
+                          {/* Physics / Chemistry / Biology → Grade 10 to 13 */}
+                          {(subject === "Physics" ||
+                            subject === "Chemistry" ||
+                            subject === "Biology") && (
+                            <>
+                              <SelectItem value="Grade 10">Grade 10</SelectItem>
+                              <SelectItem value="Grade 11">Grade 11</SelectItem>
+                              <SelectItem value="Grade 12">Grade 12</SelectItem>
+                              <SelectItem value="Grade 13">Grade 13</SelectItem>
+                            </>
+                          )}
+
+                          {/* Science → Grade 6 to 11 */}
+                          {subject === "Science" && (
+                            <>
+                              <SelectItem value="Grade 6">Grade 6</SelectItem>
+                              <SelectItem value="Grade 7">Grade 7</SelectItem>
+                              <SelectItem value="Grade 8">Grade 8</SelectItem>
+                              <SelectItem value="Grade 9">Grade 9</SelectItem>
+                              <SelectItem value="Grade 10">Grade 10</SelectItem>
+                              <SelectItem value="Grade 11">Grade 11</SelectItem>
+                            </>
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
+
                     <div>
-                      <Label htmlFor="difficulty">Difficulty Level</Label>
-                      <Select>
-                        <SelectTrigger id="difficulty">
-                          <SelectValue placeholder="Select difficulty" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Beginner">Beginner</SelectItem>
-                          <SelectItem value="Intermediate">Intermediate</SelectItem>
-                          <SelectItem value="Advanced">Advanced</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label htmlFor="duration">Duration *</Label>
+                      <Input 
+                        id="duration" 
+                        name="duration"
+                        placeholder="e.g., 45 min" 
+                        defaultValue="45 min"
+                        required
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="duration">Duration</Label>
-                      <Input id="duration" placeholder="e.g., 45 min" />
-        </div>
-        {canUpload && (
-          <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
-            setIsAddDialogOpen(open);
-            if (!open) {
-              resetFileStates();
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Practical
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Add New Practical</DialogTitle>
-                <DialogDescription>
-                  Upload a new practical video and lab sheet for students
-                </DialogDescription>
-              </DialogHeader>
-              <form className="space-y-4" onSubmit={handleAddPractical}>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="title">Practical Title *</Label>
-                    <Input 
-                      id="title" 
-                      name="title"
-                      placeholder="e.g., Acid-Base Titration" 
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="subject">Subject *</Label>
-                    <Select
-                      name="subject"
-                      value={subject}
-                      onValueChange={(value) => {
-                        setSubject(value);
-                        setGrade(""); // reset grade when subject changes
-                      }}
-                      required
-                    >
-                      <SelectTrigger id="subject">
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Physics">Physics</SelectItem>
-                        <SelectItem value="Chemistry">Chemistry</SelectItem>
-                        <SelectItem value="Biology">Biology</SelectItem>
-                        <SelectItem value="Science">Science</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="grade">Grade *</Label>
-                    <Select
-                      name="grade"
-                      value={grade}
-                      onValueChange={setGrade}
-                      required
-                    >
-                      <SelectTrigger id="grade">
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {/* Physics / Chemistry / Biology → Grade 10 to 13 */}
-                        {(subject === "Physics" ||
-                          subject === "Chemistry" ||
-                          subject === "Biology") && (
-                          <>
-                            <SelectItem value="Grade 10">Grade 10</SelectItem>
-                            <SelectItem value="Grade 11">Grade 11</SelectItem>
-                            <SelectItem value="Grade 12">Grade 12</SelectItem>
-                            <SelectItem value="Grade 13">Grade 13</SelectItem>
-                          </>
-                        )}
-
-                        {/* Science → Grade 6 to 11 */}
-                        {subject === "Science" && (
-                          <>
-                            <SelectItem value="Grade 6">Grade 6</SelectItem>
-                            <SelectItem value="Grade 7">Grade 7</SelectItem>
-                            <SelectItem value="Grade 8">Grade 8</SelectItem>
-                            <SelectItem value="Grade 9">Grade 9</SelectItem>
-                            <SelectItem value="Grade 10">Grade 10</SelectItem>
-                            <SelectItem value="Grade 11">Grade 11</SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="duration">Duration *</Label>
-                    <Input 
-                      id="duration" 
-                      name="duration"
-                      placeholder="e.g., 45 min" 
-                      defaultValue="45 min"
-                      required
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      placeholder="Describe the practical and learning objectives..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                {/* File Upload Section */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h4 className="text-gray-900">Upload Files or Provide URLs</h4>
-                  
-                  {/* Video Upload */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="video">Practical Video</Label>
-                      <span className="text-xs text-gray-500">Optional</span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {/* File Upload Option */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
-                        onClick={() => document.getElementById('video-file-input')?.click()}>
-                        <Input 
-                          id="video-file-input" 
-                          type="file" 
-                          accept="video/*" 
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            setVideoFile(file);
-                          }}
-                        />
-                        <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        {videoFile ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
-                                {videoFile.name}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
-                              {uploadProgress.video > 0 && ` • Uploading: ${uploadProgress.video}%`}
-                            </p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="mt-1 h-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setVideoFile(null);
-                              }}
-                            >
-                              <X className="w-3 h-3 mr-1" /> Remove File
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-600 mb-1">Click to upload video</p>
-                            <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* OR Separator */}
-                      <div className="flex items-center my-2">
-                        <div className="flex-1 border-t border-gray-300"></div>
-                        <span className="px-3 text-xs text-gray-500">OR</span>
-                        <div className="flex-1 border-t border-gray-300"></div>
-                      </div>
-                      
-                      {/* URL Option */}
-                      <div>
-                        <Label htmlFor="videoUrl">Video URL</Label>
-                        <Input 
-                          id="videoUrl" 
-                          name="videoUrl"
-                          placeholder="https://example.com/video.mp4" 
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Provide a direct link to the video file
-                        </p>
-                      </div>
+                    <div className="col-span-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        placeholder="Describe the practical and learning objectives..."
+                        rows={3}
+                      />
                     </div>
                   </div>
 
+                  {/* File Upload Section */}
                   <div className="space-y-4 pt-4 border-t">
-                    <h4 className="font-semibold text-gray-900">Upload Materials</h4>
-
-                  {/* Lab Sheet Upload */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
-                      <span className="text-xs text-gray-500">Optional</span>
-                    </div>
+                    <h4 className="font-semibold text-gray-900">Upload Files or Provide URLs</h4>
                     
-                    <div className="space-y-2">
-                      {/* File Upload Option */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
-                        onClick={() => document.getElementById('labsheet-file-input')?.click()}>
-                        <Input 
-                          id="labsheet-file-input" 
-                          type="file" 
-                          accept=".pdf" 
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            setLabSheetFile(file);
-                          }}
-                        />
-                        <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        {labSheetFile ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
-                                {labSheetFile.name}
-                              </p>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {(labSheetFile.size / 1024).toFixed(2)} KB
-                              {uploadProgress.labSheet > 0 && ` • Uploading: ${uploadProgress.labSheet}%`}
-                            </p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="mt-1 h-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setLabSheetFile(null);
-                              }}
-                            >
-                              <X className="w-3 h-3 mr-1" /> Remove File
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-600 mb-1">Click to upload PDF</p>
-                            <p className="text-xs text-gray-500">PDF up to 10MB</p>
-                          </>
-                        )}
+                    {/* Video Upload */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="video">Practical Video</Label>
+                        <span className="text-xs text-gray-500">Optional</span>
                       </div>
                       
-                      {/* OR Separator */}
-                      <div className="flex items-center my-2">
-                        <div className="flex-1 border-t border-gray-300"></div>
-                        <span className="px-3 text-xs text-gray-500">OR</span>
-                        <div className="flex-1 border-t border-gray-300"></div>
-                      </div>
-                      
-                      {/* URL Option */}
-                      <div>
-                        <Label htmlFor="labSheetUrl">Lab Sheet URL</Label>
-                        <Input 
-                          id="labSheetUrl" 
-                          name="labSheetUrl"
-                          placeholder="https://example.com/lab-sheet.pdf" 
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Provide a direct link to the PDF file
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Thumbnail Upload */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="thumbnail">Thumbnail Image</Label>
-                      <span className="text-xs text-gray-500">Optional</span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {/* File Upload Option */}
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
-                        onClick={() => document.getElementById('thumbnail-file-input')?.click()}>
-                        <Input 
-                          id="thumbnail-file-input" 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] || null;
-                            setThumbnailFile(file);
-                          }}
-                        />
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        {thumbnailFile ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-center gap-3">
-                              <img 
-                                src={URL.createObjectURL(thumbnailFile)} 
-                                alt="Preview" 
-                                className="w-16 h-16 object-cover rounded border"
-                              />
-                              <div className="text-left">
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle className="w-4 h-4 text-green-500" />
-                                  <p className="text-sm text-gray-700 font-medium truncate max-w-[200px]">
-                                    {thumbnailFile.name}
-                                  </p>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {(thumbnailFile.size / 1024).toFixed(2)} KB
-                                  {uploadProgress.thumbnail > 0 && ` • Uploading: ${uploadProgress.thumbnail}%`}
+                      <div className="space-y-2">
+                        {/* File Upload Option */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                          onClick={() => document.getElementById('video-file-input')?.click()}>
+                          <Input 
+                            id="video-file-input" 
+                            type="file" 
+                            accept="video/*" 
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setVideoFile(file);
+                            }}
+                          />
+                          <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          {videoFile ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
+                                  {videoFile.name}
                                 </p>
                               </div>
+                              <p className="text-xs text-gray-500">
+                                {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                                {uploadProgress.video > 0 && ` • Uploading: ${uploadProgress.video}%`}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="mt-1 h-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVideoFile(null);
+                                }}
+                              >
+                                <X className="w-3 h-3 mr-1" /> Remove File
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setThumbnailFile(null);
-                              }}
-                            >
-                              <X className="w-3 h-3 mr-1" /> Remove File
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-600 mb-1">Click to upload image</p>
-                            <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
-                          </>
-                        )}
+                          ) : (
+                            <>
+                              <p className="text-sm text-gray-600 mb-1">Click to upload video</p>
+                              <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* OR Separator */}
+                        <div className="flex items-center my-2">
+                          <div className="flex-1 border-t border-gray-300"></div>
+                          <span className="px-3 text-xs text-gray-500">OR</span>
+                          <div className="flex-1 border-t border-gray-300"></div>
+                        </div>
+                        
+                        {/* URL Option */}
+                        <div>
+                          <Label htmlFor="videoUrl">Video URL</Label>
+                          <Input 
+                            id="videoUrl" 
+                            name="videoUrl"
+                            placeholder="https://example.com/video.mp4" 
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Provide a direct link to the video file
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lab Sheet Upload */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
+                        <span className="text-xs text-gray-500">Optional</span>
                       </div>
                       
-                      {/* OR Separator */}
-                      <div className="flex items-center my-2">
-                        <div className="flex-1 border-t border-gray-300"></div>
-                        <span className="px-3 text-xs text-gray-500">OR</span>
-                        <div className="flex-1 border-t border-gray-300"></div>
+                      <div className="space-y-2">
+                        {/* File Upload Option */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                          onClick={() => document.getElementById('labsheet-file-input')?.click()}>
+                          <Input 
+                            id="labsheet-file-input" 
+                            type="file" 
+                            accept=".pdf" 
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setLabSheetFile(file);
+                            }}
+                          />
+                          <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          {labSheetFile ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <p className="text-sm text-gray-700 font-medium truncate max-w-xs">
+                                  {labSheetFile.name}
+                                </p>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {(labSheetFile.size / 1024).toFixed(2)} KB
+                                {uploadProgress.labSheet > 0 && ` • Uploading: ${uploadProgress.labSheet}%`}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="mt-1 h-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLabSheetFile(null);
+                                }}
+                              >
+                                <X className="w-3 h-3 mr-1" /> Remove File
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm text-gray-600 mb-1">Click to upload PDF</p>
+                              <p className="text-xs text-gray-500">PDF up to 10MB</p>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* OR Separator */}
+                        <div className="flex items-center my-2">
+                          <div className="flex-1 border-t border-gray-300"></div>
+                          <span className="px-3 text-xs text-gray-500">OR</span>
+                          <div className="flex-1 border-t border-gray-300"></div>
+                        </div>
+                        
+                        {/* URL Option */}
+                        <div>
+                          <Label htmlFor="labSheetUrl">Lab Sheet URL</Label>
+                          <Input 
+                            id="labSheetUrl" 
+                            name="labSheetUrl"
+                            placeholder="https://example.com/lab-sheet.pdf" 
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Provide a direct link to the PDF file
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thumbnail Upload */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="thumbnail">Thumbnail Image</Label>
+                        <span className="text-xs text-gray-500">Optional</span>
                       </div>
                       
-                      {/* URL Option */}
-                      <div>
-                        <Label htmlFor="thumbnail">Thumbnail URL</Label>
-                        <Input 
-                          id="thumbnail" 
-                          name="thumbnail"
-                          placeholder="https://example.com/thumbnail.jpg" 
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Provide a direct link to the image
-                        </p>
+                      <div className="space-y-2">
+                        {/* File Upload Option */}
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-emerald-400 transition-colors cursor-pointer relative"
+                          onClick={() => document.getElementById('thumbnail-file-input')?.click()}>
+                          <Input 
+                            id="thumbnail-file-input" 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setThumbnailFile(file);
+                            }}
+                          />
+                          <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                          {thumbnailFile ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-center gap-3">
+                                <img 
+                                  src={URL.createObjectURL(thumbnailFile)} 
+                                  alt="Preview" 
+                                  className="w-16 h-16 object-cover rounded border"
+                                />
+                                <div className="text-left">
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    <p className="text-sm text-gray-700 font-medium truncate max-w-[200px]">
+                                      {thumbnailFile.name}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {(thumbnailFile.size / 1024).toFixed(2)} KB
+                                    {uploadProgress.thumbnail > 0 && ` • Uploading: ${uploadProgress.thumbnail}%`}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setThumbnailFile(null);
+                                }}
+                              >
+                                <X className="w-3 h-3 mr-1" /> Remove File
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <p className="text-sm text-gray-600 mb-1">Click to upload image</p>
+                              <p className="text-xs text-gray-500">JPG, PNG up to 5MB</p>
+                            </>
+                          )}
+                        </div>
+                        
+                        {/* OR Separator */}
+                        <div className="flex items-center my-2">
+                          <div className="flex-1 border-t border-gray-300"></div>
+                          <span className="px-3 text-xs text-gray-500">OR</span>
+                          <div className="flex-1 border-t border-gray-300"></div>
+                        </div>
+                        
+                        {/* URL Option */}
+                        <div>
+                          <Label htmlFor="thumbnail">Thumbnail URL</Label>
+                          <Input 
+                            id="thumbnail" 
+                            name="thumbnail"
+                            placeholder="https://example.com/thumbnail.jpg" 
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Provide a direct link to the image
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsAddDialogOpen(false);
-                      resetFileStates();
-                    }}
-                    disabled={isSubmitting || isUploading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                    disabled={isSubmitting || isUploading}
-                  >
-                    {(isSubmitting || isUploading) ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        {isUploading ? 'Uploading...' : 'Creating...'}
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Practical
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsAddDialogOpen(false);
+                        resetFileStates();
+                      }}
+                      disabled={isSubmitting || isUploading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                      disabled={isSubmitting || isUploading}
+                    >
+                      {(isSubmitting || isUploading) ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {isUploading ? 'Uploading...' : 'Creating...'}
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Practical
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </motion.div>
         )}
       </div>
 
@@ -1265,7 +1259,8 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                       <SelectItem value="Grade 7">Grade 7</SelectItem>
                       <SelectItem value="Grade 8">Grade 8</SelectItem>
                       <SelectItem value="Grade 9">Grade 9</SelectItem>
-                      
+                      <SelectItem value="Grade 10">Grade 10</SelectItem>
+                      <SelectItem value="Grade 11">Grade 11</SelectItem>
                     </>
                   )}
                   {/* Show advanced grades (10-13) for Physics, Chemistry, Biology */}
@@ -1306,118 +1301,111 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
         {filteredPracticals.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredPracticals.map((practical) => (
-              <Card key={practical.id} className="overflow-hidden border-gray-200">
-                <div className="flex flex-col sm:flex-row">
-                  {/* Thumbnail */}
-                  <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0">
-                    <ImageWithFallback
-                      src={getSafeThumbnail(practical.thumbnail)}
-                      alt={practical.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              <motion.div
+                key={practical.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="overflow-hidden border-gray-200 hover:shadow-lg transition-shadow">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Thumbnail */}
+                    <div className="sm:w-48 h-48 sm:h-auto bg-gray-100 flex-shrink-0">
+                      <ImageWithFallback
+                        src={getSafeThumbnail(practical.thumbnail)}
+                        alt={practical.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col">
-                    <CardHeader>
-                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                        <Badge className={getSubjectColor(practical.subject)}>
-                          {practical.subject}
-                        </Badge>
-                        <Badge variant="outline">{practical.grade}</Badge>
-                      </div>
-                      <CardTitle className="text-lg">{practical.title}</CardTitle>
-                      <CardDescription>{practical.description || ''}</CardDescription>
-                    </CardHeader>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                        disabled={!practical.videoUrl}
-                        onClick={() => practical.videoUrl && handleWatchVideo(practical.videoUrl)}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Watch Video
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="hover:bg-blue-50 hover:border-blue-300"
-                        onClick={() => handleDownloadLabSheet(practical)}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Lab Sheet
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="hover:bg-blue-50 hover:border-blue-300"
-                        onClick={() => handleStartQuiz(practical)}
-                      >
-                        <HelpCircle className="w-4 h-4 mr-2" />
-                        Attempt Quiz
-                      </Button>
-
-                      {canUploadVideo && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                          onClick={() => handleVideoUpload(practical.id)}
-                    <CardContent className="flex-1 flex flex-col justify-between">
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge variant="outline" className="bg-gray-50">
-                          ⏱️ {practical.duration}
-                        </Badge>
-                        {/* Add quiz badge if quizzes exist */}
-                        {practical.quizzes && practical.quizzes.length > 0 && (
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                            📝 {practical.quizzes.length} quiz{practical.quizzes.length !== 1 ? 'zes' : ''}
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col">
+                      <CardHeader>
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                          <Badge className={getSubjectColor(practical.subject)}>
+                            {practical.subject}
                           </Badge>
-                        )}
-                      </div>
+                          <Badge variant="outline">{practical.grade}</Badge>
+                        </div>
+                        <CardTitle className="text-lg">{practical.title}</CardTitle>
+                        <CardDescription>{practical.description || ''}</CardDescription>
+                      </CardHeader>
 
-                      <div className="flex flex-wrap gap-2">
-                        {practical.videoUrl && (
-                          <Button 
-                            size="sm" 
-                            className="bg-gradient-to-r from-blue-600 to-blue-700"
-                            asChild
-                          >
-                            <a href={practical.videoUrl} target="_blank" rel="noopener noreferrer">
+                      <CardContent className="flex-1 flex flex-col justify-between">
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <Badge variant="outline" className="bg-gray-50">
+                            ⏱️ {practical.duration}
+                          </Badge>
+                          {/* Add quiz badge if quizzes exist */}
+                          {practical.quizzes && practical.quizzes.length > 0 && (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                              📝 {practical.quizzes.length} quiz{practical.quizzes.length !== 1 ? 'zes' : ''}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          {practical.videoUrl && (
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                              onClick={() => handleWatchVideo(practical.videoUrl!)}
+                            >
                               <Play className="w-4 h-4 mr-2" />
                               Watch Video
-                            </a>
-                          </Button>
-                        )}
-                        {practical.labSheetUrl && (
+                            </Button>
+                          )}
+                          {practical.labSheetUrl && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="hover:bg-blue-50 hover:border-blue-300"
+                              onClick={() => handleDownloadLabSheet(practical)}
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              Lab Sheet
+                            </Button>
+                          )}
+                          
+                          {/* Quiz Button - Opens the quiz dialog */}
                           <Button 
                             size="sm" 
                             variant="outline"
-                            asChild
+                            className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
+                            onClick={() => setSelectedPractical(practical)}
                           >
-                            <a href={practical.labSheetUrl} target="_blank" rel="noopener noreferrer">
-                              <FileText className="w-4 h-4 mr-2" />
-                              Lab Sheet
-                            </a>
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            Quiz
                           </Button>
-                        )}
-                        
-                        {/* Quiz Button - Opens the quiz dialog */}
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="hover:bg-purple-50 hover:border-purple-300 hover:text-purple-700"
-                          onClick={() => setSelectedPractical(practical)}
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Quiz
-                        </Button>
-                        
-                        {canUpload && (
-                          <>
+                          
+                          {/* Teacher can upload/update video */}
+                          {canUploadVideo && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                              onClick={() => handleVideoUpload(practical.id)}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              {practical.videoUrl ? 'Update Video' : 'Upload Video'}
+                            </Button>
+                          )}
+
+                          {/* Admin can delete video */}
+                          {canDeleteVideo && practical.videoUrl && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="border-red-300 text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteVideo(practical.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Video
+                            </Button>
+                          )}
+                          
+                          {canUpload && (
                             <Button 
                               size="sm" 
                               variant="outline"
@@ -1426,28 +1414,20 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                               <Edit className="w-4 h-4 mr-2" />
                               Edit
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => handleDeletePractical(practical.id)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </CardContent>
+                          )}
+                        </div>
+                      </CardContent>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </motion.div>
             ))}
           </div>
         ) : (
           <Card className="py-12 border-blue-100">
             <CardContent className="text-center">
               <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-gray-900 mb-2">No practicals found</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No practicals found</h3>
               <p className="text-gray-600 mb-4">
                 {searchQuery 
                   ? `No results found for "${searchQuery}"`
@@ -1480,7 +1460,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 {userRole === 'student' 
                   ? 'Take quizzes to test your knowledge' 
                   : 'Manage quizzes for this practical'}
-            </DialogDescription>
+              </DialogDescription>
             </DialogHeader>
             
             {/* Quiz Results Section for Teachers */}
@@ -1690,7 +1670,8 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                           <SelectItem value="Grade 7">Grade 7</SelectItem>
                           <SelectItem value="Grade 8">Grade 8</SelectItem>
                           <SelectItem value="Grade 9">Grade 9</SelectItem>
-                          
+                          <SelectItem value="Grade 10">Grade 10</SelectItem>
+                          <SelectItem value="Grade 11">Grade 11</SelectItem>
                         </>
                       )}
                     </SelectContent>
@@ -1698,7 +1679,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-duration">Duration *</Label>
-                    <Input 
+                  <Input 
                     id="edit-duration" 
                     name="duration"
                     defaultValue={editingPractical.duration}
@@ -1734,11 +1715,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                     placeholder="https://example.com/lab-sheet.pdf" 
                   />
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
                 <div className="col-span-2">
                   <Label htmlFor="edit-thumbnail">Thumbnail URL</Label>
                   <Input 
@@ -1750,22 +1726,205 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
                 </div>
               </div>
 
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDialogOpen(false);
+                    setEditingPractical(null);
+                  }}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Practical
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Video Upload Dialog - Only for Teachers */}
+      {canUploadVideo && (
+        <Dialog open={isVideoUploadDialogOpen} onOpenChange={setIsVideoUploadDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Upload/Update Video</DialogTitle>
+              <DialogDescription>
+                Provide a video URL or upload a video file
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div className="space-y-2">
+                <Label>Upload Video File</Label>
+                <div 
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 transition-colors cursor-pointer"
+                  onClick={() => document.getElementById('video-upload-input')?.click()}
+                >
+                  <Input 
+                    id="video-upload-input" 
+                    type="file" 
+                    accept="video/*" 
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setVideoFile(file);
+                    }}
+                  />
+                  <Video className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  {videoFile ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <p className="text-sm text-gray-700 font-medium">
+                          {videoFile.name}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setVideoFile(null);
+                        }}
+                      >
+                        <X className="w-3 h-3 mr-1" /> Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-1">Click to upload video</p>
+                      <p className="text-xs text-gray-500">MP4, AVI, MOV up to 500MB</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* OR Separator */}
+              <div className="flex items-center">
+                <div className="flex-1 border-t border-gray-300"></div>
+                <span className="px-3 text-xs text-gray-500">OR</span>
+                <div className="flex-1 border-t border-gray-300"></div>
+              </div>
+
+              {/* URL Input */}
+              <div className="space-y-2">
+                <Label htmlFor="video-url-input">Video URL</Label>
+                <Input 
+                  id="video-url-input"
+                  placeholder="https://example.com/video.mp4 or YouTube/Vimeo link"
+                  value={videoUrlInput}
+                  onChange={(e) => setVideoUrlInput(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">
+                  Provide a direct link to the video file or a YouTube/Vimeo URL
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              {isUploading && uploadProgress.video > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Uploading...</span>
+                    <span>{uploadProgress.video}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress.video}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsVideoUploadDialogOpen(false);
+                    setVideoFile(null);
+                    setVideoUrlInput('');
+                  }} 
+                  disabled={isUploading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitVideo}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                  disabled={(!videoFile && !videoUrlInput) || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Video
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Video Confirmation Dialog - Only for Admins */}
+      {canDeleteVideo && (
+        <Dialog open={isDeleteVideoDialogOpen} onOpenChange={setIsDeleteVideoDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Video</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this video? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
             <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsVideoUploadDialogOpen(false)} disabled={isUploading}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsDeleteVideoDialogOpen(false);
+                  setSelectedPracticalForDeleteVideo(null);
+                }}
+              >
                 Cancel
               </Button>
               <Button
-                onClick={handleSubmitVideo}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
-                disabled={(!videoFile && !videoUrlInput) || isUploading}
+                variant="destructive"
+                onClick={confirmDeleteVideo}
               >
-                <Upload className="w-4 h-4 mr-2" />
-                {isUploading ? 'Uploading...' : 'Upload Video'}
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Video
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Video Player Dialog */}
       <Dialog open={isVideoPlayerDialogOpen} onOpenChange={setIsVideoPlayerDialogOpen}>
@@ -1884,40 +2043,6 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
           </div>
         </DialogContent>
       </Dialog>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    setEditingPractical(null);
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Update Practical
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
