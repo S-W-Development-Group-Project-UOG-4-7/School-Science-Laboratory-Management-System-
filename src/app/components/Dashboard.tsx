@@ -1,5 +1,3 @@
-// Dashboard.tsx - Updated with state persistence
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -55,6 +53,9 @@ type Page =
 export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
   const router = useRouter();
   const [profileImageUrl, setProfileImageUrl] = useState<string>('');
+  const [userName, setUserName] = useState<string>(user.name);
+  const [userEmail, setUserEmail] = useState<string>(user.email);
+  const [userPhone, setUserPhone] = useState<string>(user.phone || '');
   
   // Initialize currentPage from initialView (URL) or localStorage
   const [currentPage, setCurrentPage] = useState<Page>(() => {
@@ -92,30 +93,67 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
     router.push(`/?view=${page}`, { scroll: false });
   };
 
-  // Fetch user's profile image on component mount
+  // Fetch user's complete profile data on component mount
   useEffect(() => {
-    const fetchProfileImage = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const response = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
-        if (response.ok) {
-          const data = await response.json();
+        // Fetch from database
+        const dbResponse = await fetch(`/api/users?search=${encodeURIComponent(user.email)}`);
+        if (dbResponse.ok) {
+          const users = await dbResponse.json();
+          const dbUser = users.find((u: any) => u.email === user.email);
+          
+          if (dbUser) {
+            // Update name from database
+            setUserName(dbUser.name);
+            setUserEmail(dbUser.email);
+            setUserPhone(dbUser.phone || '');
+          }
+        }
+
+        // Fetch profile image from JSON file
+        const profileResponse = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
+        if (profileResponse.ok) {
+          const data = await profileResponse.json();
           if (data.user.profileImageUrl) {
             setProfileImageUrl(data.user.profileImageUrl);
           }
+          // Also update name from profile if available
+          if (data.user.name) {
+            setUserName(data.user.name);
+          }
         }
       } catch (error) {
-        console.error('Error fetching profile image:', error);
+        console.error('Error fetching user profile:', error);
       }
     };
 
-    fetchProfileImage();
+    fetchUserProfile();
   }, [user.email]);
 
   // Listen for profile updates from SettingsPage
   useEffect(() => {
     const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('Profile update event received:', event.detail);
+      
+      // Update profile image
       if (event.detail?.profileImageUrl) {
         setProfileImageUrl(event.detail.profileImageUrl);
+      }
+      
+      // Update user name
+      if (event.detail?.name) {
+        setUserName(event.detail.name);
+      }
+      
+      // Update email
+      if (event.detail?.email) {
+        setUserEmail(event.detail.email);
+      }
+      
+      // Update phone
+      if (event.detail?.phone !== undefined) {
+        setUserPhone(event.detail.phone);
       }
     };
 
@@ -287,14 +325,14 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
                   >
                     <Avatar className="w-8 h-8 border-2 border-white/30">
                       {profileImageUrl ? (
-                        <AvatarImage src={profileImageUrl} alt={user.name} />
+                        <AvatarImage src={profileImageUrl} alt={userName} />
                       ) : null}
                       <AvatarFallback className={`bg-gradient-to-br ${getRoleBadgeColor()} text-white text-sm`}>
-                        {user.name.charAt(0)}
+                        {userName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="hidden sm:block text-left">
-                      <p className="text-sm text-white">{user.name}</p>
+                      <p className="text-sm text-white">{userName}</p>
                       <p className="text-xs text-white/70">
                         {getRoleDisplayName(user.role)}
                       </p>
@@ -305,7 +343,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div>
-                      <p className="text-sm">{user.name}</p>
+                      <p className="text-sm">{userName}</p>
                       <p className="text-xs text-gray-500">
                         {getRoleDisplayName(user.role)}
                       </p>
@@ -345,7 +383,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
           >
             {currentPage === "home" && (
               <HomePage 
-                userName={user.name}
+                userName={userName}
                 userRole={user.role} 
                 onNavigate={(page) => handlePageChange(page as Page)}
               />
@@ -363,7 +401,7 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
               <InventoryRequestsPage 
                 userRole={user.role}
                 userId={user.id}
-                userName={user.name}
+                userName={userName}
               />
             )}
             {currentPage === "users" && user.role === "admin" && (
@@ -371,7 +409,12 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
             )}
             {currentPage === "settings" && (
               <SettingsPage 
-                user={user}
+                user={{
+                  ...user,
+                  name: userName,
+                  email: userEmail,
+                  phone: userPhone,
+                }}
               />
             )}
           </motion.div>
