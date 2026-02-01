@@ -408,8 +408,6 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
               <UserManagementPage />
             )}
             {currentPage === "settings" && (
-              <SettingsPage
-                user={user}
               <SettingsPage 
                 user={{
                   ...user,
