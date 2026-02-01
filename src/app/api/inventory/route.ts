@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         name: formData.get('name') as string,
         category: formData.get('category') as Category,
 
-        quantity: Number(formData.get('quantity')),
+       quantity: Number(formData.get('quantity')),
         unit: formData.get('unit') as string,
 
         packageSize: formData.get('packageSize')
