@@ -364,6 +364,7 @@ const TIMETABLE = {
 type DayType = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
 type StepType = 'schedule' | 'equipment';
 
+ const canSchedule = userRole === 'teacher' || userRole === 'admin';
 interface Toast {
   id: string;
   message: string;
