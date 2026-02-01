@@ -5,7 +5,7 @@ import {
   generateTOTPSecret,
   generateQRCode,
   generateBackupCodes,
-} from '@/src/app/lib/totpHelper';
+}from '@/src/app/lib/totpHelper';
 
 // POST - Initialize TOTP setup
 export async function POST(request: NextRequest) {
