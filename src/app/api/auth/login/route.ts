@@ -4,7 +4,6 @@ import { prisma } from '@/src/app/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { setAuthCookie } from '@/src/app/lib/auth';
 
-
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();

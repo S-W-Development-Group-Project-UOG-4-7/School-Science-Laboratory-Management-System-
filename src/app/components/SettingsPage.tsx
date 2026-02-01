@@ -93,7 +93,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
         
         // Try to fetch profile image
         try {
-          const profileResponse = await fetch(`/api/user/profile?userId=${encodeURIComponent(user.email)}`);
+          const profileResponse = await fetch(`/api/users/profile?userId=${encodeURIComponent(user.email)}`);
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             if (profileData.user?.profileImageUrl) {
@@ -117,6 +117,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
     fetchUserData();
   }, [user.email, user.name, user.id, user.twoFactorEnabled]);
 
+  // Updated handleSave function with event dispatch
   const handleSave = async () => {
     try {
       let imageUrl = savedProfileImageUrl;
@@ -128,7 +129,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
         formData.append('profileImage', profileImageFile);
         formData.append('userId', user.email);
         
-        const uploadResponse = await fetch('/api/user/profile/upload', {
+        const uploadResponse = await fetch('/api/users/profile/upload', {
           method: 'POST',
           body: formData
         });
@@ -144,7 +145,7 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
         setUploading(false);
       }
       
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -162,6 +163,26 @@ export function SettingsPage({ user, onUserUpdate }: SettingsPageProps) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update profile');
       }
+
+      const responseData = await response.json();
+      
+      // ✅ DISPATCH CUSTOM EVENT TO UPDATE DASHBOARD
+      const profileUpdateEvent = new CustomEvent('profileUpdated', {
+        detail: {
+          name: fullName,
+          email: email,
+          phone: phone,
+          profileImageUrl: imageUrl,
+        },
+      });
+      window.dispatchEvent(profileUpdateEvent);
+      
+      console.log('Profile update event dispatched:', {
+        name: fullName,
+        email,
+        phone,
+        profileImageUrl: imageUrl,
+      });
       
       setProfileImageFile(null);
       setSaved(true);
