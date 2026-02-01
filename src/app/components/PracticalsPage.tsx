@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video, X, CheckCircle } from 'lucide-react';
+import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video, X, CheckCircle, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -18,7 +18,8 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from '@/src/app/lib/types';
+
+type UserRole = 'student' | 'teacher' | 'lab-assistant' | 'principal' | 'admin';
 
 interface PracticalsPageProps {
   userRole: UserRole;
@@ -86,6 +87,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [isVideoPlayerDialogOpen, setIsVideoPlayerDialogOpen] = useState(false);
   const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<string | null>(null);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteVideoDialogOpen, setIsDeleteVideoDialogOpen] = useState(false);
+  const [selectedPracticalForDelete, setSelectedPracticalForDelete] = useState<string | null>(null);
   
   // Form states
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -95,7 +99,9 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
   // Permissions
   const canCreatePractical = userRole === 'teacher';
-  const canUploadVideo = userRole === 'admin';
+  const canUploadVideo = userRole === 'teacher'; // Only teachers can upload/update videos
+  const canDeletePractical = false; // Admin cannot delete practicals
+  const canDeleteVideo = userRole === 'admin'; // Only admin can delete videos
   const canViewAll = userRole === 'admin' || userRole === 'teacher';
 
   const filteredPracticals = practicals.filter((practical) => {
@@ -149,7 +155,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
     const file = e.target.files?.[0];
     if (file) {
       setVideoFile(file);
-      setVideoUrlInput(''); // Clear URL input when file is selected
+      setVideoUrlInput('');
     }
   };
 
@@ -184,7 +190,6 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
       const data = await response.json();
 
       if (data.success) {
-        // Update local state with the embed URL
         setPracticals(prev => prev.map(p => 
           p.id === selectedPracticalForVideo 
             ? { ...p, videoUrl: data.videoUrl }
@@ -205,6 +210,62 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const handleWatchVideo = (videoUrl: string) => {
     setCurrentVideoUrl(videoUrl);
     setIsVideoPlayerDialogOpen(true);
+  };
+
+  const handleDeletePractical = (practicalId: string) => {
+    setSelectedPracticalForDelete(practicalId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePractical = async () => {
+    if (!selectedPracticalForDelete) return;
+
+    try {
+      const response = await fetch(`/api/practicals/${selectedPracticalForDelete}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setPracticals(prev => prev.filter(p => p.id !== selectedPracticalForDelete));
+        setIsDeleteDialogOpen(false);
+        setSelectedPracticalForDelete(null);
+      } else {
+        alert('Failed to delete practical');
+      }
+    } catch (error) {
+      console.error('Error deleting practical:', error);
+      alert('Failed to delete practical');
+    }
+  };
+
+  const handleDeleteVideo = (practicalId: string) => {
+    setSelectedPracticalForDelete(practicalId);
+    setIsDeleteVideoDialogOpen(true);
+  };
+
+  const confirmDeleteVideo = async () => {
+    if (!selectedPracticalForDelete) return;
+
+    try {
+      const response = await fetch(`/api/practicals/${selectedPracticalForDelete}/delete-video`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setPracticals(prev => prev.map(p => 
+          p.id === selectedPracticalForDelete 
+            ? { ...p, videoUrl: '' }
+            : p
+        ));
+        setIsDeleteVideoDialogOpen(false);
+        setSelectedPracticalForDelete(null);
+      } else {
+        alert('Failed to delete video');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      alert('Failed to delete video');
+    }
   };
 
   return (
@@ -331,7 +392,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> Video upload will be handled by the admin. After creating this practical, the admin can upload the demonstration video.
+                        <strong>Note:</strong> After creating this practical, you can upload the demonstration video using the "Upload Video" button.
                       </p>
                     </div>
                   </div>
@@ -492,6 +553,30 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                           {practical.videoUrl ? 'Update Video' : 'Upload Video'}
                         </Button>
                       )}
+
+                      {canDeleteVideo && practical.videoUrl && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                          onClick={() => handleDeleteVideo(practical.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Video
+                        </Button>
+                      )}
+
+                      {canDeletePractical && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-red-300 text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeletePractical(practical.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Practical
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </div>
@@ -583,7 +668,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                 value={videoUrlInput}
                 onChange={(e) => {
                   setVideoUrlInput(e.target.value);
-                  setVideoFile(null); // Clear file when URL is entered
+                  setVideoFile(null);
                 }}
               />
               <p className="text-xs text-gray-500">
@@ -609,7 +694,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <p className="text-sm text-purple-800">
-                <strong>Admin Access:</strong> Upload video files or provide streaming URLs. Teachers manage other practical content.
+                <strong>Teacher Access:</strong> Upload video files or provide streaming URLs for your practicals.
               </p>
             </div>
 
@@ -643,6 +728,86 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
               allowFullScreen
               title="Practical Video"
             ></iframe>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Practical Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Delete Practical</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this practical? This action cannot be undone and will remove:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+              <li>The practical and all its details</li>
+              <li>Associated video (if any)</li>
+              <li>Lab sheets and materials</li>
+              <li>All related data</li>
+            </ul>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> This action is permanent and cannot be reversed.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedPracticalForDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmDeletePractical}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Practical
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Video Confirmation Dialog */}
+      <Dialog open={isDeleteVideoDialogOpen} onOpenChange={setIsDeleteVideoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-orange-600">Delete Video</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the video for this practical?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <p className="text-sm text-orange-800">
+                This will remove the video from this practical. The practical itself and other materials will remain intact. Students will no longer be able to watch this video.
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsDeleteVideoDialogOpen(false);
+                setSelectedPracticalForDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmDeleteVideo}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Video
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
