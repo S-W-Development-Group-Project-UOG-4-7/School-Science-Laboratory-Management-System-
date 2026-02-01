@@ -158,10 +158,13 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     }
   ];
 
-  // Permissions
+    // Permissions
   const canCreatePractical = userRole === 'teacher';
-  const canUploadVideo = userRole === 'admin';
+  const canUploadVideo = userRole === 'teacher'; // Only teachers can upload/update videos
+  const canDeletePractical = false; // Admin cannot delete practicals
+  const canDeleteVideo = userRole === 'admin'; // Only admin can delete videos
   const canViewAll = userRole === 'admin' || userRole === 'teacher';
+  
   // Load teacherId from localStorage (runs once on mount)
   useEffect(() => {
     const storedTeacherId = localStorage.getItem('teacherId');
