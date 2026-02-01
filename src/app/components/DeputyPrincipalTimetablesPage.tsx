@@ -63,9 +63,7 @@ function parseClassCodeFromTeacherSubject(subject: string, fallbackGrade?: numbe
   const maybe = parts.length > 1 ? parts[1] : "";
   const m = maybe.toUpperCase().match(/^(\d{1,2})([A-Z])$/);
   if (m) return `${m[1]}${m[2]}`;
- 
- 
- return fallbackGrade ? String(fallbackGrade) : "";
+  return fallbackGrade ? String(fallbackGrade) : "";
 }
 
 function parseClassCode(code: string) {
@@ -77,8 +75,15 @@ function parseClassCode(code: string) {
 
 function getAllowedGradesForLabName(labName: string) {
   const name = (labName ?? "").toLowerCase();
+
+  // ✅ Required rules
   if (name.includes("science")) return [6, 7, 8, 9, 10, 11];
-  if (name.includes("physics") || name.includes("chemistry") || name.includes("biology")) return [12, 13];
+
+  if (name.includes("physics") || name.includes("chemistry") || name.includes("biology")) {
+    return [12, 13];
+  }
+
+  // fallback
   return [6, 7, 8, 9, 10, 11, 12, 13];
 }
 
@@ -102,6 +107,7 @@ function GridEditor({
   grid,
   setGrid,
   placeholder,
+  // optional: for UI restriction or future highlighting
 }: {
   title: string;
   description: string;
@@ -204,18 +210,20 @@ function GridEditor({
           </table>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-3">Tip: Leave a cell empty if that period has no allocation.</p>
+        <p className="text-xs text-muted-foreground mt-3">
+          Tip: Leave a cell empty if that period has no allocation.
+        </p>
       </CardContent>
     </Card>
   );
 }
 
 /** ---------- Main Page ---------- */
-export default function DeputyTimetablePage({ user }: { user: AppUser }) {
-  const isDeputy =
-    user.role === "deputy-principal"; user.role === "deputy-principal";
+export default function DeputyPrincipalTimetablesPage({ user }: { user: AppUser }) {
+  // IMPORTANT: match your role string exactly
+  const isDeputy = user.role === "deputy-principal";
 
-  // ✅ Deputy-only UI
+  
   if (!isDeputy) {
     return (
       <div className="p-6">
@@ -237,7 +245,6 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [selectedLabId, setSelectedLabId] = useState<string>("");
 
-  
   const [teacherGrid, setTeacherGrid] = useState<Record<string, string>>({});
   const [labGrid, setLabGrid] = useState<Record<string, string>>({});
 
@@ -277,7 +284,7 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
   }
 
   useEffect(() => {
-  
+   
     refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -294,7 +301,7 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
   // rebuild Teacher grid
   useEffect(() => {
     if (!selectedTeacherId) return;
-   
+    
     const map: Record<string, string> = {};
     for (const r of teacherTT.filter((x) => x.teacherId === selectedTeacherId)) {
       map[getKey(r.day, r.period)] = parseClassCodeFromTeacherSubject(r.subject, r.grade);
@@ -313,8 +320,12 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
   }, [selectedLabId, labTT]);
 
   async function saveTeacherGrid() {
-    if (!selectedTeacherId) return;
+    if (!selectedTeacherId) {
+      toast.error("Please select a teacher first");
+      return;
+    }
 
+    // validate format
     for (const [k, v] of Object.entries(teacherGrid)) {
       const value = (v ?? "").trim();
       if (!value) continue;
@@ -341,8 +352,12 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
   }
 
   async function saveLabGrid() {
-    if (!selectedLabId) return;
+    if (!selectedLabId) {
+      toast.error("Please select a lab first");
+      return;
+    }
 
+    // ✅ Front-end restriction (instant popup before calling API)
     const selectedLab = labs.find((l) => l.id === selectedLabId);
     const labName = selectedLab?.name ?? "";
     const allowed = getAllowedGradesForLabName(labName);
@@ -358,11 +373,15 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
       }
 
       if (!allowed.includes(parsed.grade)) {
-        toast.error(`Invalid grade for ${labName}. Allowed: ${allowed.join(", ")}`);
+        // ✅ Popup when wrong grade entered
+        toast.error(
+          `${labName} only allows grades: ${allowed.join(", ")}. You entered ${parsed.classCode} at ${k}.`
+        );
         return;
       }
     }
 
+    // ✅ Backend call (also validates again)
     const res = await fetch("/api/timetables/lab/bulk", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-user-role": user.role },
@@ -370,8 +389,26 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
     });
 
     const data = await readJsonSafe(res);
+
     if (!res.ok) {
-      toast.error((data as any)?.error ?? "Failed to save lab timetable");
+      const msg = (data as any)?.error ?? "Failed to save lab timetable";
+      toast.error(msg);
+
+      const invalidCells = (data as any)?.invalidCells;
+      if (Array.isArray(invalidCells) && invalidCells.length > 0) {
+        toast.message("Wrong entries", {
+          description:
+            invalidCells.slice(0, 6).join(", ") + (invalidCells.length > 6 ? " ..." : ""),
+        });
+      }
+
+      const range = (data as any)?.allowedRange;
+      if (range?.minGrade != null && range?.maxGrade != null) {
+        toast.message("Allowed grade range", {
+          description: `${range.minGrade} to ${range.maxGrade}`,
+        });
+      }
+
       return;
     }
 
@@ -469,7 +506,8 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
           icon={<CalendarDays className="w-5 h-5 text-blue-600" />}
           selectedLabel={
             <div className="text-sm text-muted-foreground">
-              Teacher: <span className="font-medium text-gray-900">{selectedTeacher?.name ?? "—"}</span>
+              Teacher:{" "}
+              <span className="font-medium text-gray-900">{selectedTeacher?.name ?? "—"}</span>
             </div>
           }
           grid={teacherGrid}
@@ -490,7 +528,7 @@ export default function DeputyTimetablePage({ user }: { user: AppUser }) {
           grid={labGrid}
           setGrid={setLabGrid}
           onSave={saveLabGrid}
-          placeholder="ex: 9A"
+          placeholder="ex: 12A"
         />
       </div>
     </div>

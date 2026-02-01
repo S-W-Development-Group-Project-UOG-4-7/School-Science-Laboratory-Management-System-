@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,80 +9,175 @@ datasource db {
 }
 
 model User {
-  id                String             @id @default(cuid())
-  name              String
-  email             String             @unique
-  password          String
-  role              Role
-  createdAt         DateTime           @default(now())
-  practicals        Practical[]
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Logs & notifications
+  activityLogs  ActivityLog[]
+  notifications Notification[]
+
+  // Inventory request relations
+  requestsMade      InventoryRequest[] @relation("RequestCreatedBy")
+  requestsApproved  InventoryRequest[] @relation("RequestApprovedBy")
+  requestsRejected  InventoryRequest[] @relation("RequestRejectedBy")
+  requestsFulfilled InventoryRequest[] @relation("RequestFulfilledBy")
+
+  // Scheduling
   teacherTimetables TeacherTimetable[]
+  labSchedules      LabSchedule[]
 }
 
 model Lab {
-  id            String         @id @default(cuid())
-  name          String         @unique
-  gradeFrom     Int
-  gradeTo       Int
-  createdAt     DateTime       @default(now())
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  gradeFrom Int?
+  gradeTo   Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   labTimetables LabTimetable[]
-  practicals    Practical[]
+  labSchedules  LabSchedule[]
 }
 
+// Deputy Principal Timetables (Annual/Weekly repeating grids)
 model TeacherTimetable {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   teacherId String
   day       DayOfWeek
   period    Int
-  subject   String
-  grade     Int
-  classCode String   
+  subject   String?
+  grade     Int?
+  classCode String?
+  available Boolean  @default(true)
   updatedAt DateTime @updatedAt
-  available Boolean   @default(true)
-  teacher   User      @relation(fields: [teacherId], references: [id])
+
+  teacher User @relation(fields: [teacherId], references: [id])
 
   @@unique([teacherId, day, period])
 }
 
 model LabTimetable {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   labId     String
-  classCode String    // REQUIRED (ex: "10A")
+  
   day       DayOfWeek
   period    Int
+  classCode String?
+  available Boolean  @default(true)
   updatedAt DateTime @updatedAt
-  available Boolean   @default(true)
-  lab       Lab       @relation(fields: [labId], references: [id])
 
-  @@unique([labId, day, period]) 
-  @@index([classCode])          
+  lab Lab @relation(fields: [labId], references: [id])
+
+  @@unique([labId, day, period])
 }
 
-model Practical {
-  id        String          @id @default(cuid())
-  title     String
-  date      DateTime
+// Actual Practical Sessions (date-based bookings)
+model LabSchedule {
+  id        String   @id @default(cuid())
+  labId     String
+  teacherId String
   day       DayOfWeek
   period    Int
-  grade     Int
-  subject   String
-  status    PracticalStatus @default(UPCOMING)
-  teacherId String
-  labId     String
-  createdAt DateTime        @default(now())
-  lab       Lab             @relation(fields: [labId], references: [id])
-  teacher   User            @relation(fields: [teacherId], references: [id])
+  date      DateTime
+  title     String?
+  subject   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lab     Lab  @relation(fields: [labId], references: [id])
+  teacher User @relation(fields: [teacherId], references: [id])
 
   @@unique([labId, day, period, date])
 }
 
+// Inventory
+model InventoryItem {
+  id            String   @id @default(cuid())
+  name          String
+  category      String
+  stockLevel    Int      @default(0)
+  minStockLevel Int      @default(0)
+  unit          String
+  location      String
+  photo         String?
+  safetyNotes   String?
+  lastUpdated   DateTime @updatedAt
+
+  requests InventoryRequest[]
+}
+
+model InventoryRequest {
+  id                String          @id @default(cuid())
+  itemId            String
+  quantity          Int
+  priority          RequestPriority
+  status            RequestStatus   @default(pending)
+  reason            String
+  neededDate        DateTime
+  notes             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  requestedById     String
+  approvedById      String?
+  rejectedById      String?
+  fulfilledById     String?
+
+  approvedDate      DateTime?
+  rejectedDate      DateTime?
+  fulfilledDate     DateTime?
+  fulfilledQuantity Int?
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+
+  requestedBy User  @relation("RequestCreatedBy", fields: [requestedById], references: [id])
+  approvedBy  User? @relation("RequestApprovedBy", fields: [approvedById], references: [id])
+  rejectedBy  User? @relation("RequestRejectedBy", fields: [rejectedById], references: [id])
+  fulfilledBy User? @relation("RequestFulfilledBy", fields: [fulfilledById], references: [id])
+
+  notifications Notification[]
+}
+
+// Logs & Notifications
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  userId    String
+  requestId String?
+  createdAt DateTime         @default(now())
+
+  user    User              @relation(fields: [userId], references: [id])
+  request InventoryRequest? @relation(fields: [requestId], references: [id])
+}
+
+// Enums
 enum Role {
   ADMIN
   PRINCIPAL
-  DEPUTY_PRINCIPAL
+  
   TEACHER
   LAB_ASSISTANT
   STUDENT
+  DEPUTY_PRINCIPAL
 }
 
 enum DayOfWeek {
@@ -93,11 +188,23 @@ enum DayOfWeek {
   FRIDAY
 }
 
-enum PracticalStatus {
-  UPCOMING
-  COMPLETED
-  CANCELLED
+enum NotificationType {
+  fulfillment
+  approval
+  rejection
+  request
 }
 
+enum RequestPriority {
+  low
+  medium
+  high
+}
 
-
+enum RequestStatus {
+  pending
+  approved
+  rejected
+  in_progress
+  fulfilled
+}

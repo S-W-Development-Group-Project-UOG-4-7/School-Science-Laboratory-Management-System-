@@ -1,76 +1,83 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/src/app/lib/prisma'
+import { NextResponse } from "next/server";
+import { prisma } from "@/src/app/lib/prisma";
+import { DayOfWeek } from "@prisma/client";
 
-type Slot = { period: number }
+type Body = {
+  teacherId: string;
+  labId: string;
+  day: DayOfWeek;
+  date: string; // "2026-02-05"
+};
+
+// change if your school has different number of periods
+const ALL_PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const { teacherId, labId, day } = body
+    const body = (await req.json()) as Body;
+    const { teacherId, labId, day, date } = body;
 
-    // 1. Validate request body
-    if (!teacherId || !labId || !day) {
+    if (!teacherId || !labId || !day || !date) {
       return NextResponse.json(
-        { error: 'Missing required fields: teacherId, labId, or day' },
+        { error: "teacherId, labId, day, date are required" },
         { status: 400 }
-      )
+      );
     }
 
-    // 2. Get teacher availability
-    const teacherSlots = await prisma.teacherTimetable.findMany({
+    const d = new Date(date);
+    if (isNaN(d.getTime())) {
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
+
+    // 1) Teacher weekly available periods (optional)
+    const teacherAvail = await prisma.teacherTimetable.findMany({
+      where: { teacherId, day, available: true },
+      select: { period: true },
+    });
+
+    // 2) Lab weekly available periods (optional)
+    const labAvail = await prisma.labTimetable.findMany({
+      where: { labId, day, available: true },
+      select: { period: true },
+    });
+
+    // If timetables are empty (not configured), fallback to all periods
+    const teacherPeriods = teacherAvail.length
+      ? new Set(teacherAvail.map((x) => x.period))
+      : new Set(ALL_PERIODS);
+
+    const labPeriods = labAvail.length
+      ? new Set(labAvail.map((x) => x.period))
+      : new Set(ALL_PERIODS);
+
+    // Candidate periods = intersection
+    const candidate = ALL_PERIODS.filter((p) => teacherPeriods.has(p) && labPeriods.has(p));
+
+    // 3) Get already-booked periods on that date for teacher/lab
+    const booked = await prisma.labSchedule.findMany({
       where: {
-        teacherId,
+        date: d,
         day,
-        available: true,
+        OR: [{ teacherId }, { labId }],
       },
-      select: {
-        period: true,
-      },
-    })
+      select: { period: true, teacherId: true, labId: true },
+    });
 
-    // 3. Get lab availability
-    const labSlots = await prisma.labTimetable.findMany({
-      where: {
-        labId,
-        day,
-        available: true,
-      },
-      select: {
-        period: true,
-      },
-    })
+    const bookedTeacher = new Set(booked.filter(b => b.teacherId === teacherId).map(b => b.period));
+    const bookedLab = new Set(booked.filter(b => b.labId === labId).map(b => b.period));
 
-    // 4. Get already booked practicals
-    const bookedPracticals = await prisma.practical.findMany({
-      where: {
-        labId,
-        day,
-      },
-      select: {
-        period: true,
-      },
-    })
+    // 4) Free = candidate not booked by teacher or lab
+    const freePeriods = candidate.filter((p) => !bookedTeacher.has(p) && !bookedLab.has(p));
 
-    // 5. Convert to Sets for faster lookup
-    const teacherSet = new Set(teacherSlots.map((s: Slot) => s.period))
-    const labSet = new Set(labSlots.map((s: Slot) => s.period))
-    const bookedSet = new Set(bookedPracticals.map((p: Slot) => p.period))
-
-    // 6. Find available periods (common between teacher and lab, excluding booked)
-    const availablePeriods = [...teacherSet].filter(
-      (period) => labSet.has(period) && !bookedSet.has(period)
-    )
-
-    // 7. Return response
     return NextResponse.json({
       day,
-      availablePeriods,
-    })
-  } catch (error) {
-    console.error('Error fetching available slots:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch available slots' },
-      { status: 500 }
-    )
+      date,
+      teacherId,
+      labId,
+      freePeriods,
+    });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Failed to compute available slots" }, { status: 500 });
   }
 }
