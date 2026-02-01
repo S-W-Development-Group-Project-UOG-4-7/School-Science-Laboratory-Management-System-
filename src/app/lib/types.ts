@@ -143,10 +143,6 @@ export const PRIVILEGE_METADATA: Record<Privilege, { label: string; description:
     category: 'Labs'
   }
 };
-<<<<<<< HEAD
-
-=======
->>>>>>> 43b9e78b320e63017eaa0eb85c4673f198c41da6
 export interface InventoryItem {
   id: string;
   name: string;
@@ -166,12 +162,7 @@ export interface InventoryItem {
   handlingProcedure: string;
   safetyNotes: string;
   lastUpdated: string;
-<<<<<<< HEAD
 }
-=======
-}
-
-
 // ========== ENUMS ==========
 export enum EquipmentCategory {
   GLASSWARE = 'GLASSWARE',
@@ -951,4 +942,3 @@ export interface AuthSession {
   user: SessionUser;
   expires: string;
 }
->>>>>>> 43b9e78b320e63017eaa0eb85c4673f198c41da6
