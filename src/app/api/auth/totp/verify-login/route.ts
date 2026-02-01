@@ -1,8 +1,8 @@
 // src/app/api/auth/totp/verify-login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
-import { verifyTOTPToken, decryptSecret, hashBackupCode } from '@/app/lib/totpHelper';
-import { setAuthCookie } from '@/app/lib/auth';
+import { prisma } from '@/src/app/lib/prisma';
+import { verifyTOTPToken, decryptSecret, hashBackupCode } from '@/src/app/lib/totpHelper';
+import { setAuthCookie } from '@/src/app/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
