@@ -19,15 +19,35 @@ async function main() {
       name: "Deputy Principal",
       email: "deputyprincipal@school.lk",
       password: "deputy123",
-      role: Role.DEPUTY_PRINCIPAL, // ✅ use correct role (recommended)
-      // if you still want admin access, use Role.ADMIN
+      role: Role.DEPUTY_PRINCIPAL,
     },
   });
 
-  const teacher = await prisma.user.create({
+  // Teacher 1 (your one)
+  const teacher1 = await prisma.user.create({
     data: {
-      name: "Science Teacher",
+      name: "Mrs Jayasuriya",
       email: "teacher@school.lk",
+      password: "teacher123",
+      role: Role.TEACHER,
+    },
+  });
+
+  // Teacher 2
+  const teacher2 = await prisma.user.create({
+    data: {
+      name: "Mr Perera",
+      email: "perera@school.lk",
+      password: "teacher123",
+      role: Role.TEACHER,
+    },
+  });
+
+  // Teacher 3
+  const teacher3 = await prisma.user.create({
+    data: {
+      name: "Ms Silva",
+      email: "silva@school.lk",
       password: "teacher123",
       role: Role.TEACHER,
     },
@@ -53,45 +73,81 @@ async function main() {
   });
 
   // -----------------------------
-  // Teacher timetable (example)
+  // Teacher timetables (examples)
   // -----------------------------
-  await prisma.teacherTimetable.create({
-    data: {
-      teacherId: teacher.id,
-      day: DayOfWeek.MONDAY,
-      period: 3,
-      subject: "Science",
-      grade: 10,          // ✅ must match classCode
-      classCode: "10A",    // ✅ required if in schema
-      available: true,
-    },
+  await prisma.teacherTimetable.createMany({
+    data: [
+      {
+        teacherId: teacher1.id,
+        day: DayOfWeek.MONDAY,
+        period: 3,
+        subject: "Science",
+        grade: 10,
+        classCode: "10A",
+        available: true,
+      },
+      {
+        teacherId: teacher2.id,
+        day: DayOfWeek.TUESDAY,
+        period: 2,
+        subject: "Physics",
+        grade: 12,
+        classCode: "12B",
+        available: true,
+      },
+      {
+        teacherId: teacher3.id,
+        day: DayOfWeek.WEDNESDAY,
+        period: 4,
+        subject: "Chemistry",
+        grade: 12,
+        classCode: "12C",
+        available: true,
+      },
+    ],
   });
 
   // -----------------------------
-  // Lab timetable (example)
+  // Lab timetables (examples)
   // -----------------------------
-  await prisma.labTimetable.create({
-    data: {
-      labId: scienceLab.id,
-      day: DayOfWeek.MONDAY,
-      period: 3,
-      available: true,
-      classCode: "10A",    // ✅ required if in schema
-    },
-  });
-
-  await prisma.labTimetable.create({
-    data: {
-      labId: physicsLab.id,
-      day: DayOfWeek.MONDAY,
-      period: 4,
-      available: true,
-      classCode: "11D",
-    },
+  await prisma.labTimetable.createMany({
+    data: [
+      {
+        labId: scienceLab.id,
+        day: DayOfWeek.MONDAY,
+        period: 3,
+        available: true,
+        classCode: "10A",
+      },
+      {
+        labId: physicsLab.id,
+        day: DayOfWeek.TUESDAY,
+        period: 2,
+        available: true,
+        classCode: "12B",
+      },
+      {
+        labId: chemistryLab.id,
+        day: DayOfWeek.WEDNESDAY,
+        period: 4,
+        available: true,
+        classCode: "12C",
+      },
+      {
+        labId: biologyLab.id,
+        day: DayOfWeek.THURSDAY,
+        period: 1,
+        available: true,
+        classCode: "13A",
+      },
+    ],
   });
 
   console.log("✅ Seeding completed successfully");
-  console.log("👤 Deputy Principal:", deputyPrincipal.email, "/", "deputy123");
+  console.log("👤 Deputy Principal login:", deputyPrincipal.email, "/", "deputy123");
+  console.log("👩‍🏫 Teacher 1 login:", teacher1.email, "/", "teacher123");
+  console.log("👨‍🏫 Teacher 2 login:", teacher2.email, "/", "teacher123");
+  console.log("👩‍🏫 Teacher 3 login:", teacher3.email, "/", "teacher123");
 }
 
 main()
