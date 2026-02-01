@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/src/app/lib/prisma'
 import { Role } from "@prisma/client";
 
 // GET /api/teachers -> list teachers

@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from './ui/table';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/src/app/lib/types';
 import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface InventoryPageProps {
@@ -362,7 +362,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
 
     const updatedRequests = requests.map(req => 
       req.id === requestId 
-        ? { ...req, status: 'approved', approvedBy: 'Principal Silva', approvedDate: new Date().toISOString().split('T')[0] }
+        ? { ...req, status: 'approved' as const, approvedBy: 'Principal Silva', approvedDate: new Date().toISOString().split('T')[0] }
         : req
     );
 
@@ -389,7 +389,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
 
     const updatedRequests = requests.map(req => 
       req.id === requestId 
-        ? { ...req, status: 'rejected' }
+        ? { ...req, status: 'rejected' as const }
         : req
     );
 
@@ -417,7 +417,7 @@ export function InventoryPage({ userRole }: InventoryPageProps) {
       req.id === selectedRequest.id 
         ? { 
             ...req, 
-            status: 'fulfilled',
+            status: 'fulfilled' as const,
             fulfilledBy: 'Lab Assistant',
             fulfilledDate: fulfillmentDate,
             fulfilledQuantity: parseInt(fulfilledQuantity),

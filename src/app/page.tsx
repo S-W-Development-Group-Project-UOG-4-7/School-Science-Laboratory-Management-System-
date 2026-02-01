@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { LoginPage } from '@/components/LoginPage';
-import { Dashboard } from '@/components/Dashboard';
-import { Toaster } from '@/components/ui/sonner';
-import type { User } from '@/lib/types';
+import { LoginPage } from '@/src/app/components/LoginPage';
+import { Dashboard } from '@/src/app/components/Dashboard';
+import { Toaster } from '@/src/app/components/ui/sonner';
+import type { User } from '@/src/app/lib/types';
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const handleLogin = (userData: User) => {

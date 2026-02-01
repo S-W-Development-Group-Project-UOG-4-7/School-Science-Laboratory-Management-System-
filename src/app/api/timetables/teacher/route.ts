@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/src/app/lib/prisma'
 
 /**
  * GET – Fetch all teacher timetable entries
@@ -23,7 +23,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { teacherId, day, period, subject, grade } = body
+    const { teacherId, day, period, subject, grade, classCode } = body
 
     const entry = await prisma.teacherTimetable.create({
       data: {
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         period,
         subject,
         grade,
+        classCode,
         available: true,
       },
     })

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from '@/lib/prisma'
+import { prisma } from '@/src/app/lib/prisma'
 
 // PUT /api/teachers/:id  body: { name?, email?, password? }
 export async function PUT(req: Request, { params }: { params: { id: string } }) {

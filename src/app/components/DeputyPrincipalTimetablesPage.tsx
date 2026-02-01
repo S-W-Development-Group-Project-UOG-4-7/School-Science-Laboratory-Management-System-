@@ -10,9 +10,10 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Badge } from "./ui/badge";
 import { toast } from "sonner";
-import type { UserRole } from "@/lib/types";
+import type { User as AppUser } from "@/src/app/lib/types";
 import { CalendarDays, FlaskConical, Users } from "lucide-react";
 
+/** ---------- Types & Constants ---------- */
 type DayOfWeek = "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY";
 
 const DAYS: { label: string; value: DayOfWeek }[] = [
@@ -37,7 +38,7 @@ type TeacherTT = {
   subject: string; // stored like "Science | 8A"
   grade: number;
   available: boolean;
-  teacher?: Teacher;
+
 };
 
 type LabTT = {
@@ -47,9 +48,10 @@ type LabTT = {
   period: number;
   available: boolean;
   classCode?: string | null;
-  lab?: Lab;
+
 };
 
+/** ---------- Helpers ---------- */
 function getKey(day: DayOfWeek, period: number) {
   return `${day}-${period}`;
 }
@@ -61,9 +63,9 @@ function parseClassCodeFromTeacherSubject(subject: string, fallbackGrade?: numbe
   const maybe = parts.length > 1 ? parts[1] : "";
   const m = maybe.toUpperCase().match(/^(\d{1,2})([A-Z])$/);
   if (m) return `${m[1]}${m[2]}`;
-
-  // fallback if old data had only grade without section:
-  return fallbackGrade ? String(fallbackGrade) : "";
+ 
+ 
+ return fallbackGrade ? String(fallbackGrade) : "";
 }
 
 function parseClassCode(code: string) {
@@ -75,15 +77,22 @@ function parseClassCode(code: string) {
 
 function getAllowedGradesForLabName(labName: string) {
   const name = (labName ?? "").toLowerCase();
-
-  // ✅ your rule:
-  if (name.includes("science")) return [6, 7, 8, 9,10,11];
+  if (name.includes("science")) return [6, 7, 8, 9, 10, 11];
   if (name.includes("physics") || name.includes("chemistry") || name.includes("biology")) return [12, 13];
-
-  // fallback: allow 6-13 if lab name not matched
-  return [6,7,8,9,10,11,12,13];
+  return [6, 7, 8, 9, 10, 11, 12, 13];
 }
 
+async function readJsonSafe(res: Response) {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Non-JSON response (${res.status}): ${text.slice(0, 180)}`);
+  }
+}
+
+/** ---------- Grid Editor ---------- */
 function GridEditor({
   title,
   description,
@@ -133,10 +142,7 @@ function GridEditor({
           <div className="text-right">
             {selectedLabel}
             <div className="mt-3 flex justify-end">
-              <Button
-                onClick={onSave}
-                className="rounded-xl px-5 py-2 font-semibold shadow-sm"
-              >
+              <Button onClick={onSave} className="rounded-xl px-5 py-2 font-semibold shadow-sm">
                 Save Timetable
               </Button>
             </div>
@@ -198,16 +204,28 @@ function GridEditor({
           </table>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-3">
-          Tip: Leave a cell empty if that period has no allocation.
-        </p>
+        <p className="text-xs text-muted-foreground mt-3">Tip: Leave a cell empty if that period has no allocation.</p>
       </CardContent>
     </Card>
   );
 }
 
-export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole }) {
-  const isDeputy = userRole === "admin" || userRole === "deputy-principal";
+/** ---------- Main Page ---------- */
+export default function DeputyTimetablePage({ user }: { user: AppUser }) {
+  const isDeputy =
+    user.role === "deputy-principal"; user.role === "deputy-principal";
+
+  // ✅ Deputy-only UI
+  if (!isDeputy) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-semibold">Access denied</h1>
+        <p className="text-sm text-muted-foreground">
+          Only Deputy Principal can access Annual Timetable Setup.
+        </p>
+      </div>
+    );
+  }
 
   const [loading, setLoading] = useState(false);
 
@@ -219,27 +237,33 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>("");
   const [selectedLabId, setSelectedLabId] = useState<string>("");
 
-  // ✅ grids MUST be above any useEffect that uses them
+  
   const [teacherGrid, setTeacherGrid] = useState<Record<string, string>>({});
   const [labGrid, setLabGrid] = useState<Record<string, string>>({});
 
   async function refreshAll() {
     setLoading(true);
     try {
+      const headers = { "x-user-role": user.role };
+
       const [tRes, lRes, ttRes, ltRes] = await Promise.all([
-        fetch("/api/teachers"),
-        fetch("/api/labs"),
-        fetch("/api/timetables/teacher"),
-        fetch("/api/timetables/lab"),
+        fetch("/api/teachers", { headers, cache: "no-store" }),
+        fetch("/api/labs", { headers, cache: "no-store" }),
+        fetch("/api/timetables/teacher", { headers, cache: "no-store" }),
+        fetch("/api/timetables/lab", { headers, cache: "no-store" }),
       ]);
 
-      // if API returns HTML error page, json() will fail — show clear error
       const [t, l, tt, lt] = await Promise.all([
-        tRes.json(),
-        lRes.json(),
-        ttRes.json(),
-        ltRes.json(),
+        readJsonSafe(tRes),
+        readJsonSafe(lRes),
+        readJsonSafe(ttRes),
+        readJsonSafe(ltRes),
       ]);
+
+      if (!tRes.ok) throw new Error((t as any)?.error ?? "Failed to load teachers");
+      if (!lRes.ok) throw new Error((l as any)?.error ?? "Failed to load labs");
+      if (!ttRes.ok) throw new Error((tt as any)?.error ?? "Failed to load teacher timetables");
+      if (!ltRes.ok) throw new Error((lt as any)?.error ?? "Failed to load lab timetables");
 
       setTeachers(Array.isArray(t) ? t : []);
       setLabs(Array.isArray(l) ? l : []);
@@ -253,10 +277,10 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
   }
 
   useEffect(() => {
-    if (!isDeputy) return;
+  
     refreshAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDeputy]);
+  }, []);
 
   // default selections after load
   useEffect(() => {
@@ -267,10 +291,10 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
     if (!selectedLabId && labs.length) setSelectedLabId(labs[0].id);
   }, [labs, selectedLabId]);
 
-  // ✅ rebuild Teacher grid (ONLY ONCE)
+  // rebuild Teacher grid
   useEffect(() => {
     if (!selectedTeacherId) return;
-
+   
     const map: Record<string, string> = {};
     for (const r of teacherTT.filter((x) => x.teacherId === selectedTeacherId)) {
       map[getKey(r.day, r.period)] = parseClassCodeFromTeacherSubject(r.subject, r.grade);
@@ -278,16 +302,15 @@ export function DeputyPrincipalTimetablesPage({ userRole }: { userRole: UserRole
     setTeacherGrid(map);
   }, [selectedTeacherId, teacherTT]);
 
-  // ✅ rebuild Lab grid (ONLY ONCE)
-useEffect(() => {
-  if (!selectedLabId) return;
-
-  const map: Record<string, string> = {};
-  for (const r of labTT.filter((x) => x.labId === selectedLabId)) {
-    map[getKey(r.day, r.period)] = (r.classCode ?? "").toUpperCase();
-  }
-  setLabGrid(map);
-}, [selectedLabId, labTT]);
+  // rebuild Lab grid
+  useEffect(() => {
+    if (!selectedLabId) return;
+    const map: Record<string, string> = {};
+    for (const r of labTT.filter((x) => x.labId === selectedLabId)) {
+      map[getKey(r.day, r.period)] = (r.classCode ?? "").toUpperCase();
+    }
+    setLabGrid(map);
+  }, [selectedLabId, labTT]);
 
   async function saveTeacherGrid() {
     if (!selectedTeacherId) return;
@@ -303,13 +326,13 @@ useEffect(() => {
 
     const res = await fetch("/api/timetables/teacher/bulk", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-user-role": user.role },
       body: JSON.stringify({ teacherId: selectedTeacherId, grid: teacherGrid }),
     });
 
-    const data = await res.json().catch(() => ({}));
+    const data = await readJsonSafe(res);
     if (!res.ok) {
-      toast.error(data?.error ?? "Failed to save teacher timetable");
+      toast.error((data as any)?.error ?? "Failed to save teacher timetable");
       return;
     }
 
@@ -317,52 +340,43 @@ useEffect(() => {
     refreshAll();
   }
 
-async function saveLabGrid() {
-  if (!selectedLabId) return;
+  async function saveLabGrid() {
+    if (!selectedLabId) return;
 
-  const labName = selectedLab?.name ?? "";
-  const allowed = getAllowedGradesForLabName(labName);
+    const selectedLab = labs.find((l) => l.id === selectedLabId);
+    const labName = selectedLab?.name ?? "";
+    const allowed = getAllowedGradesForLabName(labName);
 
-  for (const [k, v] of Object.entries(labGrid)) {
-    const value = (v ?? "").trim();
-    if (!value) continue;
+    for (const [k, v] of Object.entries(labGrid)) {
+      const value = (v ?? "").trim();
+      if (!value) continue;
 
-    const parsed = parseClassCode(value);
-    if (!parsed) {
-      toast.error(`Invalid class at ${k}. Use like 12A / 13B`);
+      const parsed = parseClassCode(value);
+      if (!parsed) {
+        toast.error(`Invalid class at ${k}. Use like 12A / 13B`);
+        return;
+      }
+
+      if (!allowed.includes(parsed.grade)) {
+        toast.error(`Invalid grade for ${labName}. Allowed: ${allowed.join(", ")}`);
+        return;
+      }
+    }
+
+    const res = await fetch("/api/timetables/lab/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-user-role": user.role },
+      body: JSON.stringify({ labId: selectedLabId, grid: labGrid }),
+    });
+
+    const data = await readJsonSafe(res);
+    if (!res.ok) {
+      toast.error((data as any)?.error ?? "Failed to save lab timetable");
       return;
     }
 
-    if (!allowed.includes(parsed.grade)) {
-      toast.error(`Invalid grade for ${labName}. Allowed: ${allowed.join(", ")}`);
-      return;
-    }
-  }
-
-  const res = await fetch("/api/timetables/lab/bulk", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ labId: selectedLabId, grid: labGrid }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    toast.error(data?.error ?? "Failed to save lab timetable");
-    return;
-  }
-
-  toast.success("Lab timetable saved");
-  refreshAll();
-}
-
-  if (!isDeputy) {
-    return (
-      <Card className="border border-gray-200 rounded-2xl">
-        <CardContent className="p-6 text-gray-700">
-          You don’t have permission to access Deputy Principal timetable management.
-        </CardContent>
-      </Card>
-    );
+    toast.success("Lab timetable saved");
+    refreshAll();
   }
 
   const selectedTeacher = teachers.find((t) => t.id === selectedTeacherId);
@@ -447,7 +461,7 @@ async function saveLabGrid() {
         </Card>
       </div>
 
-      {/* BOTH grids */}
+      {/* both grids */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <GridEditor
           title="Teacher Timetable"
@@ -455,10 +469,7 @@ async function saveLabGrid() {
           icon={<CalendarDays className="w-5 h-5 text-blue-600" />}
           selectedLabel={
             <div className="text-sm text-muted-foreground">
-              Teacher:{" "}
-              <span className="font-medium text-gray-900">
-                {selectedTeacher?.name ?? "—"}
-              </span>
+              Teacher: <span className="font-medium text-gray-900">{selectedTeacher?.name ?? "—"}</span>
             </div>
           }
           grid={teacherGrid}
@@ -469,14 +480,11 @@ async function saveLabGrid() {
 
         <GridEditor
           title="Lab Timetable"
-          description="Allocate lab slots for grades (only grade number)."
+          description="Allocate lab slots for grades."
           icon={<FlaskConical className="w-5 h-5 text-indigo-600" />}
           selectedLabel={
             <div className="text-sm text-muted-foreground">
-              Lab:{" "}
-              <span className="font-medium text-gray-900">
-                {selectedLab?.name ?? "—"}
-              </span>
+              Lab: <span className="font-medium text-gray-900">{selectedLab?.name ?? "—"}</span>
             </div>
           }
           grid={labGrid}

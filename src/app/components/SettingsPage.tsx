@@ -24,7 +24,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { User as UserType } from '@/lib/types';
+import type { User as UserType } from '@/src/app/lib/types';
 import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface SettingsPageProps {

@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('ADMIN', 'DEPUTY_PRINCIPAL','TEACHER', 'LAB_ASSISTANT');
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'PRINCIPAL', 'DEPUTY_PRINCIPAL', 'TEACHER', 'LAB_ASSISTANT', 'STUDENT');
 
 -- CreateEnum
 CREATE TYPE "DayOfWeek" AS ENUM ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY');
@@ -38,6 +38,8 @@ CREATE TABLE "TeacherTimetable" (
     "period" INTEGER NOT NULL,
     "subject" TEXT NOT NULL,
     "grade" INTEGER NOT NULL,
+    "classCode" TEXT NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "available" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "TeacherTimetable_pkey" PRIMARY KEY ("id")
@@ -47,10 +49,10 @@ CREATE TABLE "TeacherTimetable" (
 CREATE TABLE "LabTimetable" (
     "id" TEXT NOT NULL,
     "labId" TEXT NOT NULL,
-    "gradeFrom" INTEGER NOT NULL,
-    "gradeTo" INTEGER NOT NULL,
+    "classCode" TEXT NOT NULL,
     "day" "DayOfWeek" NOT NULL,
     "period" INTEGER NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "available" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "LabTimetable_pkey" PRIMARY KEY ("id")
@@ -83,6 +85,9 @@ CREATE UNIQUE INDEX "Lab_name_key" ON "Lab"("name");
 CREATE UNIQUE INDEX "TeacherTimetable_teacherId_day_period_key" ON "TeacherTimetable"("teacherId", "day", "period");
 
 -- CreateIndex
+CREATE INDEX "LabTimetable_classCode_idx" ON "LabTimetable"("classCode");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "LabTimetable_labId_day_period_key" ON "LabTimetable"("labId", "day", "period");
 
 -- CreateIndex
@@ -95,7 +100,7 @@ ALTER TABLE "TeacherTimetable" ADD CONSTRAINT "TeacherTimetable_teacherId_fkey" 
 ALTER TABLE "LabTimetable" ADD CONSTRAINT "LabTimetable_labId_fkey" FOREIGN KEY ("labId") REFERENCES "Lab"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Practical" ADD CONSTRAINT "Practical_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Practical" ADD CONSTRAINT "Practical_labId_fkey" FOREIGN KEY ("labId") REFERENCES "Lab"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Practical" ADD CONSTRAINT "Practical_labId_fkey" FOREIGN KEY ("labId") REFERENCES "Lab"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Practical" ADD CONSTRAINT "Practical_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

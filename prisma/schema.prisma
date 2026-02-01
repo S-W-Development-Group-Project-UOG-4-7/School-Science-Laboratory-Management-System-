@@ -37,6 +37,7 @@ model TeacherTimetable {
   subject   String
   grade     Int
   classCode String   
+  updatedAt DateTime @updatedAt
   available Boolean   @default(true)
   teacher   User      @relation(fields: [teacherId], references: [id])
 
@@ -49,6 +50,7 @@ model LabTimetable {
   classCode String    // REQUIRED (ex: "10A")
   day       DayOfWeek
   period    Int
+  updatedAt DateTime @updatedAt
   available Boolean   @default(true)
   lab       Lab       @relation(fields: [labId], references: [id])
 

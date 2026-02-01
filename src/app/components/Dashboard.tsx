@@ -33,8 +33,8 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import type { User } from "@/lib/types";
-import { DeputyPrincipalTimetablesPage } from "./DeputyPrincipalTimetablesPage";
+import type { User } from "@/src/app/lib/types";
+import DeputyPrincipalTimetablesPage  from "./DeputyPrincipalTimetablesPage";
 import DeputyDashboardHome from "./DeputyDashboardHome";
 
 
@@ -297,7 +297,7 @@ const getRoleBadgeColor = () => {
             )}
             {currentPage === "schedule" && (
             user.role === "deputy-principal" ? (
-            <DeputyPrincipalTimetablesPage userRole={user.role} />
+            <DeputyPrincipalTimetablesPage user={user} />
             ) : (
             <SchedulePage userRole={user.role as "teacher" | "lab-assistant" | "admin"} />
             )
