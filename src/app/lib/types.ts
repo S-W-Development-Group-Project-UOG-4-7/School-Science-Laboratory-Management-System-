@@ -17,6 +17,7 @@ export interface User {
   name: string;
   role: UserRole;
   email: string;
+  phone?: string | null;
   id: string;
 
   // Two-Factor Authentication fields
@@ -142,23 +143,3 @@ export const PRIVILEGE_METADATA: Record<Privilege, { label: string; description:
     category: 'Labs'
   }
 };
-export interface InventoryItem {
-  id: string;
-  name: string;
-  category: 'Glassware' | 'Equipment' | 'Chemicals' | 'Safety Materials' | 'Instruments';
-
-  quantity: number;
-  unit: string;
-
-  packageSize?: number | null;
-  packageUnit?: string | null;
-
-  minStockLevel: number;
-  location: string;
-  
-  photo: string;
-  storageInstructions: string;
-  handlingProcedure: string;
-  safetyNotes: string;
-  lastUpdated: string;
-}
