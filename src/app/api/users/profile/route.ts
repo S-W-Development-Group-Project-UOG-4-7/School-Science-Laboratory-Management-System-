@@ -1,72 +1,61 @@
-// File: src/app/api/user/profile/route.ts
+// src/app/api/users/profile/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, readFile, mkdir } from 'fs/promises';
-import { existsSync } from 'fs';
+import prisma from '@/lib/prisma';
+import fs from 'fs/promises';
 import path from 'path';
 
-// Simple JSON file storage (replace with database in production)
-const STORAGE_DIR = path.join(process.cwd(), 'data');
-const USERS_FILE = path.join(STORAGE_DIR, 'users.json');
+// Path to store profile data separately from Prisma
+const PROFILE_DATA_DIR = path.join(process.cwd(), 'data');
+const PROFILE_DATA_PATH = path.join(PROFILE_DATA_DIR, 'users.json');
 
-// Initialize storage
-async function initStorage() {
-  if (!existsSync(STORAGE_DIR)) {
-    await mkdir(STORAGE_DIR, { recursive: true });
-  }
-  if (!existsSync(USERS_FILE)) {
-    await writeFile(USERS_FILE, JSON.stringify({}));
-  }
+// Interface for profile data
+interface ProfileData {
+  [userId: string]: {
+    userId: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    profileImageUrl?: string;
+    updatedAt: string;
+  };
 }
 
-// Read users data
-async function readUsers() {
-  await initStorage();
-  const data = await readFile(USERS_FILE, 'utf-8');
-  return JSON.parse(data);
-}
-
-// Write users data
-async function writeUsers(users: any) {
-  await writeFile(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-export async function PUT(request: NextRequest) {
+// Helper to ensure data directory exists
+async function ensureDataDirectory() {
   try {
-    const body = await request.json();
-    const { userId, fullName, email, phone, profileImageUrl } = body;
-
-    // Read existing users
-    const users = await readUsers();
-
-    // Update or create user
-    users[userId] = {
-      userId,
-      fullName,
-      email,
-      phone,
-      profileImageUrl,
-      updatedAt: new Date().toISOString()
-    };
-
-    // Save to file
-    await writeUsers(users);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Profile updated successfully',
-      user: users[userId]
-    });
-
+    await fs.mkdir(PROFILE_DATA_DIR, { recursive: true });
   } catch (error) {
-    console.error('Profile update error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    // Directory might already exist, that's fine
   }
 }
 
+// Helper to read profile data from JSON file
+async function readProfileData(): Promise<ProfileData> {
+  try {
+    await ensureDataDirectory();
+    const data = await fs.readFile(PROFILE_DATA_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    // File doesn't exist yet, return empty object
+    console.log('Profile data file not found, creating new one');
+    return {};
+  }
+}
+
+// Helper to write profile data to JSON file
+async function writeProfileData(data: ProfileData): Promise<void> {
+  try {
+    await ensureDataDirectory();
+    await fs.writeFile(PROFILE_DATA_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    console.log('Profile data saved successfully');
+  } catch (error) {
+    console.error('Error writing profile data:', error);
+    throw new Error('Failed to save profile data');
+  }
+}
+
+// GET - Fetch user profile
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -79,35 +68,157 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Read users
-    const users = await readUsers();
-    const user = users[userId];
+    console.log('Fetching profile for userId:', userId);
 
-    if (!user) {
-      // Return default user data if not found
-      return NextResponse.json({
-        success: true,
-        user: {
-          userId,
-          fullName: 'Dr. Sarah Johnson',
-          email: userId,
-          phone: '+94 71 234 5678',
-          role: 'laboratory technician',
-          profileImageUrl: null
-        }
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: user
+    // Fetch user from Prisma database (WITHOUT profileImageUrl)
+    const dbUser = await prisma.user.findUnique({
+      where: { email: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        twoFactorEnabled: true,
+        createdDate: true,
+        lastLogin: true,
+        customPrivileges: true,
+        revokedPrivileges: true,
+      },
     });
 
-  } catch (error) {
-    console.error('Profile fetch error:', error);
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch profile data from JSON file
+    const profileData = await readProfileData();
+    const userProfile = profileData[userId];
+
+    console.log('Profile data for user:', userProfile);
+
+    // Merge database user with profile data from JSON
+    const user = {
+      ...dbUser,
+      profileImageUrl: userProfile?.profileImageUrl || null,
+    };
+
+    return NextResponse.json({ user });
+  } catch (error: any) {
+    console.error('Error fetching user profile:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch profile' },
+      { error: 'Failed to fetch user profile', details: error.message },
       { status: 500 }
     );
   }
+}
+
+// PUT - Update user profile
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, fullName, email, phone, profileImageUrl } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Updating profile for userId:', userId);
+    console.log('Update data:', { fullName, email, phone, profileImageUrl });
+
+    // Build Prisma update data object (WITHOUT profileImageUrl - it doesn't exist in schema)
+    const prismaUpdateData: {
+      name?: string;
+      email?: string;
+      phone?: string | null;
+    } = {};
+
+    // Only update fields that are provided and valid for Prisma
+    if (fullName !== undefined) prismaUpdateData.name = fullName;
+    if (email !== undefined) prismaUpdateData.email = email;
+    if (phone !== undefined) prismaUpdateData.phone = phone || null;
+
+    // Update user in Prisma database (basic info only, NO profileImageUrl)
+    let updatedUser;
+    try {
+      updatedUser = await prisma.user.update({
+        where: { email: userId },
+        data: prismaUpdateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          status: true,
+          twoFactorEnabled: true,
+          createdDate: true,
+          lastLogin: true,
+          customPrivileges: true,
+          revokedPrivileges: true,
+        },
+      });
+
+      console.log('Prisma user updated successfully');
+    } catch (prismaError: any) {
+      console.error('Prisma update error:', prismaError);
+      
+      if (prismaError.code === 'P2025') {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      
+      throw prismaError;
+    }
+
+    // Now update profile data in JSON file (including profileImageUrl)
+    const profileData = await readProfileData();
+    
+    // Update or create profile entry in JSON
+    profileData[userId] = {
+      userId,
+      fullName: fullName || updatedUser.name,
+      email: email || updatedUser.email,
+      phone: phone || updatedUser.phone || '',
+      profileImageUrl: profileImageUrl || profileData[userId]?.profileImageUrl || '',
+      updatedAt: new Date().toISOString(),
+    };
+
+    await writeProfileData(profileData);
+
+    console.log('Profile data (JSON) updated successfully for:', userId);
+
+    // Return merged data (Prisma user + profileImageUrl from JSON)
+    const responseUser = {
+      ...updatedUser,
+      profileImageUrl: profileData[userId].profileImageUrl,
+    };
+
+    return NextResponse.json({
+      success: true,
+      user: responseUser,
+    });
+  } catch (error: any) {
+    console.error('Error updating user profile:', error);
+    
+    return NextResponse.json(
+      { error: 'Failed to update user profile', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Partial update (if needed)
+export async function PATCH(request: NextRequest) {
+  // Just reuse PUT logic for partial updates
+  return PUT(request);
 }

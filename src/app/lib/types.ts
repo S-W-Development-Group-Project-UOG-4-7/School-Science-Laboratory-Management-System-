@@ -17,6 +17,7 @@ export interface User {
   name: string;
   role: UserRole;
   email: string;
+  phone?: string | null;
   id: string;
 
   // Two-Factor Authentication fields
