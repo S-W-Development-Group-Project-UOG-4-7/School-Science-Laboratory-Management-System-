@@ -18,11 +18,11 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { motion } from 'framer-motion';
-import type { UserRole } from '@/lib/types';
+import type { User as UserType } from "@/src/app/lib/types";
 import { ImageWithFallback } from './img/ImageWithFallback';
 
 interface PracticalsPageProps {
-  userRole: UserRole;
+  userRole: UserType['role'];
 }
 
 interface Practical {

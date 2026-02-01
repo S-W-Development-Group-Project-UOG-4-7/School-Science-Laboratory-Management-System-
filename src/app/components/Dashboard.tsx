@@ -33,7 +33,7 @@ import { SettingsPage } from "./SettingsPage";
 import { InventoryRequestsPage } from "./InventoryRequestsPage";
 import { UserManagementPage } from "./UserManagementPage";
 import { HomePage } from "./HomePage";
-import type { User } from "@/lib/types";
+import type { User } from "@/src/app/lib/types";
 
 interface DashboardProps {
   user: User;

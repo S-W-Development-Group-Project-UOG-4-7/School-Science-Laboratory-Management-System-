@@ -44,7 +44,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Switch } from './ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from "@/src/app/lib/types";
 
 interface SchedulePageProps {
   userRole: UserRole;

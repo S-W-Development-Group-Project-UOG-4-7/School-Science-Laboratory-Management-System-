@@ -48,7 +48,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-
+import type { UserRole } from "@/src/app/lib/types";
 // --------------------
 // Types (UI-side)
 // --------------------
@@ -56,6 +56,7 @@ type UIUrgency = 'low' | 'medium' | 'high';
 type UIStatus = 'pending' | 'approved' | 'rejected' | 'on-hold';
 
 interface InventoryRequest {
+  userRole: UserRole;
   id: string;
   requesterName: string;
   requesterRole: string;
@@ -169,6 +170,7 @@ export function InventoryRequestsPage({ userRole, userId, userName, userEmail }:
     // If your backend already returns UI-ready fields, this still works.
     // If it returns prisma shapes, adjust here.
     const mapped: InventoryRequest[] = (Array.isArray(data) ? data : []).map((r: any) => ({
+      userRole: roleToHeaderRole(userRole) as UserRole,
       id: r.id,
       requesterName: r.requesterName ?? r.requestedBy?.name ?? 'Unknown',
       requesterRole: r.requesterRole ?? r.requestedBy?.role ?? 'Lab Assistant',

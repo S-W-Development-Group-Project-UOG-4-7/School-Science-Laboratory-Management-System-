@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { requirePrincipal } from '@/lib/auth'
+import { prisma } from '@/src/app/lib/prisma'
+import { requirePrincipal } from '@/src/app/lib/auth'
 
 export async function GET(req: Request) {
   const role = req.headers.get('x-user-role') ?? undefined
