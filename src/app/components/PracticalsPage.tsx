@@ -592,7 +592,7 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
         // Update local state to remove video URL
         setPracticals(prev => prev.map(p =>
           p.id === selectedPracticalForDeleteVideo
-            ? { ...p, videoUrl: null }
+            ? { ...p, videoUrl: undefined }
             : p
         ));
 
