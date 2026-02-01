@@ -1,11 +1,11 @@
 // src/app/api/auth/totp/setup/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/app/lib/prisma';
+import prisma from '@/lib/prisma';
 import {
   generateTOTPSecret,
   generateQRCode,
   generateBackupCodes,
-} from '@/app/lib/totpHelper';
+} from '@/src/app/lib/totpHelper';
 
 // POST - Initialize TOTP setup
 export async function POST(request: NextRequest) {

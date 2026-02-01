@@ -7,7 +7,8 @@ import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Search, Play, FileText, Download, BookOpen, Plus, Upload, Video, X, CheckCircle } from 'lucide-react';
+import { Search, Play, FileText, BookOpen, Plus, Upload, Video, X, CheckCircle, HelpCircle } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   Dialog,
@@ -86,12 +87,52 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const [isVideoPlayerDialogOpen, setIsVideoPlayerDialogOpen] = useState(false);
   const [selectedPracticalForVideo, setSelectedPracticalForVideo] = useState<string | null>(null);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
-  
+
   // Form states
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Quiz states
+  const [isQuizDialogOpen, setIsQuizDialogOpen] = useState(false);
+  const [quizStep, setQuizStep] = useState<'intro' | 'questions' | 'result'>('intro');
+  const [currentQuizScore, setCurrentQuizScore] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [activeQuizPractical, setActiveQuizPractical] = useState<Practical | null>(null);
+
+  const sampleQuestions = [
+    {
+      id: 1,
+      question: "Which of the following is an example of a chemical change?",
+      options: ["Melting ice", "Rusting iron", "Breaking glass", "Boiling water"],
+      correctAnswer: "Rusting iron"
+    },
+    {
+      id: 2,
+      question: "What is the powerhouse of the cell?",
+      options: ["Nucleus", "Mitochondria", "Ribosome", "Endoplasmic Reticulum"],
+      correctAnswer: "Mitochondria"
+    },
+    {
+      id: 3,
+      question: "Newton's First Law is also known as the law of:",
+      options: ["Inertia", "Acceleration", "Action-Reaction", "Gravity"],
+      correctAnswer: "Inertia"
+    },
+    {
+      id: 4,
+      question: "What comes after a hypothesis in the scientific method?",
+      options: ["Conclusion", "Experiment", "Observation", "Theory"],
+      correctAnswer: "Experiment"
+    },
+    {
+      id: 5,
+      question: "Which pH value indicates a strong acid?",
+      options: ["13", "7", "9", "1"],
+      correctAnswer: "1"
+    }
+  ];
 
   // Permissions
   const canCreatePractical = userRole === 'teacher';
@@ -156,7 +197,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const simulateUpload = () => {
     setIsUploading(true);
     setUploadProgress(0);
-    
+
     const interval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 100) {
@@ -185,12 +226,12 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
       if (data.success) {
         // Update local state with the embed URL
-        setPracticals(prev => prev.map(p => 
-          p.id === selectedPracticalForVideo 
+        setPracticals(prev => prev.map(p =>
+          p.id === selectedPracticalForVideo
             ? { ...p, videoUrl: data.videoUrl }
             : p
         ));
-        
+
         setVideoUrlInput('');
         setIsVideoUploadDialogOpen(false);
       } else {
@@ -205,6 +246,57 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
   const handleWatchVideo = (videoUrl: string) => {
     setCurrentVideoUrl(videoUrl);
     setIsVideoPlayerDialogOpen(true);
+  };
+
+  const handleDownloadLabSheet = (practical: Practical) => {
+    // In a real app, this would be a real URL. For now we simulate/use the placeholder.
+    if (practical.labSheetUrl === '#' || !practical.labSheetUrl) {
+      // Fallback or demo behavior
+      const link = document.createElement('a');
+      link.href = '/sample_lab_sheet.pdf'; // Dummy path or maybe create a text blob
+      link.download = `${practical.title.replace(/\s+/g, '_')}_Lab_Sheet.pdf`;
+      // Create a dummy blob if no real url
+      const blob = new Blob(['Sample Lab Sheet Content for ' + practical.title], { type: 'text/plain' });
+      link.href = URL.createObjectURL(blob);
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      const link = document.createElement('a');
+      link.href = practical.labSheetUrl;
+      link.download = `${practical.title.replace(/\s+/g, '_')}_Lab_Sheet.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleStartQuiz = (practical: Practical) => {
+    setActiveQuizPractical(practical);
+    setQuizStep('intro');
+    setQuizAnswers({});
+    setCurrentQuizScore(0);
+    setIsQuizDialogOpen(true);
+  };
+
+  const handleQuizAnswer = (questionId: number, answer: string) => {
+    setQuizAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+  };
+
+  const handleSubmitQuiz = () => {
+    let score = 0;
+    sampleQuestions.forEach(q => {
+      if (quizAnswers[q.id] === q.correctAnswer) {
+        score++;
+      }
+    });
+    const percentage = (score / sampleQuestions.length) * 100;
+    setCurrentQuizScore(percentage);
+    setQuizStep('result');
   };
 
   return (
@@ -226,7 +318,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
             </Badge>
           </div>
         </motion.div>
-        
+
         {canCreatePractical && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -310,7 +402,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
 
                   <div className="space-y-4 pt-4 border-t">
                     <h4 className="font-semibold text-gray-900">Upload Materials</h4>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="labsheet">Lab Sheet (PDF)</Label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer">
@@ -463,28 +555,39 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button 
-                        size="sm" 
-                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800" 
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                         disabled={!practical.videoUrl}
                         onClick={() => practical.videoUrl && handleWatchVideo(practical.videoUrl)}
                       >
                         <Play className="w-4 h-4 mr-2" />
                         Watch Video
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="hover:bg-blue-50 hover:border-blue-300"
+                        onClick={() => handleDownloadLabSheet(practical)}
+                      >
                         <FileText className="w-4 h-4 mr-2" />
                         Lab Sheet
                       </Button>
-                      <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:border-blue-300">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="hover:bg-blue-50 hover:border-blue-300"
+                        onClick={() => handleStartQuiz(practical)}
+                      >
+                        <HelpCircle className="w-4 h-4 mr-2" />
+                        Attempt Quiz
                       </Button>
-                      
+
                       {canUploadVideo && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          size="sm"
+                          variant="outline"
                           className="border-purple-300 text-purple-700 hover:bg-purple-50"
                           onClick={() => handleVideoUpload(practical.id)}
                         >
@@ -599,7 +702,7 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
                   <span className="text-gray-900 font-medium">{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
@@ -617,8 +720,8 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
               <Button variant="outline" onClick={() => setIsVideoUploadDialogOpen(false)} disabled={isUploading}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleSubmitVideo} 
+              <Button
+                onClick={handleSubmitVideo}
                 className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
                 disabled={(!videoFile && !videoUrlInput) || isUploading}
               >
@@ -643,6 +746,107 @@ export function PracticalsPage({ userRole }: PracticalsPageProps) {
               allowFullScreen
               title="Practical Video"
             ></iframe>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quiz Dialog */}
+      <Dialog open={isQuizDialogOpen} onOpenChange={setIsQuizDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {quizStep === 'result' ? 'Quiz Result' : `Quiz: ${activeQuizPractical?.title || 'Science Practical'}`}
+            </DialogTitle>
+            <DialogDescription>
+              {quizStep === 'intro' && "Test your knowledge before starting the practical."}
+              {quizStep === 'questions' && "Answer the following questions."}
+              {quizStep === 'result' && "Here is how you performed."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {quizStep === 'intro' && (
+              <div className="space-y-4 text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <HelpCircle className="w-10 h-10 text-blue-600" />
+                </div>
+                <p className="text-gray-600">
+                  This quiz contains {sampleQuestions.length} questions to test your understanding of the practical concepts.
+                </p>
+                <Button onClick={() => setQuizStep('questions')} className="w-full mt-4">
+                  Start Quiz
+                </Button>
+              </div>
+            )}
+
+            {quizStep === 'questions' && (
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                {sampleQuestions.map((q, index) => (
+                  <div key={q.id} className="space-y-3 p-4 border rounded-lg bg-gray-50/50">
+                    <p className="font-medium text-gray-900">
+                      {index + 1}. {q.question}
+                    </p>
+                    <RadioGroup
+                      value={quizAnswers[q.id]}
+                      onValueChange={(val) => handleQuizAnswer(q.id, val)}
+                    >
+                      {q.options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`q${q.id}-${option}`} />
+                          <Label htmlFor={`q${q.id}-${option}`} className="font-normal cursor-pointer">
+                            {option}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                ))}
+                <Button
+                  onClick={handleSubmitQuiz}
+                  className="w-full mt-4"
+                  disabled={Object.keys(quizAnswers).length < sampleQuestions.length}
+                >
+                  Submit Quiz
+                </Button>
+              </div>
+            )}
+
+            {quizStep === 'result' && (
+              <div className="space-y-6 text-center">
+                <div className="relative flex items-center justify-center w-32 h-32 rounded-full border-4 border-gray-100 mx-auto">
+                  <div className="text-center">
+                    <span className={`text-3xl font-bold ${currentQuizScore >= 80 ? 'text-green-600' :
+                        currentQuizScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                      }`}>
+                      {currentQuizScore.toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-lg font-medium">
+                    {currentQuizScore >= 80 ? 'Excellent Work!' :
+                      currentQuizScore >= 60 ? 'Good Effort!' : 'Keep Practicing!'}
+                  </p>
+                  <p className="text-gray-500">
+                    You scored {Math.round((currentQuizScore / 100) * sampleQuestions.length)} out of {sampleQuestions.length}
+                  </p>
+                </div>
+
+                <div className="flex justify-center gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setIsQuizDialogOpen(false)}>
+                    Close
+                  </Button>
+                  <Button onClick={() => {
+                    setQuizStep('questions');
+                    setQuizAnswers({});
+                    setCurrentQuizScore(0);
+                  }}>
+                    Retry Quiz
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
