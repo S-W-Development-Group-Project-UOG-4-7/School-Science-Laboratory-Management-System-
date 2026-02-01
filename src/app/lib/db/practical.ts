@@ -1,6 +1,6 @@
 // lib/db/practical.ts - CORRECTED VERSION
-import { prisma } from "@/lib/prisma";
-import type { DifficultyLevel } from "@prisma/client";
+import { prisma } from "@/src/app/lib/prisma";
+
 
 export interface CreatePracticalInput {
   title: string;
@@ -8,7 +8,6 @@ export interface CreatePracticalInput {
   subject: string;
   grade: string;
   duration: string;
-  difficulty: DifficultyLevel;
   videoUrl?: string;
   labSheetUrl?: string;
   thumbnail?: string;
@@ -21,7 +20,6 @@ export interface UpdatePracticalInput {
   subject?: string;
   grade?: string;
   duration?: string;
-  difficulty?: DifficultyLevel;
   videoUrl?: string;
   labSheetUrl?: string;
   thumbnail?: string;
@@ -36,7 +34,6 @@ export async function createPractical(data: CreatePracticalInput) {
       subject: data.subject,
       grade: data.grade,
       duration: data.duration,
-      difficulty: data.difficulty,
       videoUrl: data.videoUrl,
       labSheetUrl: data.labSheetUrl,
       thumbnail: data.thumbnail,

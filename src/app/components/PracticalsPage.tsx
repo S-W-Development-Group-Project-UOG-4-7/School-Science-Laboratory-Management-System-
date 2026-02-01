@@ -107,15 +107,62 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
   const componentId = useId();
   const canUpload = userRole === 'teacher' || userRole === 'lab-assistant' || userRole === 'admin';
 
-  // Load teacherId from localStorage (runs once on mount)
+  // Load teacherId from server (try multiple endpoints) then fallback to localStorage
   useEffect(() => {
-    const storedTeacherId = localStorage.getItem('teacherId');
-    if (storedTeacherId) {
-      setCurrentUserId(Number(storedTeacherId));
-    } else {
-      console.error('Teacher not found. Please login again.');
-    }
-    setUserLoaded(true);
+    let mounted = true;
+
+    const fetchTeacherInfo = async () => {
+      try {
+        const endpoints = [
+          '/api/auth/teacher-info',
+          '/api/teacher/me',
+          '/api/auth/session',
+        ];
+
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep, { credentials: 'include' });
+            if (!res.ok) continue;
+            const data = await res.json();
+
+            // Try multiple shapes for teacherId
+            const tid = data?.teacherId || data?.user?.teacherId || data?.teacher?.id;
+            if (tid && mounted) {
+              setCurrentUserId(Number(tid));
+              localStorage.setItem('teacherId', String(tid));
+              setUserLoaded(true);
+              return;
+            }
+          } catch (e) {
+            // try next endpoint
+            continue;
+          }
+        }
+
+        // Fallback to localStorage
+        const storedTeacherId = localStorage.getItem('teacherId');
+        if (storedTeacherId && mounted) {
+          setCurrentUserId(Number(storedTeacherId));
+        } else {
+          // Non-fatal: warn instead of error to avoid dev overlay spam
+          console.warn('Teacher not found during auth check. Please login again.');
+        }
+      } catch (err) {
+        const storedTeacherId = localStorage.getItem('teacherId');
+        if (storedTeacherId && mounted) {
+          setCurrentUserId(Number(storedTeacherId));
+        } else {
+          // Non-fatal: warn instead of error to avoid dev overlay spam
+          console.warn('Teacher not found during auth catch. Please login again.');
+        }
+      } finally {
+        if (mounted) setUserLoaded(true);
+      }
+    };
+
+    fetchTeacherInfo();
+
+    return () => { mounted = false; };
   }, []); // Empty dependency array - runs only once
 
   // Fetch practicals when dependencies change
@@ -336,7 +383,9 @@ export function PracticalsPage({ userRole, userId }: PracticalsPageProps) {
     }
 
     if (currentUserId === null) {
-      alert('Teacher not found. Please login again.');
+      // Show UI-friendly error and avoid blocking modal alerts
+      setError('Teacher not found. Please login again.');
+      console.warn('Add practical aborted: teacher not found.');
       setIsSubmitting(false);
       return;
     }

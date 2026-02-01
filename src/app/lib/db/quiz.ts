@@ -1,5 +1,5 @@
 // lib/db/quiz.ts
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/src/app/lib/prisma";
 import type { QuestionType, QuizStatus } from "@prisma/client";
 
 export interface CreateQuizInput {
