@@ -382,9 +382,6 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
             transition={{ duration: 0.3 }}
           >
             {currentPage === "home" && (
-              <HomePage
-                userName={user.name}
-                userRole={user.role}
               <HomePage 
                 userName={userName}
                 userRole={user.role} 
