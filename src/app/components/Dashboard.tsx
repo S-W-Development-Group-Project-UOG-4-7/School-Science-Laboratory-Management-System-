@@ -50,12 +50,22 @@ type Page =
   | "requests"
   | "users";
 
+// Default privileges for each role
+const DEFAULT_ROLE_PRIVILEGES: Record<string, string[]> = {
+  'STUDENT': ['view_reports', 'manage_bookings'],
+  'TEACHER': ['view_reports', 'manage_bookings', 'manage_equipment', 'approve_requests', 'view_analytics'],
+  'LAB_ASSISTANT': ['view_reports', 'manage_equipment', 'manage_bookings', 'manage_inventory', 'manage_labs'],
+  'PRINCIPAL': ['view_reports', 'manage_equipment', 'manage_bookings', 'approve_requests', 'view_analytics', 'export_data', 'manage_labs'],
+  'ADMIN': ['view_reports', 'manage_equipment', 'manage_bookings', 'manage_users', 'manage_inventory', 'approve_requests', 'view_analytics', 'manage_settings', 'export_data', 'manage_labs']
+};
+
 export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
   const router = useRouter();
   const [profileImageUrl, setProfileImageUrl] = useState<string>('');
   const [userName, setUserName] = useState<string>(user.name);
   const [userEmail, setUserEmail] = useState<string>(user.email);
   const [userPhone, setUserPhone] = useState<string>(user.phone || '');
+  const [userPrivileges, setUserPrivileges] = useState<string[]>([]);
   
   // Initialize currentPage from initialView (URL) or localStorage
   const [currentPage, setCurrentPage] = useState<Page>(() => {
@@ -81,6 +91,30 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
     const validPages: Page[] = ["home", "practicals", "inventory", "schedule", "settings", "requests", "users"];
     return validPages.includes(page as Page);
   }
+
+  // Helper function to check if user has a specific privilege
+  const hasPrivilege = (privilegeId: string): boolean => {
+    return userPrivileges.includes(privilegeId);
+  };
+
+  // Calculate effective privileges (role + custom - revoked)
+  const calculateEffectivePrivileges = (
+    role: string,
+    customPrivileges: string[] = [],
+    revokedPrivileges: string[] = []
+  ): string[] => {
+    const roleUpperCase = role.toUpperCase().replace('-', '_');
+    const rolePrivileges = DEFAULT_ROLE_PRIVILEGES[roleUpperCase] || [];
+    
+    // Start with role privileges, remove revoked ones
+    const effectiveFromRole = rolePrivileges.filter(p => !revokedPrivileges.includes(p));
+    
+    // Add custom privileges that aren't from role
+    const effectiveCustom = customPrivileges.filter(p => !rolePrivileges.includes(p));
+    
+    // Combine both
+    return [...effectiveFromRole, ...effectiveCustom];
+  };
 
   // Handle page changes - save to both localStorage and URL
   const handlePageChange = (page: Page) => {
@@ -108,6 +142,14 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
             setUserName(dbUser.name);
             setUserEmail(dbUser.email);
             setUserPhone(dbUser.phone || '');
+            
+            // Calculate effective privileges
+            const privileges = calculateEffectivePrivileges(
+              dbUser.role,
+              dbUser.customPrivileges || [],
+              dbUser.revokedPrivileges || []
+            );
+            setUserPrivileges(privileges);
           }
         }
 
@@ -163,42 +205,43 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
     };
   }, []);
 
-  // Define navigation items based on user role
+  // Define navigation items based on user privileges
   const getNavigationItems = () => {
-    const baseNavigation = [
+    const navigationConfig = [
       {
         id: "practicals" as Page,
         label: "Practicals & Videos",
         icon: Video,
-        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
+        requiredPrivilege: 'view_reports', // Anyone who can view reports can access practicals
       },
       {
         id: "inventory" as Page,
         label: "Laboratory Inventory",
         icon: Package,
-        roles: ['teacher', 'lab-assistant', 'principal', 'admin'],
+        requiredPrivilege: 'manage_inventory',
       },
       {
         id: "schedule" as Page,
         label: "Schedule & Calendar",
         icon: Calendar,
-        roles: ['student', 'teacher', 'lab-assistant', 'principal', 'admin'],
+        requiredPrivilege: 'manage_bookings',
       },
       {
         id: "requests" as Page,
         label: "Inventory Requests",
         icon: FileText,
-        roles: ['teacher', 'lab-assistant', 'principal'],
+        requiredPrivilege: 'approve_requests',
       },
       {
         id: "users" as Page,
         label: "User Management",
         icon: UsersIcon,
-        roles: ['admin'],
+        requiredPrivilege: 'manage_users',
       },
     ];
 
-    return baseNavigation.filter(item => item.roles.includes(user.role));
+    // Filter navigation items based on user's privileges
+    return navigationConfig.filter(item => hasPrivilege(item.requiredPrivilege));
   };
 
   const navigation = getNavigationItems();
@@ -388,23 +431,23 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
                 onNavigate={(page) => handlePageChange(page as Page)}
               />
             )}
-            {currentPage === "practicals" && (
+            {currentPage === "practicals" && hasPrivilege('view_reports') && (
               <PracticalsPage userRole={user.role} />
             )}
-            {currentPage === "inventory" && (
+            {currentPage === "inventory" && hasPrivilege('manage_inventory') && (
               <InventoryPage userRole={user.role} />
             )}
-            {currentPage === "schedule" && (
+            {currentPage === "schedule" && hasPrivilege('manage_bookings') && (
               <SchedulePage userRole={user.role} />
             )}
-            {currentPage === "requests" && (
+            {currentPage === "requests" && hasPrivilege('approve_requests') && (
               <InventoryRequestsPage 
                 userRole={user.role}
                 userId={user.id}
                 userName={userName}
               />
             )}
-            {currentPage === "users" && user.role === "admin" && (
+            {currentPage === "users" && hasPrivilege('manage_users') && (
               <UserManagementPage />
             )}
             {currentPage === "settings" && (
@@ -416,6 +459,42 @@ export function Dashboard({ user, onLogout, initialView }: DashboardProps) {
                   phone: userPhone,
                 }}
               />
+            )}
+            {/* Access Denied Message */}
+            {!hasPrivilege('view_reports') && currentPage === "practicals" && (
+              <div className="text-center py-12">
+                <ShieldCheck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-700 mb-2">Access Denied</h2>
+                <p className="text-gray-500">You don't have permission to access this page.</p>
+              </div>
+            )}
+            {!hasPrivilege('manage_inventory') && currentPage === "inventory" && (
+              <div className="text-center py-12">
+                <ShieldCheck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-700 mb-2">Access Denied</h2>
+                <p className="text-gray-500">You don't have permission to access this page.</p>
+              </div>
+            )}
+            {!hasPrivilege('manage_bookings') && currentPage === "schedule" && (
+              <div className="text-center py-12">
+                <ShieldCheck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-700 mb-2">Access Denied</h2>
+                <p className="text-gray-500">You don't have permission to access this page.</p>
+              </div>
+            )}
+            {!hasPrivilege('approve_requests') && currentPage === "requests" && (
+              <div className="text-center py-12">
+                <ShieldCheck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-700 mb-2">Access Denied</h2>
+                <p className="text-gray-500">You don't have permission to access this page.</p>
+              </div>
+            )}
+            {!hasPrivilege('manage_users') && currentPage === "users" && (
+              <div className="text-center py-12">
+                <ShieldCheck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <h2 className="text-2xl font-bold text-gray-700 mb-2">Access Denied</h2>
+                <p className="text-gray-500">You don't have permission to access this page.</p>
+              </div>
             )}
           </motion.div>
         </AnimatePresence>

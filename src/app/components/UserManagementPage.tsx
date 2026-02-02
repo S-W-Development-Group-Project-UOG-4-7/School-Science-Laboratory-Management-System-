@@ -26,7 +26,8 @@ import {
   XCircle,
   Lock,
   Unlock,
-  Phone
+  Phone,
+  RefreshCw
 } from 'lucide-react';
 import {
   Dialog,
@@ -184,7 +185,7 @@ export function UserManagementPage() {
   };
 
   const validatePhone = (phoneNumber: string): boolean => {
-    if (!phoneNumber) return true; // Optional field
+    if (!phoneNumber) return true;
     
     const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
     const sriLankanPattern = /^(\+94|0)?[0-9]{9,10}$/;
@@ -1122,8 +1123,152 @@ export function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Other Dialogs - Delete, Reset Password, Privilege Management remain the same */}
-      
+      {/* Privilege Management Dialog */}
+      <Dialog open={isPrivilegeDialogOpen} onOpenChange={setIsPrivilegeDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Privileges</DialogTitle>
+            <DialogDescription>
+              Customize privileges for {selectedUser?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-4 py-4">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-4 gap-3">
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-700">{privilegeStats.total}</p>
+                      <p className="text-xs text-gray-600">Total Active</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-green-200 bg-green-50">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-green-700">{privilegeStats.fromRole}</p>
+                      <p className="text-xs text-gray-600">From Role</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-purple-200 bg-purple-50">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-purple-700">{privilegeStats.custom}</p>
+                      <p className="text-xs text-gray-600">Custom Added</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-red-200 bg-red-50">
+                  <CardContent className="pt-4 pb-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-red-700">{privilegeStats.revoked}</p>
+                      <p className="text-xs text-gray-600">Revoked</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Role Info */}
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertTitle>Current Role: {formatRole(selectedUser.role)}</AlertTitle>
+                <AlertDescription>
+                  Toggle privileges to customize permissions. Changes are highlighted.
+                </AlertDescription>
+              </Alert>
+
+              {/* Privileges by Category */}
+              <div className="space-y-4">
+                {Object.entries(privilegesByCategory).map(([category, privs]) => (
+                  <Card key={category}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold text-gray-700">{category}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {privs.map((priv) => {
+                        const status = getPrivilegeStatus(priv.id);
+                        const isActive = isPrivilegeActive(priv.id);
+                        
+                        return (
+                          <div key={priv.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm">{priv.label}</p>
+                                {status === 'role' && (
+                                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                    From Role
+                                  </Badge>
+                                )}
+                                {status === 'custom' && (
+                                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                                    Custom
+                                  </Badge>
+                                )}
+                                {status === 'revoked' && (
+                                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                                    Revoked
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">{priv.description}</p>
+                            </div>
+                            <Switch
+                              checked={isActive}
+                              onCheckedChange={() => togglePrivilege(priv.id)}
+                            />
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={handleResetPrivileges}
+              disabled={customPrivileges.length === 0 && revokedPrivileges.length === 0}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset to Role Defaults
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsPrivilegeDialogOpen(false);
+                setSelectedUser(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdatePrivileges}
+              disabled={submitting}
+              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Save Privileges
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1179,6 +1324,7 @@ export function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Reset Password Dialog */}
       <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
         <DialogContent>
           <DialogHeader>
